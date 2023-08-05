@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/mnu_home"
+        android:icon="@drawable/baseline_home_24"
+        android:title="Home"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/mnu_purchase_check_in"
+        android:title="Purchase Check In"
+        app:showAsAction="never" />
+
+
+
+</menu>
