@@ -37,17 +37,15 @@ public class G {
         View popupView = inflater.inflate(R.layout.popup_form, null);
         FlexboxLayout flexboxLayout = popupView.findViewById(R.id.flexboxLayout);
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
-
         for (DataService.Lookup l : lookup) {
             Button button = new Button(context);
             button.setWidth(100);
             button.setHeight(200);
             button.setText(l.Name);
             button.setTag(l);
-
+            button.setPadding(0, 0, 0, 0);
             flexboxLayout.addView(button);
         }
-
         alertDialogBuilder.setView(popupView);
         alertDialogBuilder
         .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

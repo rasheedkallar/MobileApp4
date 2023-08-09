@@ -18,7 +18,12 @@ import java.util.List;
 
 public class DataService {
     public  void get(String url, AsyncHttpResponseHandler response){
-        String finalUrl= "http://192.168.0.126/api/" + url;
+        String finalUrl= "http://192.168.0.126/api/" + url; // home
+        //String finalUrl= "http://10.207.176.91/api/" + url;  //office
+
+
+
+
         new AsyncHttpClient().get(finalUrl, response);
     }
     public  void getLookup(Context context, String lookup, DataService.LookupResponse response){
@@ -42,7 +47,7 @@ public class DataService {
     public abstract  class DataResponse {
         public abstract void onSuccess(String data);
     }
-    public abstract  class LookupResponse {
+    public static abstract  class LookupResponse {
         public abstract void onSuccess(List<Lookup> lookup);
     }
     public  class Lookup{

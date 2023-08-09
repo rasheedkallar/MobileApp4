@@ -6,12 +6,6 @@
     android:layout_margin="1dp"
     android:orientation="vertical"
     android:padding="1dp">
-    <!-- Add form elements here, e.g., EditText, Button, etc. -->
-    <EditText
-        android:id="@+id/editTextName"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:hint="Name" />
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
