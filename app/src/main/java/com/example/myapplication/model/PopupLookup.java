@@ -33,7 +33,7 @@ public class PopupLookup extends Popup{
         }
     }
     @Override
-    public void onAddControl(LinearLayout container) {
+    public void AddControls(LinearLayout container) {
 
         //G.showAlertDialog(Context,"hi",  "hi");
 
@@ -59,7 +59,6 @@ public class PopupLookup extends Popup{
 
     public void onAddLookup(FlexboxLayout container, DataService.Lookup lookup){
 
-
         Button button = new Button(Context);
         button.setWidth(GetButtonWidth());
         button.setHeight(GetButtonHeight());
@@ -67,26 +66,25 @@ public class PopupLookup extends Popup{
         button.setTag(lookup);
         button.setPadding(0, 0, 0, 0);
 
-
-
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if(view.getTag() == null){
-                    getListener().onPick(null);
+                    Pick(AlertDialog,null);
                 }
                 else{
                     DataService.Lookup l = (DataService.Lookup)view.getTag();
-                    getListener().onPick(l);
+                    Pick(AlertDialog,l);
                 }
-                AlertDialog.dismiss();
+
             }
         });
-
-
         container.addView(button);
+    }
 
-
+    public void Pick(DialogInterface dialog,DataService.Lookup lookup){
+        getListener().onPick(dialog,lookup);
+        AlertDialog.dismiss();
     }
 
     public  int GetButtonWidth(){
@@ -101,64 +99,8 @@ public class PopupLookup extends Popup{
         public PopupLookup getPopup(){
             return  (PopupLookup)super.getPopup();
         }
-        /*
-        @Override
-        public void onAddControl(LinearLayout container) {
 
-            EditText txt = new EditText(getPopup().Context);
-            TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            txt.setLayoutParams(txtP);
-            container.addView(txt);
-
-
-            ScrollView sv = new ScrollView(getPopup().Context);
-            ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
-            scP.setLayoutDirection(LinearLayout.HORIZONTAL);
-            sv.setLayoutParams(scP);
-            container.addView(sv);
-
-            FlexboxLayout fbl = new FlexboxLayout(getPopup().Context);
-            TableLayout.LayoutParams fblP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            fbl.setLayoutParams(fblP);
-            fbl.setFlexWrap(FlexWrap.WRAP);
-            sv.addView(fbl);
-
-            for (DataService.Lookup lookup : getPopup().Lookups) {
-                onAddLookup(fbl,lookup);
-            }
-
-        }
-
-         */
-        public  int GetButtonWidth(){
-            return  100;
-        }
-        public  int GetButtonHeight(){
-            return  200;
-        }
-        public void onAddLookup(FlexboxLayout container, DataService.Lookup lookup){
-            Button button = new Button(getPopup().Context);
-            button.setWidth(GetButtonWidth());
-            button.setHeight(GetButtonHeight());
-            button.setText(lookup.Name);
-            button.setTag(lookup);
-            button.setPadding(0, 0, 0, 0);
-            button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if(view.getTag() == null){
-                        onPick(null);
-                    }
-                    else{
-                        DataService.Lookup l = (DataService.Lookup)view.getTag();
-                        onPick(l);
-                    }
-                    getPopup().AlertDialog.dismiss();
-                }
-            });
-            container.addView(button);
-        }
-        public abstract void onPick(DataService.Lookup lookup);
+        public abstract void onPick(DialogInterface dialog,DataService.Lookup lookup);
     }
 
 }
