@@ -70,11 +70,11 @@ public class PopupLookup extends Popup{
             @Override
             public void onClick(View view) {
                 if(view.getTag() == null){
-                    Pick(AlertDialog,null);
+                    Pick(null);
                 }
                 else{
                     DataService.Lookup l = (DataService.Lookup)view.getTag();
-                    Pick(AlertDialog,l);
+                    Pick(l);
                 }
 
             }
@@ -82,9 +82,9 @@ public class PopupLookup extends Popup{
         container.addView(button);
     }
 
-    public void Pick(DialogInterface dialog,DataService.Lookup lookup){
-        getListener().onPick(dialog,lookup);
-        AlertDialog.dismiss();
+    public void Pick(DataService.Lookup lookup){
+        getListener().onPick(lookup);
+        super.DoOk();
     }
 
     public  int GetButtonWidth(){
@@ -100,7 +100,7 @@ public class PopupLookup extends Popup{
             return  (PopupLookup)super.getPopup();
         }
 
-        public abstract void onPick(DialogInterface dialog,DataService.Lookup lookup);
+        public abstract boolean onPick(DataService.Lookup lookup);
     }
 
 }

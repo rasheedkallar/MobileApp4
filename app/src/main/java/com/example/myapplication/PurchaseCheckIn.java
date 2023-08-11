@@ -12,6 +12,7 @@ import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class PurchaseCheckIn extends BaseActivity {
@@ -29,7 +30,7 @@ public class PurchaseCheckIn extends BaseActivity {
                         final List<DataService.Lookup> suppliers = lookup;
                         new PopupLookup(contxt, "Supplier", lookup, new PopupLookup.onFormPopupLookupListener() {
                             @Override
-                            public void onPick(DialogInterface dialog, DataService.Lookup lookup) {
+                            public boolean onPick(DataService.Lookup lookup) {
                                 final DataService.Lookup suppler = lookup;
                                 new DataService().getLookup(contxt, "Employee", new DataService.LookupResponse() {
                                     @Override
@@ -38,10 +39,11 @@ public class PurchaseCheckIn extends BaseActivity {
                                         final List<DataService.Lookup> employees = lookup;
                                         new PopupLookup(contxt, "Employee", lookup, new PopupLookup.onFormPopupLookupListener() {
                                             @Override
-                                            public void onPick(DialogInterface dialog,DataService.Lookup lookup) {
+                                            public boolean onPick(DataService.Lookup lookup) {
                                                 final DataService.Lookup employee = lookup;
 
                                                 ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
+                                                controls.add(new Utility.Control(Utility.ControlType.Date,"CheckInDate","Check In Date",new Date(),null,false));
                                                 controls.add(new Utility.Control(Utility.ControlType.Text,"RefNum","Ref Number",null,null,false));
                                                 controls.add(new Utility.Control(Utility.ControlType.Lookup,"Supplier","Supplier",suppler,suppliers,true));
                                                 controls.add(new Utility.Control(Utility.ControlType.Lookup,"Employee","Employee",employee,employees,true));
@@ -51,27 +53,18 @@ public class PurchaseCheckIn extends BaseActivity {
                                                         return super.getPopup();
                                                     }
                                                 });
+                                                return true;
                                             }
                                         });
                                     }
                                 });
-
+                                return true;
                             }
                         });
-
                     }
                 });
-
-
-
-
-
-
-
             }
         });
-
-
     }
 }
 

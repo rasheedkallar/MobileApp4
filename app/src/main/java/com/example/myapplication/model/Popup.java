@@ -56,7 +56,7 @@ public abstract class Popup {
             AlertDialogBuilder.setPositiveButton(getOkButton(),new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    DoOk(dialog,which);
+                    DoOk();
                 }
             });
         }
@@ -64,7 +64,7 @@ public abstract class Popup {
             AlertDialogBuilder.setNegativeButton(getCancelButton(),new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    DoCancel(dialog,which);
+                    DoCancel();
                 }
             });
         }
@@ -75,11 +75,11 @@ public abstract class Popup {
         AlertDialog.setCancelable(false);
         AlertDialog.show();
     }
-    public void DoOk(DialogInterface dialog, int which){
-        if(getListener().onDoOk())dialog.dismiss();
+    public void DoOk(){
+        if(getListener().onDoOk())AlertDialog.dismiss();
     }
-    public void DoCancel(DialogInterface dialog, int which){
-        if(getListener().onDoCancel())dialog.dismiss();
+    public void DoCancel( ){
+        if(getListener().onDoCancel())AlertDialog.dismiss();
     }
 
     public abstract void AddControls(LinearLayout container);

@@ -15,6 +15,9 @@ import androidx.core.content.ContextCompat;
 
 import com.example.myapplication.R;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class Utility {
@@ -57,9 +60,10 @@ public class Utility {
                 public void onClick(View v) {
                     new PopupLookup(context, control.Caption, control.Lookup, new PopupLookup.onFormPopupLookupListener() {
                         @Override
-                        public void onPick(DialogInterface dialog, DataService.Lookup lookup) {
+                        public boolean onPick( DataService.Lookup lookup) {
                             tvl.setText(lookup.Name);
                             lll.setTag(lookup);
+                            return true;
                         }
                     });
                 }
@@ -69,6 +73,61 @@ public class Utility {
                 DataService.Lookup lookup = (DataService.Lookup)control.DefaultValue;
                 tvl.setText(lookup.Name);
                 lll.setTag(lookup);
+            }
+            view = lll;
+        }
+        else if(control.Type == ControlType.Date){
+
+            Integer buttonWidth = 100;
+
+            LinearLayout lll = new LinearLayout(context);
+            LinearLayout.LayoutParams lllp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            lllp.setMargins(0, 0, 0, 0);
+            lll.setPadding(0, 0, 0, 0);
+            lll.setOrientation(LinearLayout.HORIZONTAL);
+            lll.setLayoutParams(lllp);
+
+            EditText tvl = new EditText(context);
+            LinearLayout.LayoutParams tvlp= new LinearLayout.LayoutParams(width- buttonWidth+10, ViewGroup.LayoutParams.WRAP_CONTENT);
+            tvl.setLayoutParams(tvlp);
+
+            lll.addView(tvl);
+            Button btl = new Button(context);
+            ViewGroup.LayoutParams btlp= new ViewGroup.LayoutParams(100, 100);
+            btl.setLayoutParams(btlp);
+            btl.setText("...");
+            btl.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+
+                    Date defaultDate = new Date();
+                    if(control.DefaultValue != null)defaultDate = (Date) control.DefaultValue;
+                    new PopupDate(context, control.Caption, defaultDate, new PopupDate.onFormPopupDateListener() {
+                        @Override
+                        public boolean onPick(Date date) {
+                            DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
+                            tvl.setText(dateFormat.format(date));
+                            lll.setTag(date);
+                            return true;
+                        }
+                    });
+
+                    /*
+                    new PopupLookup(context, control.Caption, control.Lookup, new PopupLookup.onFormPopupLookupListener() {
+                        @Override
+                        public void onPick(DialogInterface dialog, DataService.Lookup lookup) {
+                            tvl.setText(lookup.Name);
+                            lll.setTag(lookup);
+                        }
+                    });
+                    */
+                }
+            });
+            lll.addView(btl);
+            if(control.DefaultValue != null){
+                DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
+                Date date = (Date)control.DefaultValue;
+                tvl.setText(dateFormat.format(date));
+                lll.setTag(date);
             }
             view = lll;
         }

@@ -58,12 +58,8 @@ public class PopupForm extends Popup {
         container.addView(Utility.GenerateView(Context, control,getControlWidth(control)));
     }
     public  int getControlWidth(Utility.Control control){
-        if(control.DoubleSize) return 802;
-        else return 400;
-    }
-    @Override
-    public void DoOk(DialogInterface dialog, int which) {
-        super.DoOk(dialog, which);
+        if(control.DoubleSize) return 922;
+        else return 460;
     }
 
     public  static abstract  class  onFormPopupFormListener extends  Popup.onFormPopupListener{
