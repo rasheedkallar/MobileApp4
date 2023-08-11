@@ -1,23 +1,15 @@
 package com.example.myapplication;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 
 import com.example.myapplication.model.DataService;
-import com.example.myapplication.model.FormEditor;
-import com.example.myapplication.model.G;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupLookup;
+import com.example.myapplication.model.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,25 +41,16 @@ public class PurchaseCheckIn extends BaseActivity {
                                             public void onPick(DialogInterface dialog,DataService.Lookup lookup) {
                                                 final DataService.Lookup employee = lookup;
 
-                                                ArrayList<PopupForm.Control> controls = new ArrayList<PopupForm.Control>();
-                                                controls.add(new PopupForm.Control(PopupForm.ControlType.Text,"RefNum","Ref Number"));
-                                                controls.add(new PopupForm.Control(PopupForm.ControlType.Lookup,"Supplier","Supplier",suppler,suppliers));
-                                                controls.add(new PopupForm.Control(PopupForm.ControlType.Lookup,"Employee","Employee",employee,employees));
-
-
+                                                ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
+                                                controls.add(new Utility.Control(Utility.ControlType.Text,"RefNum","Ref Number",null,null,false));
+                                                controls.add(new Utility.Control(Utility.ControlType.Lookup,"Supplier","Supplier",suppler,suppliers,true));
+                                                controls.add(new Utility.Control(Utility.ControlType.Lookup,"Employee","Employee",employee,employees,true));
                                                 new PopupForm(contxt, "Purchase Check In", controls, "CheckIn", new PopupForm.onFormPopupFormListener() {
                                                     @Override
                                                     public PopupForm getPopup() {
                                                         return super.getPopup();
                                                     }
                                                 });
-
-
-
-
-
-
-
                                             }
                                         });
                                     }

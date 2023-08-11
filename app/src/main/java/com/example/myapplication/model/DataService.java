@@ -40,7 +40,7 @@ public class DataService {
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 String result = new String(responseBody);
-                G.showAlertDialog(context,"Error Alert",result);
+                Utility.showAlertDialog(context,"Error Alert",result);
             }
         });
     }
