@@ -4,6 +4,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+import com.loopj.android.http.ResponseHandlerInterface;
 
 import cz.msebera.android.httpclient.Header;
 
@@ -17,15 +19,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DataService {
+
+    //private final String rootUrl = "http://10.207.176.91/api/"; //office
+    private final String rootUrl = "http://192.168.0.126/api/"; //home
+
     public  void get(String url, AsyncHttpResponseHandler response){
-        String finalUrl= "http://192.168.0.126/api/" + url; // home
-        //String finalUrl= "http://10.207.176.91/api/" + url;  //office
-
-
-
-
+        String finalUrl= rootUrl + url;  //office
         new AsyncHttpClient().get(finalUrl, response);
     }
+    public  void post(String url, RequestParams params, ResponseHandlerInterface response){
+        String finalUrl= rootUrl + url;  //office
+        new AsyncHttpClient().post(finalUrl,params, response);
+    }
+
+
     public  void getLookup(Context context, String lookup, DataService.LookupResponse response){
         get("Lookup?type=" + lookup,new AsyncHttpResponseHandler() {
             @Override

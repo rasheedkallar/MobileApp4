@@ -55,12 +55,9 @@ public class PopupForm extends Popup {
         _container = fbl;
     }
     public void AddFormControl(Utility.Control control,FlexboxLayout container){
-        container.addView(Utility.GenerateView(Context, control,getControlWidth(control)));
+        container.addView(Utility.GenerateView(Context, control));
     }
-    public  int getControlWidth(Utility.Control control){
-        if(control.DoubleSize) return 922;
-        else return 460;
-    }
+
 
     public  static abstract  class  onFormPopupFormListener extends  Popup.onFormPopupListener{
         @Override

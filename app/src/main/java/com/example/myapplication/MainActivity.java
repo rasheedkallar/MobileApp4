@@ -33,4 +33,14 @@ public class MainActivity extends BaseActivity {
         Intent intent = new Intent(this,PurchaseCheckIn.class);
         startActivity(intent);
     }
+
+    @Override
+    public void onNewClick(View view) {
+
+    }
+
+    @Override
+    public String getHeaderText() {
+        return null;
+    }
 }

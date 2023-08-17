@@ -7,20 +7,25 @@
     android:orientation="vertical"
     android:padding="1dp">
     <!-- Add form elements here, e.g., EditText, Button, etc. -->
-    <EditText
-        android:id="@+id/editTextName"
+    <com.google.android.flexbox.FlexboxLayout
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:hint="Name" />
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <com.google.android.flexbox.FlexboxLayout
-            android:id="@+id/flexboxLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:flexWrap="wrap">
-        </com.google.android.flexbox.FlexboxLayout>
-    </ScrollView>
+        android:layout_height="102dp"
+
+        app:flexWrap="wrap">
+
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Item 1" />
+
+        <Button
+            android:id="@+id/new_entry"
+            android:layout_width="wrap_content"
+            android:layout_height="35dp"
+            android:layout_marginTop="70dp"
+            android:text="New" />
+
+        <!-- Add more child views as needed -->
+
+    </com.google.android.flexbox.FlexboxLayout>
 </LinearLayout>

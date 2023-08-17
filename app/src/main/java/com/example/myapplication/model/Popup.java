@@ -45,8 +45,8 @@ public abstract class Popup {
 
         LinearLayout linearLayout = new LinearLayout(context);
         LinearLayout.LayoutParams lllP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lllP.setMargins(0, 0, 0, 0);
-        linearLayout.setPadding(5, 5, 5, 5);
+        //lllP.setMargins(0, 0, 0, 0);
+        linearLayout.setPadding(2, 2, 2, 2);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.setLayoutParams(lllP);
 

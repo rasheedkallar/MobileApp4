@@ -2,15 +2,23 @@ package com.example.myapplication.model;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Color;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ListAdapter;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 
+import androidx.core.content.ContextCompat;
+
+import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 
@@ -35,37 +43,53 @@ public class PopupLookup extends Popup{
     @Override
     public void AddControls(LinearLayout container) {
 
-        //G.showAlertDialog(Context,"hi",  "hi");
-
-        EditText txt = new EditText(Context);
-        TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        txt.setLayoutParams(txtP);
-        container.addView(txt);
-
-
         ScrollView sv = new ScrollView(Context);
         ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
         scP.setLayoutDirection(LinearLayout.HORIZONTAL);
         sv.setLayoutParams(scP);
-        container.addView(sv);
+
 
         FlexboxLayout fbl = new FlexboxLayout(Context);
         TableLayout.LayoutParams fblP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         fbl.setLayoutParams(fblP);
         fbl.setFlexWrap(FlexWrap.WRAP);
+
+
+        EditText txt = new EditText(Context);
+        TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        txt.setLayoutParams(txtP);
+        txt.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+        container.addView(txt);
         sv.addView(fbl);
+        container.addView(sv);
         _container = fbl;
     }
 
     public void onAddLookup(FlexboxLayout container, DataService.Lookup lookup){
 
         Button button = new Button(Context);
-        button.setWidth(GetButtonWidth());
-        button.setHeight(GetButtonHeight());
+        LinearLayout.LayoutParams btlp= new LinearLayout.LayoutParams(GetButtonWidth(), GetButtonHeight());
+        btlp.setMargins(5, 5, 5, 5);
+        button.setLayoutParams(btlp);
+        button.setBackgroundColor(Color.parseColor("#008477"));
+        button.setTextColor(ContextCompat.getColor(Context, R.color.white));
         button.setText(lookup.Name);
         button.setTag(lookup);
-        button.setPadding(0, 0, 0, 0);
-
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -88,10 +112,10 @@ public class PopupLookup extends Popup{
     }
 
     public  int GetButtonWidth(){
-        return  100;
+        return  223;
     }
     public  int GetButtonHeight(){
-        return  200;
+        return  190;
     }
     public  static abstract  class  onFormPopupLookupListener extends  Popup.onFormPopupListener{
 

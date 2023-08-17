@@ -4,17 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="1dp"
+    android:foreground="@color/design_default_color_error"
     android:orientation="vertical"
     android:padding="1dp">
-    <ScrollView
-        android:layout_width="match_parent"
+
+    <TimePicker
+        android:id="@+id/timePicker"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <com.google.android.flexbox.FlexboxLayout
-            android:id="@+id/flexboxLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:flexWrap="wrap">
-        </com.google.android.flexbox.FlexboxLayout>
-    </ScrollView>
+
+        android:headerBackground="@color/design_default_color_primary" />
+
+
 </LinearLayout>
