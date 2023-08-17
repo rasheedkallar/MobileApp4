@@ -12,6 +12,7 @@ import android.widget.TableLayout;
 
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupForm;
+import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
 import com.google.android.flexbox.AlignItems;
@@ -25,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import cz.msebera.android.httpclient.Header;
+
 public class PurchaseCheckIn extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,8 +39,13 @@ public class PurchaseCheckIn extends BaseActivity {
         fbl.setLayoutParams(fblP);
         fbl.setFlexWrap(FlexWrap.WRAP);
         Container.addView(fbl);
-        fbl.addView(Utility.GenerateView(this,new Utility.Control(Utility.ControlType.Date,"FromDate","From", Utility.AddDay(new Date(),1),null,false),310));
-        fbl.addView(Utility.GenerateView(this,new Utility.Control(Utility.ControlType.Date,"ToDate","To", Utility.AddDay(new Date(),10),null,false),310));
+        //fbl.addView(Utility.GenerateView(this,new Utility.Control(Utility.ControlType.Date,"FromDate","From", Utility.AddDay(new Date(),1),null,false),310));
+        //fbl.addView(Utility.GenerateView(this,new Utility.Control(Utility.ControlType.Date,"ToDate","To", Utility.AddDay(new Date(),10),null,false),310));
+
+
+        fbl.addView(new Utility.Control(Utility.ControlType.Date,"FromDate","From", Utility.AddDay(new Date(),1),null,false).GenerateView(this,310));
+        fbl.addView(new Utility.Control(Utility.ControlType.Date,"ToDate","To", Utility.AddDay(new Date(),10),null,false).GenerateView(this,310));
+
 
         Button btn = new Button(this);
         FlexboxLayout.LayoutParams btlP= new FlexboxLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, 100);
@@ -52,29 +60,16 @@ public class PurchaseCheckIn extends BaseActivity {
 
             }
         });
-
         fbl.addView(btn);
-
-        /*
-
-        RelativeLayout layout = findViewById(R.id.relativeLayout);
-        View viewAbove = findViewById(R.id.viewAbove);
-        View viewBelow = findViewById(R.id.viewBelow);
-
-        // Get the existing layout parameters of viewBelow
-        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) viewBelow.getLayoutParams();
-
-        // Set the alignment to alignBottom with viewAbove
-        layoutParams.addRule(RelativeLayout.ALIGN_BOTTOM, viewAbove.getId());
-
-        */
-
 
 
 
     }
     @Override
     public void onNewClick(View view) {
+
+
+
 
         final Context contxt = this;
         new DataService().getLookup(contxt, "Supplier", new DataService.LookupResponse() {
@@ -94,16 +89,23 @@ public class PurchaseCheckIn extends BaseActivity {
                                     @Override
                                     public boolean onPick(DataService.Lookup lookup) {
                                         final DataService.Lookup employee = lookup;
-
                                         ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
-                                        controls.add(new Utility.Control(Utility.ControlType.DateTime,"CheckInDate","Check In Date", new Date(),null,false));
-                                        controls.add(new Utility.Control(Utility.ControlType.Text,"RefNum","Ref Number",null,null,false));
-                                        controls.add(new Utility.Control(Utility.ControlType.Lookup,"Supplier","Supplier",suppler,suppliers,true));
-                                        controls.add(new Utility.Control(Utility.ControlType.Lookup,"Employee","Employee",employee,employees,true));
-                                        new PopupForm(contxt, "Purchase Check In", controls, "CheckIn", new PopupForm.onFormPopupFormListener() {
+                                        controls.add(new Utility.Control(Utility.ControlType.DateTime,"header_date","Check In Date", new Date(),null,false));
+                                        controls.add(new Utility.Control(Utility.ControlType.Text,"header_number","Ref Number",null,null,false));
+                                        controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_supplier","Supplier",suppler,suppliers,true));
+                                        controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_emplyee","Employee",employee,employees,true));
+                                        new PopupForm(contxt, "Purchase Check In", controls,  new PopupForm.onFormPopupFormListener() {
                                             @Override
-                                            public PopupForm getPopup() {
-                                                return super.getPopup();
+                                            public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
+                                                System.out.println(result);
+
+
+
+                                                return false;
+                                            }
+                                            @Override
+                                            public String getUrl() {
+                                                return "InvCheckIn";
                                             }
                                         });
                                         return true;
@@ -122,6 +124,8 @@ public class PurchaseCheckIn extends BaseActivity {
     public String getHeaderText() {
         return "Stock Receive";
     }
+
+
 }
 
 /*

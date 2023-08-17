@@ -53,32 +53,57 @@ public abstract class Popup {
         AlertDialogBuilder = new AlertDialog.Builder(context);
         AlertDialogBuilder.setView(linearLayout);
         if(getOkButton() != null) {
-            AlertDialogBuilder.setPositiveButton(getOkButton(),new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    DoOk();
-                }
-            });
+            AlertDialogBuilder.setPositiveButton(getOkButton(),null);
         }
         if(getCancelButton() != null) {
+
+            AlertDialogBuilder.setNegativeButton(getCancelButton(),null);
+
+            /*
             AlertDialogBuilder.setNegativeButton(getCancelButton(),new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    DoCancel();
+                    //DoCancel();
                 }
             });
+
+             */
         }
 
         AddControls(linearLayout);
         AlertDialog = AlertDialogBuilder.create();
         AlertDialog.setTitle(title);
         AlertDialog.setCancelable(false);
+        if(getCancelButton() != null) {
+
+            AlertDialog.setOnShowListener(dialog -> {
+                AlertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
+                    DoCancel();
+
+                });
+            });
+        }
+
+        if(getOkButton() != null) {
+
+            AlertDialog.setOnShowListener(dialog -> {
+                AlertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                    DoOk();
+
+                });
+            });
+        }
+
         AlertDialog.show();
     }
     public void DoOk(){
-        if(getListener().onDoOk())AlertDialog.dismiss();
+        if(getListener().onDoOk()){
+            AlertDialog.dismiss();
+        }
     }
     public void DoCancel( ){
+        //System.out.println("DoCancel dismiss " + this.Title + " " + this.getClass().getName());
+
         if(getListener().onDoCancel())AlertDialog.dismiss();
     }
 

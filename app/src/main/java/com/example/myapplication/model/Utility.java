@@ -39,12 +39,7 @@ public class Utility {
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
     }
-    public static   View GenerateView(Context context, Control control){
-        int width = 463;
-        if(control.DoubleSize) width = (width * 2) + 2;
-        return GenerateView(context,control,width);
 
-    }
 
     public static Date AddDay(Date date,int day){
         Calendar calendar = Calendar.getInstance();
@@ -65,152 +60,6 @@ public class Utility {
     }
 
 
-    public static   View GenerateView(Context context, Control control, int width){
-        View view;
-        //width = 440;
-        //String.format(width,"")
-
-        if(control.Type == ControlType.Lookup){
-
-            Integer buttonWidth = 100;
-
-            LinearLayout lll = new LinearLayout(context);
-            LinearLayout.LayoutParams lllp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            lll.setOrientation(LinearLayout.HORIZONTAL);
-            lll.setLayoutParams(lllp);
-
-            TextView tvl = new TextView(context);
-            LinearLayout.LayoutParams tvlp= new LinearLayout.LayoutParams(width- buttonWidth+10, ViewGroup.LayoutParams.WRAP_CONTENT);
-            tvl.setPadding(5, 5, 5, 5);
-            tvl.setLayoutParams(tvlp);
-            lll.addView(tvl);
-            Button btl = new Button(context);
-            ViewGroup.LayoutParams btlp= new ViewGroup.LayoutParams(100, 100);
-            btl.setLayoutParams(btlp);
-            btl.setText("...");
-            btl.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                    new PopupLookup(context, control.Caption, control.Lookup, new PopupLookup.onFormPopupLookupListener() {
-                        @Override
-                        public boolean onPick( DataService.Lookup lookup) {
-                            tvl.setText(lookup.Name);
-                            lll.setTag(lookup);
-                            return true;
-                        }
-                    });
-                }
-            });
-            lll.addView(btl);
-            if(control.DefaultValue != null){
-                DataService.Lookup lookup = (DataService.Lookup)control.DefaultValue;
-                tvl.setText(lookup.Name);
-                lll.setTag(lookup);
-            }
-            view = lll;
-        }
-        else if(control.Type == ControlType.DateTime || control.Type == ControlType.Date){
-
-            Integer buttonWidth = 100;
-
-            LinearLayout lll = new LinearLayout(context);
-            LinearLayout.LayoutParams lllp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            lll.setOrientation(LinearLayout.HORIZONTAL);
-            lll.setLayoutParams(lllp);
-
-            EditText tvl = new EditText(context);
-            LinearLayout.LayoutParams tvlp= new LinearLayout.LayoutParams(width- buttonWidth+10, ViewGroup.LayoutParams.WRAP_CONTENT);
-            tvl.setLayoutParams(tvlp);
-
-            tvl.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                }
-                @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                }
-                @Override
-                public void afterTextChanged(Editable editable) {
-                    Date currentDate = null;
-                    if(lll.getTag() != null) currentDate = (Date)lll.getTag();
-                    Date date = validateDate(context, tvl,currentDate);
-                    if(date != null || tvl.getText() == null || tvl.getText().toString() == null || tvl.getText().toString().length() == 0)lll.setTag(date);
-                }
-            });
-
-            lll.addView(tvl);
-            Button btl = new Button(context);
-            ViewGroup.LayoutParams btlp= new ViewGroup.LayoutParams(100, 100);
-            btl.setLayoutParams(btlp);
-            btl.setText("...");
-            //btl.setBackgroundColor(Color.parseColor("#008477"));
-            //btl.setTextColor(ContextCompat.getColor(context, R.color.white));
-            btl.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                    Date date = (Date)lll.getTag();
-                    new PopupDate(context, control.Caption, date,control.Type == ControlType.DateTime, new PopupDate.onFormPopupDateListener() {
-                        @Override
-                        public boolean onPick(Date date) {
-                            if(control.Type == ControlType.Date){
-                                DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
-                                tvl.setText(dateFormat.format(date));
-                                return true;
-                            }
-                            else{
-                                DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm");
-                                tvl.setText(dateFormat.format(date));
-                                return true;
-                            }
-                        }
-                    });
-                }
-            });
-            lll.addView(btl);
-            if(control.DefaultValue != null){
-                if(control.Type == ControlType.Date){
-                    lll.setTag(control.DefaultValue);
-                    DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
-                    Date date = (Date)control.DefaultValue;
-                    tvl.setText(dateFormat.format(date));
-                }
-                else{
-                    lll.setTag(control.DefaultValue);
-                    DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm");
-                    Date date = (Date)control.DefaultValue;
-                    tvl.setText(dateFormat.format(date));
-                }
-            }
-            view = lll;
-        }
-        else{
-
-            EditText txt = new EditText(context);
-            TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            txt.setLayoutParams(txtP);
-            view = txt;
-        }
-        control.ValueView = view;
-        LinearLayout ll = new LinearLayout(context);
-        LinearLayout.LayoutParams llParam= new LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT);
-        ll.setOrientation(LinearLayout.VERTICAL);
-        llParam.setMargins(2, 2, 2, 2);
-        ll.setLayoutParams(llParam);
-        if(control.Caption != null) {
-            TextView caption = new TextView(context);
-            TableLayout.LayoutParams cParam= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 60);
-            caption.setPadding(10, 0, 5, 10);
-            caption.setLayoutParams(cParam);
-            caption.setText(control.Caption);
-            caption.setTextColor(ContextCompat.getColor(context, R.color.white));
-            caption.setBackgroundColor(Color.parseColor("#008477"));
-            //caption.setBackgroundColor(ContextCompat.getColor(context, androidx.cardview.R.color.cardview_dark_background));
-            ll.addView(caption);
-        }
-        ll.addView(view);
-        control.Control = ll;
-        return  ll;
-    }
 
     private static Date validateDate(Context context,EditText tvl,Date currentDate){
         Calendar currentCalendar = null;
@@ -294,6 +143,192 @@ public class Utility {
         public Control(ControlType type, String name, String cation, Object defaultValue , List<DataService.Lookup> lookup,Boolean doubleSize) {
             ConfigControl(type,name,cation,defaultValue,lookup,doubleSize);
         }
+
+        public View GenerateView(Context context, Control control){
+            int width = 463;
+            if(control.DoubleSize) width = (width * 2) + 2;
+            return GenerateView(context,width);
+
+        }
+
+        public  Object getValue(){
+            if(this.ValueView == null)return  null;
+            else{
+                if(Type == ControlType.Lookup){
+                    if(this.ValueView.getTag() == null)return  null;
+                    else{
+                        DataService.Lookup l = (DataService.Lookup)this.ValueView.getTag();
+                        return  l.Id;
+                    }
+                }
+                else if(Type == ControlType.DateTime || Type == ControlType.Date){
+                    if(this.ValueView.getTag() == null)return  null;
+                    else{
+                        return this.ValueView.getTag();
+                    }
+                }
+                else{
+                    EditText et = (EditText)this.ValueView;
+                    if(et.getText() == null)return  null;
+                    else return  et.getText().toString();
+                }
+            }
+        }
+
+        public  View GenerateView(Context context, int width){
+
+            if(this.Control != null)return this.Control;
+
+
+            View view;
+            //width = 440;
+            //String.format(width,"")
+
+            if(Type == ControlType.Lookup){
+
+                Integer buttonWidth = 100;
+
+                LinearLayout lll = new LinearLayout(context);
+                LinearLayout.LayoutParams lllp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                lll.setOrientation(LinearLayout.HORIZONTAL);
+                lll.setLayoutParams(lllp);
+
+                TextView tvl = new TextView(context);
+                LinearLayout.LayoutParams tvlp= new LinearLayout.LayoutParams(width- buttonWidth+10, ViewGroup.LayoutParams.WRAP_CONTENT);
+                tvl.setPadding(5, 5, 5, 5);
+                tvl.setLayoutParams(tvlp);
+                lll.addView(tvl);
+                Button btl = new Button(context);
+                ViewGroup.LayoutParams btlp= new ViewGroup.LayoutParams(100, 100);
+                btl.setLayoutParams(btlp);
+                btl.setText("...");
+                btl.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
+                        new PopupLookup(context, Caption, Lookup, new PopupLookup.onFormPopupLookupListener() {
+                            @Override
+                            public boolean onPick( DataService.Lookup lookup) {
+                                tvl.setText(lookup.Name);
+                                lll.setTag(lookup);
+                                return true;
+                            }
+                        });
+                    }
+                });
+                lll.addView(btl);
+                if(DefaultValue != null){
+                    DataService.Lookup lookup = (DataService.Lookup)DefaultValue;
+                    tvl.setText(lookup.Name);
+                    lll.setTag(lookup);
+                }
+                view = lll;
+            }
+            else if(Type == ControlType.DateTime || Type == ControlType.Date){
+
+                Integer buttonWidth = 100;
+
+                LinearLayout lll = new LinearLayout(context);
+                LinearLayout.LayoutParams lllp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                lll.setOrientation(LinearLayout.HORIZONTAL);
+                lll.setLayoutParams(lllp);
+
+                EditText tvl = new EditText(context);
+                LinearLayout.LayoutParams tvlp= new LinearLayout.LayoutParams(width- buttonWidth+10, ViewGroup.LayoutParams.WRAP_CONTENT);
+                tvl.setLayoutParams(tvlp);
+
+                tvl.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                    }
+                    @Override
+                    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                    }
+                    @Override
+                    public void afterTextChanged(Editable editable) {
+                        Date currentDate = null;
+                        if(lll.getTag() != null) currentDate = (Date)lll.getTag();
+                        Date date = validateDate(context, tvl,currentDate);
+                        if(date != null || tvl.getText() == null || tvl.getText().toString() == null || tvl.getText().toString().length() == 0)lll.setTag(date);
+                    }
+                });
+
+                lll.addView(tvl);
+                Button btl = new Button(context);
+                ViewGroup.LayoutParams btlp= new ViewGroup.LayoutParams(100, 100);
+                btl.setLayoutParams(btlp);
+                btl.setText("...");
+                //btl.setBackgroundColor(Color.parseColor("#008477"));
+                //btl.setTextColor(ContextCompat.getColor(context, R.color.white));
+                btl.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
+                        Date date = (Date)lll.getTag();
+                        new PopupDate(context, Caption, date,Type == ControlType.DateTime, new PopupDate.onFormPopupDateListener() {
+                            @Override
+                            public boolean onPick(Date date) {
+                                if(Type == ControlType.Date){
+                                    DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
+                                    tvl.setText(dateFormat.format(date));
+                                    return true;
+                                }
+                                else{
+                                    DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm");
+                                    tvl.setText(dateFormat.format(date));
+                                    return true;
+                                }
+                            }
+                        });
+                    }
+                });
+                lll.addView(btl);
+                if(DefaultValue != null){
+                    if(Type == ControlType.Date){
+                        lll.setTag(DefaultValue);
+                        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
+                        Date date = (Date)DefaultValue;
+                        tvl.setText(dateFormat.format(date));
+                    }
+                    else{
+                        lll.setTag(DefaultValue);
+                        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm");
+                        Date date = (Date)DefaultValue;
+                        tvl.setText(dateFormat.format(date));
+                    }
+                }
+                view = lll;
+            }
+            else{
+
+                EditText txt = new EditText(context);
+                TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                txt.setLayoutParams(txtP);
+                view = txt;
+            }
+            ValueView = view;
+            LinearLayout ll = new LinearLayout(context);
+            LinearLayout.LayoutParams llParam= new LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT);
+            ll.setOrientation(LinearLayout.VERTICAL);
+            llParam.setMargins(2, 2, 2, 2);
+            ll.setLayoutParams(llParam);
+            if(Caption != null) {
+                TextView caption = new TextView(context);
+                TableLayout.LayoutParams cParam= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 60);
+                caption.setPadding(10, 0, 5, 10);
+                caption.setLayoutParams(cParam);
+                caption.setText(Caption);
+                caption.setTextColor(ContextCompat.getColor(context, R.color.white));
+                caption.setBackgroundColor(Color.parseColor("#008477"));
+                //caption.setBackgroundColor(ContextCompat.getColor(context, androidx.cardview.R.color.cardview_dark_background));
+                ll.addView(caption);
+            }
+            ll.addView(view);
+            this.Control = ll;
+            return  ll;
+        }
+
+
+
+
         private void ConfigControl(ControlType type, String name, String cation, Object defaultValue, List<DataService.Lookup> lookup, Boolean doubleSize) {
 
             if(doubleSize == null) {

@@ -27,7 +27,7 @@ public class DataService {
         String finalUrl= rootUrl + url;  //office
         new AsyncHttpClient().get(finalUrl, response);
     }
-    public  void post(String url, RequestParams params, ResponseHandlerInterface response){
+    public  void post(String url, RequestParams params, AsyncHttpResponseHandler response){
         String finalUrl= rootUrl + url;  //office
         new AsyncHttpClient().post(finalUrl,params, response);
     }
@@ -47,7 +47,7 @@ public class DataService {
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 String result = new String(responseBody);
-                Utility.showAlertDialog(context,"Error Alert",result);
+                new PopupHtml(context,"Get Lookup Error",result);
             }
         });
     }

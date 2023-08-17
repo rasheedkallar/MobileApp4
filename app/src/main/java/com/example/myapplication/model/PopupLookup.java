@@ -40,6 +40,9 @@ public class PopupLookup extends Popup{
             onAddLookup(_container,lookup);
         }
     }
+
+
+
     @Override
     public void AddControls(LinearLayout container) {
 
@@ -63,14 +66,25 @@ public class PopupLookup extends Popup{
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
             }
-
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
+                String text = charSequence.toString().toUpperCase();
+                for (int i4 = 0; i4 < fbl.getChildCount(); i4++) {
+                    View childView = fbl.getChildAt(i4);
+                    if (childView instanceof Button) {
+                        Button button = (Button) childView;
+                        if (button.getText().toString().toLowerCase().contains(text.toLowerCase())) {
+                            button.setVisibility(View.VISIBLE);
+                        } else {
+                            button.setVisibility(View.GONE);
+                        }
+                    }
+                }
             }
 
             @Override
             public void afterTextChanged(Editable editable) {
+
 
             }
         });
