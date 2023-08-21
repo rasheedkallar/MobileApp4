@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 import com.example.myapplication.R;
@@ -23,8 +24,12 @@ import com.loopj.android.http.RequestParams;
 import com.loopj.android.http.ResponseHandlerInterface;
 
 import java.lang.reflect.Type;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import cz.msebera.android.httpclient.Header;
 
@@ -41,9 +46,10 @@ public class PopupForm extends Popup {
     public PopupForm(android.content.Context context, String title , List<Utility.Control> controls,  onFormPopupFormListener listener){
         super(context,title,listener);
         Controls = controls;
-
         for (Utility.Control control : Controls) {
-           AddFormControl(control,_container);
+           if(control.Type != Utility.ControlType.HiddenValue){
+               AddFormControl(control,_container);
+           }
         }
     }
 
@@ -53,6 +59,7 @@ public class PopupForm extends Popup {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
+                System.out.println("Response: " + result);
                 if(getListener().onSuccess( statusCode,  headers,  responseBody,result)){
                     PopupForm.super.DoOk();
                 }
@@ -60,16 +67,44 @@ public class PopupForm extends Popup {
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 String result = new String(responseBody);
+                System.out.println("Response Error: " + result);
                 new PopupHtml(Context,"Save Error",result);
             }
         });
     }
 
     public RequestParams getPostRequestParams(){
+        //2023-01-01T00:00:00
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
+        //DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+
         RequestParams params = new RequestParams();
         for (Utility.Control control : Controls) {
-            //params.add(control.Name, control.getValue());
-            params.put(control.Name,control.getValue());
+            //System.out.println(control.Name);
+
+            Object value = control.getValue();
+            if (value != null && value instanceof Date) {
+                String formattedDate = dateFormat.format(value);
+                params.put(control.Name, formattedDate);
+            }
+            else{
+                params.put(control.Name,value);
+            }
+
+            /*
+
+            Object value = control.getValue();
+            if (value != null && value instanceof Date) {
+                String formattedDate = dateFormat.format(value); // + "T" + timeFormat.format(value);
+                params.put(control.Name,formattedDate);
+                //params.put(control.Name,"2023-01-10T00:00:00");
+
+
+            }else{
+                params.put(control.Name,value);
+            }
+
+             */
         }
 
         return params;
@@ -101,11 +136,15 @@ public class PopupForm extends Popup {
         txt.setLayoutParams(txtP);
         txt.setVisibility(View.GONE);
         fbl.addView(txt);
-
         _container = fbl;
-
-
     }
+
+    private TableLayout table = null;
+
+
+
+
+
     public void AddFormControl(Utility.Control control,FlexboxLayout container){
         container.addView(control.GenerateView(Context, control));
     }

@@ -16,6 +16,7 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DataService {
@@ -24,10 +25,12 @@ public class DataService {
     private final String rootUrl = "http://192.168.0.126/api/"; //home
 
     public  void get(String url, AsyncHttpResponseHandler response){
+        System.out.println(url);
         String finalUrl= rootUrl + url;  //office
         new AsyncHttpClient().get(finalUrl, response);
     }
     public  void post(String url, RequestParams params, AsyncHttpResponseHandler response){
+        System.out.println(params);
         String finalUrl= rootUrl + url;  //office
         new AsyncHttpClient().post(finalUrl,params, response);
     }
@@ -51,11 +54,34 @@ public class DataService {
             }
         });
     }
+    public  void getLookups(Context context, String[] lookups, DataService.LookupsResponse response){
+        get("Lookup?types=" + String.join("&types=", lookups),new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String result = new String(responseBody);
+                Gson gson = new GsonBuilder().create();
+                Type listType = new TypeToken<List<Lookup>[]>(){}.getType();
+                List<Lookup>[] list = gson.fromJson(result, listType);
+
+                response.onSuccess(list);
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String result = new String(responseBody);
+                new PopupHtml(context,"Get Lookup Error",result);
+            }
+        });
+    }
+
+
     public abstract  class DataResponse {
         public abstract void onSuccess(String data);
     }
     public static abstract  class LookupResponse {
         public abstract void onSuccess(List<Lookup> lookup);
+    }
+    public static abstract  class LookupsResponse {
+        public abstract void onSuccess(List<Lookup>[] lookups);
     }
     public  class Lookup{
         public Long Id;

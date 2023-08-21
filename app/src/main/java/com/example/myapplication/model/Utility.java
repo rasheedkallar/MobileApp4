@@ -12,12 +12,16 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 
 import com.example.myapplication.R;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -27,6 +31,107 @@ import java.util.Date;
 import java.util.List;
 
 public class Utility {
+
+    public  TableLayout GetTableLayout(Context context, TableLayout table, List<Control> controls, JSONArray data){
+
+        if(table == null){
+            table = new TableLayout(context);
+            TableLayout.LayoutParams tableP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            table.setLayoutParams(tableP);
+        }
+        table.removeAllViews();
+        TableRow header = new TableRow(context);
+
+
+
+
+
+        return  table;
+        /*
+        <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="100dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp" >
+        <TableRow android:background="#0079D6" android:padding="5dp">
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="UserId" />
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="User Name" />
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Location" />
+        </TableRow>
+        <TableRow android:background="#DAE8FC" android:padding="5dp">
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="1" />
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Suresh Dasari" />
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Hyderabad" />
+        </TableRow>
+        <TableRow android:background="#DAE8FC" android:padding="5dp">
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="2" />
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Rohini Alavala" />
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Guntur" />
+        </TableRow>
+        <TableRow android:background="#DAE8FC" android:padding="5dp">
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="3" />
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Trishika Dasari" />
+            <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Guntur" />
+        </TableRow>
+    </TableLayout>
+
+         */
+
+
+    }
+
+
+
+
     public static void showAlertDialog(Context context,String title,String message) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(title)
@@ -134,7 +239,8 @@ public class Utility {
         Lookup,
         Int,
         Decimal,
-        Password
+        Password,
+        HiddenValue
     }
     public static class  Control {
         public Control(ControlType type, String name, String cation) {
@@ -152,9 +258,13 @@ public class Utility {
         }
 
         public  Object getValue(){
-            if(this.ValueView == null)return  null;
+            //2023-01-01T00:00:00.000
+            if(this.ValueView == null && Type != ControlType.HiddenValue)return  null;
             else{
-                if(Type == ControlType.Lookup){
+                if(Type == ControlType.HiddenValue){
+                    return  DefaultValue;
+                }
+                else if(Type == ControlType.Lookup){
                     if(this.ValueView.getTag() == null)return  null;
                     else{
                         DataService.Lookup l = (DataService.Lookup)this.ValueView.getTag();
@@ -176,6 +286,13 @@ public class Utility {
         }
 
         public  View GenerateView(Context context, int width){
+
+            if(Type == ControlType.HiddenValue){
+                this.ValueView = null;
+                this.Control = null;
+                return  null;
+            }
+
 
             if(this.Control != null)return this.Control;
 

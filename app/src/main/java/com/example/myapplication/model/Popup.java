@@ -97,6 +97,7 @@ public abstract class Popup {
         AlertDialog.show();
     }
     public void DoOk(){
+        //System.out.println("DoCancel dismiss " + this.Title + " " + this.getClass().getName());
         if(getListener().onDoOk()){
             AlertDialog.dismiss();
         }

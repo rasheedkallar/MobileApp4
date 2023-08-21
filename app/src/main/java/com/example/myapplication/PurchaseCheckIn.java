@@ -39,9 +39,6 @@ public class PurchaseCheckIn extends BaseActivity {
         fbl.setLayoutParams(fblP);
         fbl.setFlexWrap(FlexWrap.WRAP);
         Container.addView(fbl);
-        //fbl.addView(Utility.GenerateView(this,new Utility.Control(Utility.ControlType.Date,"FromDate","From", Utility.AddDay(new Date(),1),null,false),310));
-        //fbl.addView(Utility.GenerateView(this,new Utility.Control(Utility.ControlType.Date,"ToDate","To", Utility.AddDay(new Date(),10),null,false),310));
-
 
         fbl.addView(new Utility.Control(Utility.ControlType.Date,"FromDate","From", Utility.AddDay(new Date(),1),null,false).GenerateView(this,310));
         fbl.addView(new Utility.Control(Utility.ControlType.Date,"ToDate","To", Utility.AddDay(new Date(),10),null,false).GenerateView(this,310));
@@ -57,68 +54,80 @@ public class PurchaseCheckIn extends BaseActivity {
         btn.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                RefreshList();
             }
         });
         fbl.addView(btn);
+        final Context context = this;
+
+        System.out.println("hi");
+        new DataService().getLookups(this,  new String[] {"Supplier", "Employee"}, new DataService.LookupsResponse() {
+            @Override
+            public void onSuccess(List<DataService.Lookup>[] lookups) {
+                suppliers = lookups[0];
+                employees = lookups[1];
+                RefreshList();
+            }
+        });
+    }
+    List<DataService.Lookup> suppliers;
+    List<DataService.Lookup> employees;
 
 
+    private void  RefreshList(){
+        ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
+        Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue,"header_id","Id", null,null,false);
+        controls.add(id);
+        controls.add(new Utility.Control(Utility.ControlType.DateTime,"header_date","Check In Date", new Date(),null,false));
+        controls.add(new Utility.Control(Utility.ControlType.Text,"header_number","Ref Number",null,null,false));
+        controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_supplier","Supplier",null,suppliers,true));
+        controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_employee","Employee",null,employees,true));
 
     }
+
+
     @Override
     public void onNewClick(View view) {
 
-
-
-
         final Context contxt = this;
-        new DataService().getLookup(contxt, "Supplier", new DataService.LookupResponse() {
+
+        new PopupLookup(contxt, "Supplier", suppliers, new PopupLookup.onFormPopupLookupListener() {
             @Override
-            public void onSuccess(List<DataService.Lookup> lookup) {
-                final List<DataService.Lookup> suppliers = lookup;
-                new PopupLookup(contxt, "Supplier", lookup, new PopupLookup.onFormPopupLookupListener() {
+            public boolean onPick(DataService.Lookup lookup) {
+                final DataService.Lookup suppler = lookup;
+                new PopupLookup(contxt, "Employee", employees, new PopupLookup.onFormPopupLookupListener() {
                     @Override
                     public boolean onPick(DataService.Lookup lookup) {
-                        final DataService.Lookup suppler = lookup;
-                        new DataService().getLookup(contxt, "Employee", new DataService.LookupResponse() {
+                        final DataService.Lookup employee = lookup;
+                        ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
+                        Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue, "header_id", "Id", null, null, false);
+                        controls.add(id);
+                        controls.add(new Utility.Control(Utility.ControlType.DateTime, "header_date", "Check In Date", new Date(), null, false));
+                        controls.add(new Utility.Control(Utility.ControlType.Text, "header_number", "Ref Number", null, null, false));
+                        controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", suppler, suppliers, true));
+                        controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", employee, employees, true));
+                        new PopupForm(contxt, "Purchase Check In", controls, new PopupForm.onFormPopupFormListener() {
                             @Override
-                            public void onSuccess(List<DataService.Lookup> lookup) {
+                            public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
+                                id.DefaultValue = Long.valueOf(result);
+                                //System.out.println(result);
+                                return false;
+                            }
 
-                                final List<DataService.Lookup> employees = lookup;
-                                new PopupLookup(contxt, "Employee", lookup, new PopupLookup.onFormPopupLookupListener() {
-                                    @Override
-                                    public boolean onPick(DataService.Lookup lookup) {
-                                        final DataService.Lookup employee = lookup;
-                                        ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
-                                        controls.add(new Utility.Control(Utility.ControlType.DateTime,"header_date","Check In Date", new Date(),null,false));
-                                        controls.add(new Utility.Control(Utility.ControlType.Text,"header_number","Ref Number",null,null,false));
-                                        controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_supplier","Supplier",suppler,suppliers,true));
-                                        controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_emplyee","Employee",employee,employees,true));
-                                        new PopupForm(contxt, "Purchase Check In", controls,  new PopupForm.onFormPopupFormListener() {
-                                            @Override
-                                            public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
-                                                System.out.println(result);
-
-
-
-                                                return false;
-                                            }
-                                            @Override
-                                            public String getUrl() {
-                                                return "InvCheckIn";
-                                            }
-                                        });
-                                        return true;
-                                    }
-                                });
+                            @Override
+                            public String getUrl() {
+                                return "InvCheckIn";
                             }
                         });
                         return true;
                     }
                 });
+                return true;
             }
         });
     }
+
+
 
     @Override
     public String getHeaderText() {
