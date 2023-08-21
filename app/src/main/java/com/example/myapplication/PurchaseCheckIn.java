@@ -20,6 +20,11 @@ import com.google.android.flexbox.AlignSelf;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.android.material.internal.FlowLayout;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,8 +45,12 @@ public class PurchaseCheckIn extends BaseActivity {
         fbl.setFlexWrap(FlexWrap.WRAP);
         Container.addView(fbl);
 
-        fbl.addView(new Utility.Control(Utility.ControlType.Date,"FromDate","From", Utility.AddDay(new Date(),1),null,false).GenerateView(this,310));
-        fbl.addView(new Utility.Control(Utility.ControlType.Date,"ToDate","To", Utility.AddDay(new Date(),10),null,false).GenerateView(this,310));
+        fromControl = new Utility.Control(Utility.ControlType.Date,"from","From Date", Utility.AddDay(new Date(),-10),null,false);
+        toControl  = new Utility.Control(Utility.ControlType.Date,"to","To Date", Utility.AddDay(new Date(),1),null,false);
+
+
+        fbl.addView(fromControl.GenerateView(this,310));
+        fbl.addView(toControl.GenerateView(this,310));
 
 
         Button btn = new Button(this);
@@ -58,6 +67,13 @@ public class PurchaseCheckIn extends BaseActivity {
             }
         });
         fbl.addView(btn);
+
+        table = new TableLayout(this);
+        TableLayout.LayoutParams tableP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        table.setLayoutParams(tableP);
+
+        Container.addView(table);
+
         final Context context = this;
 
         System.out.println("hi");
@@ -73,15 +89,37 @@ public class PurchaseCheckIn extends BaseActivity {
     List<DataService.Lookup> suppliers;
     List<DataService.Lookup> employees;
 
+    Utility.Control fromControl;
+    Utility.Control toControl;
+
+    TableLayout table;
 
     private void  RefreshList(){
         ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
         Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue,"header_id","Id", null,null,false);
         controls.add(id);
-        controls.add(new Utility.Control(Utility.ControlType.DateTime,"header_date","Check In Date", new Date(),null,false));
-        controls.add(new Utility.Control(Utility.ControlType.Text,"header_number","Ref Number",null,null,false));
+        controls.add(new Utility.Control(Utility.ControlType.DateTime,"header_date","Date", new Date(),null,false));
+        controls.add(new Utility.Control(Utility.ControlType.Text,"header_number","Ref#",null,null,false));
+        controls.add(new Utility.Control(Utility.ControlType.Text,"header_employee_name","Emp",null,employees,false));
         controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_supplier","Supplier",null,suppliers,true));
-        controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_employee","Employee",null,employees,true));
+
+        new DataService().get("InvCheckIn?" + fromControl.GetUrlParam() + "&" + toControl.GetUrlParam(), new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
+                String result = new String(responseBody);
+                try {
+                    JSONArray data = new JSONArray(result);
+                    Utility.CreateGrid(getBaseContext(),table,controls,data);
+
+                } catch (JSONException e) {
+                }
+            }
+            @Override
+            public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
+
+            }
+        });
+
 
     }
 

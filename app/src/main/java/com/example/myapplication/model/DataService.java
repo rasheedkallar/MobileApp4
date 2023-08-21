@@ -67,8 +67,16 @@ public class DataService {
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String result = new String(responseBody);
-                new PopupHtml(context,"Get Lookup Error",result);
+                if(responseBody == null){
+                    String result = error.toString();
+                    new PopupHtml(context,"Get Lookup Error",result);
+                }
+                else{
+                    String result = new String(responseBody);
+                    new PopupHtml(context,"Get Lookup Error",result);
+                }
+
+
             }
         });
     }

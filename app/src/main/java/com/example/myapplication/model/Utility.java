@@ -32,7 +32,7 @@ import java.util.List;
 
 public class Utility {
 
-    public  TableLayout GetTableLayout(Context context, TableLayout table, List<Control> controls, JSONArray data){
+    public static   void CreateGrid(Context context, TableLayout table, List<Control> controls, JSONArray list){
 
         if(table == null){
             table = new TableLayout(context);
@@ -40,13 +40,47 @@ public class Utility {
             table.setLayoutParams(tableP);
         }
         table.removeAllViews();
+
         TableRow header = new TableRow(context);
+        table.addView(header);
+        TableLayout.LayoutParams headerP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        header.setLayoutParams(headerP);
+        header.setBackgroundColor(Color.parseColor("#054678"));
+        header.setPadding(5,5,5,5);
+        for (Control control: controls) {
+            float weight = 1f;
+            if(control.DoubleSize)weight = 2;
+            TextView hc = new TextView(context);
+            TableRow.LayoutParams hcP= new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,weight);
+            hc.setLayoutParams(hcP);
+            hc.setText(control.Caption);
+            hc.setTextColor(Color.parseColor("#C3DEF3"));
+
+            header.addView(hc);
+        }
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject onj = (JSONObject)list.get(i);
+            for (Control control: controls) {
+                float weight = 1f;
+                if(control.DoubleSize)weight = 2;
+                TextView hc = new TextView(context);
+                TableRow.LayoutParams hcP= new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,weight);
+                hc.setLayoutParams(hcP);
+                hc.setText(control.Caption);
+                hc.setTextColor(Color.parseColor("#C3DEF3"));
+
+                header.addView(hc);
+            }
+
+        }
 
 
 
 
 
-        return  table;
+
+
+        //return  table;
         /*
         <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
@@ -254,6 +288,21 @@ public class Utility {
             int width = 463;
             if(control.DoubleSize) width = (width * 2) + 2;
             return GenerateView(context,width);
+
+        }
+
+        public  String GetUrlParam(){
+
+            Object value = this.ValueView.getTag();
+            if (value == null)return  Name + "=" ;
+            else  if(Type == ControlType.DateTime || Type == ControlType.Date || Type == ControlType.Time){
+                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                return  Name + "=" + dateFormat.format(value);
+            }
+            else{
+                return  Name + "=" + value.toString();
+            }
+
 
         }
 

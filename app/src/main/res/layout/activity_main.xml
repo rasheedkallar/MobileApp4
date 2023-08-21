@@ -6,20 +6,27 @@
     android:layout_height="match_parent"
     android:padding="0dp"
     tools:context=".MainActivity">
-    <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <TableLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <TableRow android:background="#0079D6" android:padding="5dp">
+
+        <TableRow
+            android:background="#054678"
+            android:padding="5dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.5"
                 android:text="UserId" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="User Name" />
+                android:text="User Name"
+                android:textColor="#C3DEF3" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
