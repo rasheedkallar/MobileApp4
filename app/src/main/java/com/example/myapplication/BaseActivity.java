@@ -8,6 +8,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -15,12 +17,45 @@ import androidx.appcompat.app.AppCompatActivity;
 public abstract class BaseActivity extends AppCompatActivity {
     public LinearLayout Container;
     public TextView Header;
-    public Button NewButton;
+    public RadioGroup ButtonGroup;
+
+    public RadioButton AddButton;
+    public RadioButton EditButton;
+    public RadioButton DeleteButton;
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base);
         Container = (LinearLayout) findViewById(R.id.container);
         Header = (TextView) findViewById(R.id.header);
+        ButtonGroup = (RadioGroup) findViewById(R.id.icon_button_group);
+
+        AddButton = (RadioButton) findViewById(R.id.radio_add);
+        EditButton = (RadioButton) findViewById(R.id.radio_edit);
+        DeleteButton = (RadioButton) findViewById(R.id.radio_delete);
+
+        AddButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onButtonClick("Add",(RadioButton) view);
+            }
+        });
+        EditButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onButtonClick("Add",(RadioButton) view);
+            }
+        });
+
+        DeleteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onButtonClick("Add",(RadioButton) view);
+            }
+        });
+
+
+        /*
         NewButton = (Button) findViewById(R.id.new_entry);
         NewButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -28,11 +63,17 @@ public abstract class BaseActivity extends AppCompatActivity {
                 onNewClick(view);
             }
         });
-        if(viewNewButton())NewButton.setVisibility(Button.VISIBLE);
-        else NewButton.setVisibility(Button.INVISIBLE);
+
+        */
+
+
+        //if(viewNewButton())NewButton.setVisibility(Button.VISIBLE);
+        //else NewButton.setVisibility(Button.INVISIBLE);
         Header.setText(getHeaderText());
     }
-    public abstract void onNewClick(View view);
+    public abstract void onButtonClick(String action, RadioButton button);
+
+
     public boolean viewNewButton(){
         return true;
     }

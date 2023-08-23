@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat;
 import com.example.myapplication.R;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.DateFormat;
@@ -29,10 +30,26 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public class Utility {
+    private static void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
+        row.setBackgroundColor(Color.parseColor("#C5C6C6"));
 
-    public static   void CreateGrid(Context context, TableLayout table, List<Control> controls, JSONArray list){
+        for (int i = 0; i < tableLayout.getChildCount(); i++) {
+            TableRow otherRow = (TableRow)tableLayout.getChildAt(i);
+            if(row != otherRow && header != otherRow){
+                otherRow.setBackgroundResource(android.R.color.transparent);
+            }
+        }
+    }
+
+    public  static abstract  class  onGridListener  {
+        public abstract boolean onRowSelected(TableRow row, JSONObject data);
+    }
+
+
+    public static   void CreateGrid(Context context, TableLayout table, List<Control> controls, JSONArray list,onGridListener listener) throws JSONException, ParseException {
 
         if(table == null){
             table = new TableLayout(context);
@@ -41,12 +58,13 @@ public class Utility {
         }
         table.removeAllViews();
 
-        TableRow header = new TableRow(context);
+        final TableRow header = new TableRow(context);
         table.addView(header);
         TableLayout.LayoutParams headerP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         header.setLayoutParams(headerP);
         header.setBackgroundColor(Color.parseColor("#054678"));
         header.setPadding(5,5,5,5);
+        final TableLayout  parentTable = table;
         for (Control control: controls) {
             float weight = 1f;
             if(control.DoubleSize)weight = 2;
@@ -59,19 +77,69 @@ public class Utility {
             header.addView(hc);
         }
         for (int i = 0; i < list.length(); i++) {
-            JSONObject onj = (JSONObject)list.get(i);
+            JSONObject obj = (JSONObject)list.get(i);
+            TableRow item = new TableRow(context);
+            table.addView(item);
+            TableLayout.LayoutParams itemP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            item.setLayoutParams(itemP);
+            item.setPadding(5,5,5,5);
+            item.setTag(obj);
+            item.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectRow(item,header,parentTable);
+                    listener.onRowSelected(item,(JSONObject) item.getTag());
+                }
+            });
+
+
+
             for (Control control: controls) {
                 float weight = 1f;
                 if(control.DoubleSize)weight = 2;
                 TextView hc = new TextView(context);
                 TableRow.LayoutParams hcP= new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,weight);
                 hc.setLayoutParams(hcP);
-                hc.setText(control.Caption);
-                hc.setTextColor(Color.parseColor("#C3DEF3"));
+                Object value = obj.get(control.Name);
+                if(value != null){
+                    if(control.Type == ControlType.DateTime || control.Type == ControlType.Date || control.Type == ControlType.Time){
 
-                header.addView(hc);
+                       Date datevalue = null;
+
+                        if(value.getClass() == Date.class) {
+                            datevalue = (Date) value;
+                        }
+                        else{
+                            DateFormat mainformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                            datevalue = mainformat.parse(value.toString());
+                        }
+
+                        if(control.Type == ControlType.DateTime ){
+                            DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm");
+                            hc.setText(dateFormat.format(datevalue));
+                        }
+                        else if(control.Type == ControlType.Date){
+                            DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
+                            hc.setText(dateFormat.format(datevalue));
+                        }
+                        else if(control.Type == ControlType.Time){
+                            DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+                            hc.setText(dateFormat.format(datevalue));
+                        }
+                    }
+                    else if(control.Type == ControlType.Lookup){
+                        Long id = Long.parseLong(value.toString());
+                        Optional<DataService.Lookup> l = control.Lookup.stream().filter(itm->itm.Id.equals(id)).findAny();
+                        if(l.isPresent()){
+                            hc.setText(l.get().Name);
+                        }
+                    }
+                    else{
+                        hc.setText(value.toString());
+                    }
+                }
+                item.addView(hc);
             }
-
         }
 
 
@@ -80,85 +148,7 @@ public class Utility {
 
 
 
-        //return  table;
-        /*
-        <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="100dp"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp" >
-        <TableRow android:background="#0079D6" android:padding="5dp">
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="UserId" />
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="User Name" />
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Location" />
-        </TableRow>
-        <TableRow android:background="#DAE8FC" android:padding="5dp">
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="1" />
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Suresh Dasari" />
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Hyderabad" />
-        </TableRow>
-        <TableRow android:background="#DAE8FC" android:padding="5dp">
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="2" />
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Rohini Alavala" />
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Guntur" />
-        </TableRow>
-        <TableRow android:background="#DAE8FC" android:padding="5dp">
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="3" />
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Trishika Dasari" />
-            <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Guntur" />
-        </TableRow>
-    </TableLayout>
 
-         */
 
 
     }

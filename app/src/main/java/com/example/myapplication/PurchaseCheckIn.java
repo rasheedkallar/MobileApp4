@@ -7,8 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
+import android.widget.TableRow;
 
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupForm;
@@ -26,6 +29,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -68,20 +72,34 @@ public class PurchaseCheckIn extends BaseActivity {
         });
         fbl.addView(btn);
 
+        ScrollView sv = new ScrollView(this);
+        ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
+        scP.setLayoutDirection(LinearLayout.HORIZONTAL);
+        sv.setLayoutParams(scP);
+
+        Container.addView(sv);
+
+
         table = new TableLayout(this);
         TableLayout.LayoutParams tableP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         table.setLayoutParams(tableP);
 
-        Container.addView(table);
+        sv.addView(table);
 
         final Context context = this;
 
         System.out.println("hi");
+
+        AddButton.setEnabled(false);
+        EditButton.setEnabled(false);
+        DeleteButton.setEnabled(false);
+
         new DataService().getLookups(this,  new String[] {"Supplier", "Employee"}, new DataService.LookupsResponse() {
             @Override
             public void onSuccess(List<DataService.Lookup>[] lookups) {
                 suppliers = lookups[0];
                 employees = lookups[1];
+                AddButton.setEnabled(true);
                 RefreshList();
             }
         });
@@ -96,12 +114,13 @@ public class PurchaseCheckIn extends BaseActivity {
 
     private void  RefreshList(){
         ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
-        Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue,"header_id","Id", null,null,false);
-        controls.add(id);
+        //Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue,"header_id","Id", null,null,false);
+        //controls.add(id);
         controls.add(new Utility.Control(Utility.ControlType.DateTime,"header_date","Date", new Date(),null,false));
         controls.add(new Utility.Control(Utility.ControlType.Text,"header_number","Ref#",null,null,false));
-        controls.add(new Utility.Control(Utility.ControlType.Text,"header_employee_name","Emp",null,employees,false));
+        controls.add(new Utility.Control(Utility.ControlType.Text,"header_employee_name","Emp",null,null,false));
         controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_supplier","Supplier",null,suppliers,true));
+        controls.add(new Utility.Control(Utility.ControlType.Text, "header_status", "Status", null, null, false));
 
         new DataService().get("InvCheckIn?" + fromControl.GetUrlParam() + "&" + toControl.GetUrlParam(), new AsyncHttpResponseHandler() {
             @Override
@@ -109,9 +128,16 @@ public class PurchaseCheckIn extends BaseActivity {
                 String result = new String(responseBody);
                 try {
                     JSONArray data = new JSONArray(result);
-                    Utility.CreateGrid(getBaseContext(),table,controls,data);
+                    Utility.CreateGrid(getBaseContext(), table, controls, data, new Utility.onGridListener() {
+                        @Override
+                        public boolean onRowSelected(TableRow row, JSONObject data) {
+                            SelectedItem = data;
 
-                } catch (JSONException e) {
+                            return false;
+                        }
+                    });
+
+                } catch (JSONException | ParseException e) {
                 }
             }
             @Override
@@ -123,9 +149,10 @@ public class PurchaseCheckIn extends BaseActivity {
 
     }
 
+    private JSONObject SelectedItem= null;
 
     @Override
-    public void onNewClick(View view) {
+    public void onButtonClick(String action, RadioButton button) {
 
         final Context contxt = this;
 
@@ -144,11 +171,12 @@ public class PurchaseCheckIn extends BaseActivity {
                         controls.add(new Utility.Control(Utility.ControlType.Text, "header_number", "Ref Number", null, null, false));
                         controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", suppler, suppliers, true));
                         controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", employee, employees, true));
+
                         new PopupForm(contxt, "Purchase Check In", controls, new PopupForm.onFormPopupFormListener() {
                             @Override
                             public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
                                 id.DefaultValue = Long.valueOf(result);
-                                //System.out.println(result);
+                                RefreshList();
                                 return false;
                             }
 

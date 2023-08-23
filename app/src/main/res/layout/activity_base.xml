@@ -8,6 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:layout_margin="0dp"
         android:background="#225C6E">
         <TextView
             android:id="@+id/header"
@@ -20,17 +21,51 @@
             android:layout_marginLeft="5dp"
             android:text="Header"
             android:textColor="#8CD0E4"
-            android:textSize="21sp" />
-        <Button
-            android:id="@+id/new_entry"
+            android:textSize="20sp" />
+
+        <RadioGroup
+            android:id="@+id/icon_button_group"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
-            android:layout_margin="5dp"
+            android:orientation="horizontal"
+            android:layout_marginRight="5dp"
+
             android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
-            android:layout_gravity="end"
-            android:text="New" />
+            android:layout_gravity="end">
+
+            <RadioButton
+                android:id="@+id/radio_add"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:button="@null"
+                android:background="@drawable/radio_button_add"
+                android:text="" />
+
+            <RadioButton
+                android:id="@+id/radio_edit"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:button="@null"
+                android:background="@drawable/radio_button_edit"
+                android:text="" />
+
+            <RadioButton
+                android:id="@+id/radio_delete"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:button="@null"
+                android:background="@drawable/radio_button_delete"
+                android:text="" />
+
+        </RadioGroup>
+
+
+
+
+
+
     </RelativeLayout>
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"

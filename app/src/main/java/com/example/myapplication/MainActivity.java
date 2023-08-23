@@ -11,6 +11,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 import com.loopj.android.http.AsyncHttpClient;
@@ -35,7 +36,7 @@ public class MainActivity extends BaseActivity {
     }
 
     @Override
-    public void onNewClick(View view) {
+    public void onButtonClick(String action, RadioButton button) {
 
     }
 
