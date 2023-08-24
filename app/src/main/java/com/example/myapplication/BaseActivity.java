@@ -14,6 +14,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import org.json.JSONException;
+
 public abstract class BaseActivity extends AppCompatActivity {
     public LinearLayout Container;
     public TextView Header;
@@ -43,14 +46,14 @@ public abstract class BaseActivity extends AppCompatActivity {
         EditButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                onButtonClick("Add",(RadioButton) view);
+                onButtonClick("Edit",(RadioButton) view);
             }
         });
 
         DeleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                onButtonClick("Add",(RadioButton) view);
+                onButtonClick("Delete",(RadioButton) view);
             }
         });
 
@@ -71,7 +74,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         //else NewButton.setVisibility(Button.INVISIBLE);
         Header.setText(getHeaderText());
     }
-    public abstract void onButtonClick(String action, RadioButton button);
+    public abstract void onButtonClick(String action, RadioButton button) ;
 
 
     public boolean viewNewButton(){

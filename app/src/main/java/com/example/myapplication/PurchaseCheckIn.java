@@ -1,5 +1,6 @@
 package com.example.myapplication;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -113,9 +114,9 @@ public class PurchaseCheckIn extends BaseActivity {
     TableLayout table;
 
     private void  RefreshList(){
+        EditButton.setEnabled(false);
+        DeleteButton.setEnabled(false);
         ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
-        //Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue,"header_id","Id", null,null,false);
-        //controls.add(id);
         controls.add(new Utility.Control(Utility.ControlType.DateTime,"header_date","Date", new Date(),null,false));
         controls.add(new Utility.Control(Utility.ControlType.Text,"header_number","Ref#",null,null,false));
         controls.add(new Utility.Control(Utility.ControlType.Text,"header_employee_name","Emp",null,null,false));
@@ -129,108 +130,161 @@ public class PurchaseCheckIn extends BaseActivity {
                 try {
                     JSONArray data = new JSONArray(result);
                     Utility.CreateGrid(getBaseContext(), table, controls, data, new Utility.onGridListener() {
-                        @Override
-                        public boolean onRowSelected(TableRow row, JSONObject data) {
-                            SelectedItem = data;
+                                @Override
+                                public boolean onRowSelected(TableRow row, JSONObject data) {
+                                    try {
+                                        SelectedId = data.getLong("header_id");
+                                          EditButton.setEnabled(true);
+                                        DeleteButton.setEnabled(true);
+                                        return true;
+                                    }
+                                    catch (JSONException ex){
+                                        SelectedId = 0L;
+                                        EditButton.setEnabled(false);
+                                        DeleteButton.setEnabled(false);
+                                        return false;
+                                    }
+                                }
 
+                        @Override
+                        public boolean isSelected(TableRow row, JSONObject data)   {
+                            System.out.println(data.toString());
+
+                            if(SelectedId == null || SelectedId == 0)return false;
+
+                            try {
+                                Long id = data.getLong("header_id");
+                                if(id.equals(SelectedId)){
+                                    EditButton.setEnabled(true);
+                                    DeleteButton.setEnabled(true);
+                                    return true;
+                                }
+                            }
+                            catch (JSONException ex){
+                            }
                             return false;
                         }
                     });
+                }
+                catch (JSONException | ParseException e)
+                {
 
-                } catch (JSONException | ParseException e) {
                 }
             }
             @Override
             public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
 
             }
+
         });
 
 
     }
 
-    private JSONObject SelectedItem= null;
+    private Long SelectedId= 0L;
 
     @Override
     public void onButtonClick(String action, RadioButton button) {
 
         final Context contxt = this;
 
-        new PopupLookup(contxt, "Supplier", suppliers, new PopupLookup.onFormPopupLookupListener() {
-            @Override
-            public boolean onPick(DataService.Lookup lookup) {
-                final DataService.Lookup suppler = lookup;
-                new PopupLookup(contxt, "Employee", employees, new PopupLookup.onFormPopupLookupListener() {
-                    @Override
-                    public boolean onPick(DataService.Lookup lookup) {
-                        final DataService.Lookup employee = lookup;
-                        ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
-                        Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue, "header_id", "Id", null, null, false);
-                        controls.add(id);
-                        controls.add(new Utility.Control(Utility.ControlType.DateTime, "header_date", "Check In Date", new Date(), null, false));
-                        controls.add(new Utility.Control(Utility.ControlType.Text, "header_number", "Ref Number", null, null, false));
-                        controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", suppler, suppliers, true));
-                        controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", employee, employees, true));
+        if(action == "Add"){
+            new PopupLookup(contxt, "Supplier", suppliers, new PopupLookup.onFormPopupLookupListener() {
+                @Override
+                public boolean onPick(DataService.Lookup lookup) {
+                    final DataService.Lookup suppler = lookup;
+                    new PopupLookup(contxt, "Employee", employees, new PopupLookup.onFormPopupLookupListener() {
+                        @Override
+                        public boolean onPick(DataService.Lookup lookup) {
+                            final DataService.Lookup employee = lookup;
+                            ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
+                            Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue, "header_id", "Id", null, null, false);
+                            controls.add(id);
+                            controls.add(new Utility.Control(Utility.ControlType.DateTime, "header_date", "Check In Date", new Date(), null, false));
+                            controls.add(new Utility.Control(Utility.ControlType.Text, "header_number", "Ref Number", null, null, false));
+                            controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", suppler, suppliers, true));
+                            controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", employee, employees, true));
 
-                        new PopupForm(contxt, "Purchase Check In", controls, new PopupForm.onFormPopupFormListener() {
-                            @Override
-                            public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
-                                id.DefaultValue = Long.valueOf(result);
-                                RefreshList();
-                                return false;
-                            }
+                            new PopupForm(contxt, "Purchase Check In New", controls, new PopupForm.onFormPopupFormListener() {
+                                @Override
+                                public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
+                                    Long selid = Long.valueOf(result);
+                                    id.DefaultValue = selid;
+                                    SelectedId = selid;
+                                    RefreshList();
+                                    return false;
+                                }
 
-                            @Override
-                            public String getUrl() {
-                                return "InvCheckIn";
-                            }
-                        });
-                        return true;
+                                @Override
+                                public String getUrl() {
+                                    return "InvCheckIn";
+                                }
+                            });
+                            return false;
+                        }
+                    });
+                    return true;
+                }
+            });
+        }
+        else if(action == "Edit"){
+            new DataService().getById(contxt, "InvCheckIn", SelectedId, new DataService.GetByIdResponse() {
+                @Override
+                public void onSuccess(JSONObject data) {
+                    ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
+                    Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue, "header_id", "Id", null, null, false);
+                    controls.add(id);
+                    controls.add(new Utility.Control(Utility.ControlType.DateTime, "header_date", "Check In Date", new Date(), null, false));
+                    controls.add(new Utility.Control(Utility.ControlType.Text, "header_number", "Ref Number", null, null, false));
+                    controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", null, suppliers, true));
+                    controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", null, employees, true));
+                    try {
+                        Utility.applyValues(data,controls);
                     }
-                });
-                return true;
-            }
-        });
+                    catch ( JSONException ex){
+                    }
+                    new PopupForm(contxt, "Purchase Check In Edit", controls, new PopupForm.onFormPopupFormListener() {
+                        @Override
+                        public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
+                            RefreshList();
+                            return true;
+                        }
+                        @Override
+                        public String getUrl() {
+                            return "InvCheckIn";
+                        }
+                    });
+
+                }
+            });
+        }
+        else if(action == "Delete"){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Delete Confirmation")
+                    .setMessage("Are you sure you wnat to delete?")
+                    .setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            new DataService().deleteById(contxt, "InvCheckIn", SelectedId, new DataService.DeleteByIdResponse() {
+                                @Override
+                                public void onSuccess(Boolean deleted) {
+                                    RefreshList();
+                                }
+                            });
+                        }
+                    })
+                    .setNegativeButton("NO", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.dismiss();
+                        }
+                    });
+            AlertDialog alertDialog = builder.create();
+            alertDialog.show();
+
+
+        }
     }
-
-
-
     @Override
     public String getHeaderText() {
         return "Stock Receive";
     }
-
-
 }
-
-/*
-
-                        G.lookupPicker(contxt, suppliers, new G.onLookupPickistener() {
-                            @Override
-                            public void onPick(DataService.Lookup lookup) {
-                                final DataService.Lookup suppler = lookup;
-                                new DataService().getLookup(contxt, "Employee", new DataService.LookupResponse() {
-                                    @Override
-                                    public void onSuccess(List<DataService.Lookup> lookup) {
-                                        final List<DataService.Lookup> employees = lookup;
-                                        G.lookupPicker(contxt, employees, new G.onLookupPickistener() {
-                                            @Override
-                                            public void onPick(DataService.Lookup lookup) {
-                                                final DataService.Lookup employee = lookup;
-                                                ArrayList<FormEditor.Control> controls = new ArrayList<FormEditor.Control>();
-                                                controls.add(new FormEditor.Control(FormEditor.ControlType.Text,"RefNum","Ref Number"));
-                                                controls.add(new FormEditor.Control(FormEditor.ControlType.Lookup,"Supplier","Supplier",suppler,suppliers));
-                                                controls.add(new FormEditor.Control(FormEditor.ControlType.Lookup,"Employee","Employee",employee,employees));
-
-                                                new FormEditor(contxt, controls, "PurchaseCheckIn", new FormEditor.onFormEditorListener() {
-
-
-                                                });
-                                            }
-                                        });
-                                    }
-                                });
-
-                            }
-                        });
-                        */

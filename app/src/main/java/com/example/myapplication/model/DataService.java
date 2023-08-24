@@ -11,6 +11,7 @@ import cz.msebera.android.httpclient.Header;
 
 import android.content.Context;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -29,11 +30,62 @@ public class DataService {
         String finalUrl= rootUrl + url;  //office
         new AsyncHttpClient().get(finalUrl, response);
     }
+
+    public  void delete(String url, AsyncHttpResponseHandler response){
+        System.out.println(url);
+        String finalUrl= rootUrl + url;  //office
+        new AsyncHttpClient().delete(finalUrl, response);
+    }
     public  void post(String url, RequestParams params, AsyncHttpResponseHandler response){
         System.out.println(params);
         String finalUrl= rootUrl + url;  //office
         new AsyncHttpClient().post(finalUrl,params, response);
     }
+
+    public  void getById(Context context, String url, Long id, DataService.GetByIdResponse response){
+        get(url +  "?id=" + id.toString(),new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String result = new String(responseBody);
+                try {
+                    JSONObject data = new JSONObject(result);
+                    response.onSuccess(data);
+                }
+                catch (JSONException ex){
+                    new PopupHtml(context,"getById Error",result);
+                }
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String result = new String(responseBody);
+                new PopupHtml(context,"getById Error",result);
+            }
+        });
+    }
+
+
+    public  void deleteById(Context context, String url, Long id, DataService.DeleteByIdResponse response){
+        delete(url +  "?id=" + id.toString(),new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+
+                String result = new String(responseBody);
+                try {
+                     boolean res   = Boolean.getBoolean(result);
+                     response.onSuccess(true);
+                }
+                catch ( Exception ex) {
+                    new PopupHtml(context,"getById Error",result);
+                }
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String result = new String(responseBody);
+                new PopupHtml(context,"getById Error",result);
+            }
+        });
+    }
+
 
 
     public  void getLookup(Context context, String lookup, DataService.LookupResponse response){
@@ -88,6 +140,14 @@ public class DataService {
     public static abstract  class LookupResponse {
         public abstract void onSuccess(List<Lookup> lookup);
     }
+    public static abstract  class GetByIdResponse {
+        public abstract void onSuccess(JSONObject data);
+    }
+
+    public static abstract  class DeleteByIdResponse {
+        public abstract void onSuccess(Boolean deleted);
+    }
+
     public static abstract  class LookupsResponse {
         public abstract void onSuccess(List<Lookup>[] lookups);
     }

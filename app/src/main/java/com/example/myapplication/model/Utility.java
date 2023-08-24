@@ -27,8 +27,10 @@ import org.json.JSONObject;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +48,10 @@ public class Utility {
 
     public  static abstract  class  onGridListener  {
         public abstract boolean onRowSelected(TableRow row, JSONObject data);
+
+        public  boolean isSelected(TableRow row, JSONObject data){
+            return  false;
+        }
     }
 
 
@@ -73,9 +79,9 @@ public class Utility {
             hc.setLayoutParams(hcP);
             hc.setText(control.Caption);
             hc.setTextColor(Color.parseColor("#C3DEF3"));
-
             header.addView(hc);
         }
+
         for (int i = 0; i < list.length(); i++) {
             JSONObject obj = (JSONObject)list.get(i);
             TableRow item = new TableRow(context);
@@ -91,9 +97,6 @@ public class Utility {
                     listener.onRowSelected(item,(JSONObject) item.getTag());
                 }
             });
-
-
-
             for (Control control: controls) {
                 float weight = 1f;
                 if(control.DoubleSize)weight = 2;
@@ -110,9 +113,17 @@ public class Utility {
                             datevalue = (Date) value;
                         }
                         else{
-                            DateFormat mainformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                            DateFormat mainformat;
+                            if(value.toString().length() == 19) {
+                                mainformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                            }
+                            else {
+                                mainformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                            }
                             datevalue = mainformat.parse(value.toString());
                         }
+
+
 
                         if(control.Type == ControlType.DateTime ){
                             DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm");
@@ -138,24 +149,19 @@ public class Utility {
                         hc.setText(value.toString());
                     }
                 }
+
+                //hc.setText("hi");
                 item.addView(hc);
+                if(listener.isSelected(item, obj)){
+
+                    System.out.println("machid");
+                    item.setBackgroundColor(Color.parseColor("#C5C6C6"));
+                    //selectRow(item,header,parentTable);
+                }
             }
+            //break;
         }
-
-
-
-
-
-
-
-
-
-
     }
-
-
-
-
     public static void showAlertDialog(Context context,String title,String message) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(title)
@@ -167,6 +173,30 @@ public class Utility {
                 });
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
+    }
+
+    public static void showConfirmDialog(Context context,String title,String message) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.dismiss();
+                    }
+                });
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
+
+
+    public static void applyValues(JSONObject value, ArrayList<Control> controls) throws JSONException {
+        for (Iterator<String> it = value.keys(); it.hasNext(); ) {
+            String key = it.next();
+            Optional<Control> control = controls.stream().filter(i->i.Name.equals(key)).findAny();
+            if(control.isPresent()){
+                control.get().DefaultValue = value.get(key);
+            }
+        }
     }
 
 
@@ -324,7 +354,7 @@ public class Utility {
             }
         }
 
-        public  View GenerateView(Context context, int width){
+        public  View GenerateView(Context context, int width)   {
 
             if(Type == ControlType.HiddenValue){
                 this.ValueView = null;
@@ -371,10 +401,18 @@ public class Utility {
                     }
                 });
                 lll.addView(btl);
-                if(DefaultValue != null){
+                if(DefaultValue != null && DefaultValue.getClass() == DataService.Lookup.class){
                     DataService.Lookup lookup = (DataService.Lookup)DefaultValue;
                     tvl.setText(lookup.Name);
                     lll.setTag(lookup);
+                }
+                else if(DefaultValue != null){
+                    Long id = Long.parseLong(DefaultValue.toString());
+                    Optional<DataService.Lookup> lookup = Lookup.stream().filter(i-> i.Id.equals(id)).findAny();
+                    if(lookup.isPresent()) {
+                        tvl.setText(lookup.get().Name);
+                        lll.setTag(lookup.get());
+                    }
                 }
                 view = lll;
             }
@@ -438,26 +476,53 @@ public class Utility {
                 });
                 lll.addView(btl);
                 if(DefaultValue != null){
-                    if(Type == ControlType.Date){
-                        lll.setTag(DefaultValue);
-                        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
-                        Date date = (Date)DefaultValue;
-                        tvl.setText(dateFormat.format(date));
+                    System.out.println(DefaultValue.toString());
+                    Date value = null;
+                    if(DefaultValue.getClass() == Date.class){
+                        value  = (Date)DefaultValue;
                     }
                     else{
-                        lll.setTag(DefaultValue);
-                        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm");
-                        Date date = (Date)DefaultValue;
-                        tvl.setText(dateFormat.format(date));
+
+                        DateFormat defFormat ;
+                        if(DefaultValue.toString().length() == 19) {
+                            defFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                        }
+                        else {
+                            defFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                        }
+                        try{
+                            value = defFormat.parse(DefaultValue.toString());
+                        }catch (ParseException ex){
+                            System.out.println(ex.toString());
+                        }
                     }
+                    //System.out.println(value.toString());
+                    if(value != null){
+                        //lll.setTag(value);
+                        if(Type == ControlType.Date){
+                            DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
+                            tvl.setText(dateFormat.format(value));
+                        }
+                        else if(Type == ControlType.DateTime){
+                            DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm");
+                            tvl.setText(dateFormat.format(value));
+                        }
+                        else{
+                            DateFormat dateFormat = new SimpleDateFormat("HH:mm.ss");
+                            tvl.setText(dateFormat.format(value));
+                        }
+                    }
+                    lll.setTag(value);
                 }
                 view = lll;
             }
             else{
-
                 EditText txt = new EditText(context);
                 TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                 txt.setLayoutParams(txtP);
+                if(DefaultValue != null){
+                    txt.setText(DefaultValue.toString());
+                }
                 view = txt;
             }
             ValueView = view;
