@@ -1,4 +1,5 @@
 package com.example.myapplication.model;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.location.GnssAntennaInfo;
@@ -55,22 +56,28 @@ public class PopupForm extends Popup {
 
     @Override
     public void DoOk() {
-        new DataService().post(getListener().getUrl(),getPostRequestParams(),new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String result = new String(responseBody);
-                System.out.println("Response: " + result);
-                if(getListener().onSuccess( statusCode,  headers,  responseBody,result)){
-                    PopupForm.super.DoOk();
+        if(!Utility.validate(this.Controls)){
+            new PopupHtml(Context,"Validation Error", "Invalid input");
+            AlertDialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        }
+        else {
+            new DataService().post(getListener().getUrl(), getPostRequestParams(), new AsyncHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                    String result = new String(responseBody);
+                    System.out.println("Response: " + result);
+                    if (getListener().onSuccess(statusCode, headers, responseBody, result)) {
+                        PopupForm.super.DoOk();
+                    }
                 }
-            }
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String result = new String(responseBody);
-                System.out.println("Response Error: " + result);
-                new PopupHtml(Context,"Save Error",result);
-            }
-        });
+                @Override
+                public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                    String result = new String(responseBody);
+                    System.out.println("Response Error: " + result);
+                    new PopupHtml(Context, "Save Error", result);
+                }
+            });
+        }
     }
 
     public RequestParams getPostRequestParams(){

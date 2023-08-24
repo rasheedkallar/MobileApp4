@@ -54,6 +54,16 @@ public class Utility {
         }
     }
 
+    public static  boolean validate(List<Control> controls){
+
+        boolean valid = true;
+
+        for (Control control: controls) {
+            if(!control.validate())valid = false;
+        }
+        return valid;
+    }
+
 
     public static   void CreateGrid(Context context, TableLayout table, List<Control> controls, JSONArray list,onGridListener listener) throws JSONException, ParseException {
 
@@ -326,6 +336,37 @@ public class Utility {
 
         }
 
+
+        public  boolean validate(){
+            boolean isValid = true;
+            if(Type == ControlType.HiddenValue){
+                 return  true;
+            }
+            else if(Type == ControlType.Lookup){
+                if(!this.AllowNull && this.ValueView.getTag() == null)isValid = false;
+            }
+            else if(Type == ControlType.DateTime || Type == ControlType.Date){
+                if(!this.AllowNull && this.ValueView.getTag() == null)isValid = false;
+            }
+            else{
+                EditText txt  = (EditText)this.ValueView;
+                if(!this.AllowNull && (txt.getText() == null || txt.getText().length() == 0 ))isValid = false;
+            }
+            if(caption != null){
+                if(isValid){
+                    caption.setBackgroundColor(Color.parseColor("#008477"));
+                }else{
+                    caption.setBackgroundColor(Color.parseColor("#BC3E17"));
+                }
+
+           }
+            return  isValid;
+        }
+
+
+
+
+
         public  Object getValue(){
             //2023-01-01T00:00:00.000
             if(this.ValueView == null && Type != ControlType.HiddenValue)return  null;
@@ -532,7 +573,7 @@ public class Utility {
             llParam.setMargins(2, 2, 2, 2);
             ll.setLayoutParams(llParam);
             if(Caption != null) {
-                TextView caption = new TextView(context);
+                caption = new TextView(context);
                 TableLayout.LayoutParams cParam= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 60);
                 caption.setPadding(10, 0, 5, 10);
                 caption.setLayoutParams(cParam);
@@ -577,5 +618,7 @@ public class Utility {
         public Boolean DoubleSize;
         public View Control;
         private   View ValueView;
+
+        private TextView caption;
     }
 }

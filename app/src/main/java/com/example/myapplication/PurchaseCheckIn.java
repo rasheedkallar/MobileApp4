@@ -205,14 +205,21 @@ public class PurchaseCheckIn extends BaseActivity {
                             controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", suppler, suppliers, true));
                             controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", employee, employees, true));
 
-                            new PopupForm(contxt, "Purchase Check In New", controls, new PopupForm.onFormPopupFormListener() {
+
+                            PopupForm from = new PopupForm(contxt, "Purchase Check In New", controls, new PopupForm.onFormPopupFormListener() {
                                 @Override
                                 public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
                                     Long selid = Long.valueOf(result);
-                                    id.DefaultValue = selid;
-                                    SelectedId = selid;
                                     RefreshList();
-                                    return false;
+                                    SelectedId = selid;
+                                    if(id.DefaultValue == null || id.DefaultValue.equals(0)){
+                                        id.DefaultValue = selid;
+                                        this.getPopup().AlertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                                        return false;
+                                    }
+                                    else{
+                                        return true;
+                                    }
                                 }
 
                                 @Override

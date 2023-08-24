@@ -11,7 +11,7 @@
         android:layout_height="match_parent">
 
         <TableRow
-            android:background="#C5C6C6"
+            android:background="#BC3E17"
             android:padding="5dp">
 
             <TextView

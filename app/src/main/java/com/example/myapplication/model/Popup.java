@@ -78,6 +78,8 @@ public abstract class Popup {
 
             AlertDialog.setOnShowListener(dialog -> {
                 AlertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
+                    AlertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(false);
+
                     DoCancel();
 
                 });
@@ -88,6 +90,7 @@ public abstract class Popup {
 
             AlertDialog.setOnShowListener(dialog -> {
                 AlertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                    AlertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
                     DoOk();
 
                 });
