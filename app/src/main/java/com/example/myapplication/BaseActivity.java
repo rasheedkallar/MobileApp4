@@ -1,7 +1,9 @@
 package com.example.myapplication;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -15,9 +17,18 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.myapplication.model.Popup;
+
 import org.json.JSONException;
 
+import java.security.Permission;
+
 public abstract class BaseActivity extends AppCompatActivity {
+
+    public static final int GALLERY_PERMISSION_REQUEST_CODE = 1;
+    public static final int CAMERA_PERMISSION_REQUEST_CODE  = 2;
+
+
     public LinearLayout Container;
     public TextView Header;
     public RadioGroup ButtonGroup;
@@ -36,6 +47,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         AddButton = (RadioButton) findViewById(R.id.radio_add);
         EditButton = (RadioButton) findViewById(R.id.radio_edit);
         DeleteButton = (RadioButton) findViewById(R.id.radio_delete);
+
 
         AddButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -74,6 +86,44 @@ public abstract class BaseActivity extends AppCompatActivity {
         //else NewButton.setVisibility(Button.INVISIBLE);
         Header.setText(getHeaderText());
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(permissionGrantedListener != null){
+            permissionGrantedListener.onPermissionGranted( requestCode, permissions, grantResults);
+        }
+
+        /*
+
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    //takePictureLauncher.launch(takePictureIntent);
+                }
+            }
+        }
+        else if (requestCode == GALLERY_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Intent pickImageIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                //pickImageLauncher.launch(pickImageIntent);
+            }
+        }
+
+         */
+    }
+    private onPermissionGrantedListener permissionGrantedListener;
+    public void setPermissionGrantedListener(onPermissionGrantedListener listener){
+        permissionGrantedListener = listener;
+    }
+
+
+    public  static abstract class onPermissionGrantedListener{
+        public abstract void onPermissionGranted(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults);
+    }
+
+
     public abstract void onButtonClick(String action, RadioButton button) ;
 
 
