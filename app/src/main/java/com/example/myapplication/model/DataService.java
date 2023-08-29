@@ -8,13 +8,25 @@ import com.loopj.android.http.RequestParams;
 import com.loopj.android.http.ResponseHandlerInterface;
 
 import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.entity.FileEntity;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Environment;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,13 +35,42 @@ import java.util.List;
 public class DataService {
 
     //private final String rootUrl = "http://10.207.176.91/api/"; //office
-    private final String rootUrl = "http://192.168.0.126/api/"; //home
+    //private final String rootUrl = "http://192.168.0.126/api/"; //home
+
+    private final String rootUrl = "http://192.168.0.139/api/"; //home wifi
+
+
 
     public  void get(String url, AsyncHttpResponseHandler response){
         System.out.println(url);
         String finalUrl= rootUrl + url;  //office
         new AsyncHttpClient().get(finalUrl, response);
     }
+
+    public  void put(String url, RequestParams params, AsyncHttpResponseHandler response){
+        System.out.println(params);
+        String finalUrl= rootUrl + url;  //office
+        new AsyncHttpClient().put(finalUrl,params, response);
+    }
+
+    public static abstract   class onImageUpload{
+        public abstract void imageUpload(Bitmap image,String message);
+    }
+
+    public  void upload(Context context,File file,String fileName, String entity,Long id, AsyncHttpResponseHandler handler){
+        RequestParams params = new RequestParams();
+        try{
+            params.put("file",file,"image/jpeg");
+        }catch (FileNotFoundException e){
+        }
+        String finalUrl= rootUrl + "refFile?fileName=" + fileName + "&entity=" + entity + "&id=" + id;
+        System.out.println(params);
+        AsyncHttpClient  cl = new AsyncHttpClient();
+        cl.setTimeout(1000);
+        cl.post(finalUrl, params, handler);
+    }
+
+
 
     public  void delete(String url, AsyncHttpResponseHandler response){
         System.out.println(url);
@@ -151,7 +192,16 @@ public class DataService {
     public static abstract  class LookupsResponse {
         public abstract void onSuccess(List<Lookup>[] lookups);
     }
-    public  class Lookup{
+    public static class Lookup{
+        public  Lookup()
+        {
+
+        }
+        public Lookup(Long id,String name){
+            Id = id;
+            Name = name;
+        }
+
         public Long Id;
         public String Name;
         public String Properties;

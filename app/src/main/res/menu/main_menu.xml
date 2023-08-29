@@ -13,5 +13,11 @@
         app:showAsAction="never" />
 
 
+    <item
+        android:id="@+id/mnu_test"
+        android:title="Test"
+        app:showAsAction="never" />
+
+
 
 </menu>
