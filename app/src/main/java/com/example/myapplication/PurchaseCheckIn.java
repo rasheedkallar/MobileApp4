@@ -3,16 +3,21 @@ package com.example.myapplication;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
+import android.opengl.Visibility;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.Toast;
 
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupForm;
@@ -134,7 +139,7 @@ public class PurchaseCheckIn extends BaseActivity {
                                 public boolean onRowSelected(TableRow row, JSONObject data) {
                                     try {
                                         SelectedId = data.getLong("header_id");
-                                          EditButton.setEnabled(true);
+                                        EditButton.setEnabled(true);
                                         DeleteButton.setEnabled(true);
                                         return true;
                                     }
@@ -161,6 +166,7 @@ public class PurchaseCheckIn extends BaseActivity {
                                 }
                             }
                             catch (JSONException ex){
+                                Toast.makeText(PurchaseCheckIn.this, "GetListData Failed," + ex.getMessage(), Toast.LENGTH_SHORT).show();
                             }
                             return false;
                         }
@@ -168,32 +174,75 @@ public class PurchaseCheckIn extends BaseActivity {
                 }
                 catch (JSONException | ParseException e)
                 {
-
+                    Toast.makeText(PurchaseCheckIn.this, "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
             public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
-
+                String result = new String(responseBody);
+                Toast.makeText(PurchaseCheckIn.this, "GetListData Failed," + result, Toast.LENGTH_SHORT).show();
             }
-
         });
-
-
     }
 
     private Long SelectedId= 0L;
+    private LinearLayout popup_stockReceive;
+    private void AddImage(long id,Bitmap image,FlexboxLayout layout){
+        ImageView imageView = new ImageView(getBaseContext());
+        FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(200, 150);
+        imageView.setLayoutParams(lllP);
+        imageView.setImageBitmap(image);
+        imageView.setTag(id);
+        layout.addView(imageView);
+    }
+
+    private void  configPopup_stockReceive(FlexboxLayout container,Utility.Control id){
+        LayoutInflater li = LayoutInflater.from(this );
+        popup_stockReceive = (LinearLayout)li.inflate(R.layout.popup_stockreceive, null);
+        container.addView(popup_stockReceive);
+        FlexboxLayout image_layout = container.findViewById(R.id.image_layout);
+        TableLayout item_table = container.findViewById(R.id.item_table);
+        RadioButton image_camera = container.findViewById(R.id.image_camera);
+        image_camera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                captureImage("InvCheckIn",Long.parseLong(id.DefaultValue.toString()),new onGetImage() {
+                    @Override
+                    public void getImage(Bitmap image, long id) {
+                        AddImage(id,image,image_layout)  ;
+                    }
+                });
+            }
+        });
+        RadioButton image_gallery = container.findViewById(R.id.image_gallery);
+        image_gallery.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                pickImage("InvCheckIn",Long.parseLong(id.DefaultValue.toString()),new onGetImage() {
+                    @Override
+                    public void getImage(Bitmap image, long id) {
+                        AddImage(id,image,image_layout) ;
+                    }
+                });
+            }
+        });
+        RadioButton image_delete = container.findViewById(R.id.image_delete);
+        RadioButton item_add = container.findViewById(R.id.item_add);
+        RadioButton item_edit = container.findViewById(R.id.item_edit);
+        RadioButton item_delete = container.findViewById(R.id.item_delete);
+    }
 
     @Override
     public void onButtonClick(String action, RadioButton button) {
 
-        final Context contxt = this;
+        final Context context = this;
 
         if(action == "Add"){
-            new PopupLookup(contxt, "Supplier", suppliers, new PopupLookup.onFormPopupLookupListener() {
+            new PopupLookup(context, "Supplier", suppliers, new PopupLookup.onFormPopupLookupListener() {
                 @Override
                 public boolean onPick(DataService.Lookup lookup) {
                     final DataService.Lookup suppler = lookup;
-                    new PopupLookup(contxt, "Employee", employees, new PopupLookup.onFormPopupLookupListener() {
+                    new PopupLookup(context, "Employee", employees, new PopupLookup.onFormPopupLookupListener() {
                         @Override
                         public boolean onPick(DataService.Lookup lookup) {
                             final DataService.Lookup employee = lookup;
@@ -205,8 +254,7 @@ public class PurchaseCheckIn extends BaseActivity {
                             controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", suppler, suppliers, true));
                             controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", employee, employees, true));
 
-
-                            PopupForm from = new PopupForm(contxt, "Purchase Check In New", controls, new PopupForm.onFormPopupFormListener() {
+                            PopupForm from = new PopupForm(context, "Purchase Check In New", controls, new PopupForm.onFormPopupFormListener() {
                                 @Override
                                 public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
                                     Long selid = Long.valueOf(result);
@@ -215,11 +263,19 @@ public class PurchaseCheckIn extends BaseActivity {
                                     if(id.DefaultValue == null || id.DefaultValue.equals(0)){
                                         id.DefaultValue = selid;
                                         this.getPopup().AlertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                                        popup_stockReceive.setVisibility(LinearLayout.VISIBLE);
                                         return false;
                                     }
                                     else{
                                         return true;
                                     }
+                                }
+
+                                @Override
+                                public boolean onControlAdded(FlexboxLayout container) {
+                                    configPopup_stockReceive(container,id);
+                                    popup_stockReceive.setVisibility(LinearLayout.GONE);
+                                    return super.onControlAdded(container);
                                 }
 
                                 @Override
@@ -235,7 +291,7 @@ public class PurchaseCheckIn extends BaseActivity {
             });
         }
         else if(action == "Edit"){
-            new DataService().getById(contxt, "InvCheckIn", SelectedId, new DataService.GetByIdResponse() {
+            new DataService().getById(context, "InvCheckIn", SelectedId, new DataService.GetByIdResponse() {
                 @Override
                 public void onSuccess(JSONObject data) {
                     ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
@@ -250,12 +306,19 @@ public class PurchaseCheckIn extends BaseActivity {
                     }
                     catch ( JSONException ex){
                     }
-                    new PopupForm(contxt, "Purchase Check In Edit", controls, new PopupForm.onFormPopupFormListener() {
+                    new PopupForm(context, "Purchase Check In Edit", controls, new PopupForm.onFormPopupFormListener() {
                         @Override
                         public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
                             RefreshList();
                             return true;
                         }
+
+                        @Override
+                        public boolean onControlAdded(FlexboxLayout container) {
+                            configPopup_stockReceive(container,id);
+                            return super.onControlAdded(container);
+                        }
+
                         @Override
                         public String getUrl() {
                             return "InvCheckIn";
@@ -271,7 +334,7 @@ public class PurchaseCheckIn extends BaseActivity {
                     .setMessage("Are you sure you wnat to delete?")
                     .setPositiveButton("YES", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-                            new DataService().deleteById(contxt, "InvCheckIn", SelectedId, new DataService.DeleteByIdResponse() {
+                            new DataService().deleteById(context, "InvCheckIn", SelectedId, new DataService.DeleteByIdResponse() {
                                 @Override
                                 public void onSuccess(Boolean deleted) {
                                     RefreshList();
@@ -286,8 +349,6 @@ public class PurchaseCheckIn extends BaseActivity {
                     });
             AlertDialog alertDialog = builder.create();
             alertDialog.show();
-
-
         }
     }
     @Override

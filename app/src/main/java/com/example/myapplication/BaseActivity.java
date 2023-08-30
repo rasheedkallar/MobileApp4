@@ -99,7 +99,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                 Bitmap imageBitmap = (Bitmap) extras.get("data");
                 File myDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
                 myDir.mkdirs();
-                String fileName = "Image-AbuNaser.jpg";
+                //String fileName = "Image-AbuNaser.jpg";
                 /*
 
                 File file = new File(myDir, fileName);
@@ -129,21 +129,19 @@ public abstract class BaseActivity extends AppCompatActivity {
                  */
                 File file;
                 try {
-                    file = File.createTempFile("Image-AbuNaser","jpg");
+                    file = File.createTempFile("Image-AbuNaser",".jpg");
                 }
                 catch (IOException e){
                     Toast.makeText(activity,e.getMessage(),Toast.LENGTH_LONG).show();
                     return;
                 }
-
-
-
                 try {
                     FileOutputStream out = new FileOutputStream(file);
                     imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
                     out.flush();
                     out.close();
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     e.printStackTrace();
                 }
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
@@ -154,7 +152,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                     public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                         String result = new String(responseBody);
                         System.out.println(result);
-                        if(imageListener != null)imageListener.getImage(imageBitmap,result);
+                        if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
                     }
 
                     @Override
@@ -167,7 +165,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                             result = new String(responseBody);
                         }
                         System.out.println(result);
-                        if(imageListener != null)imageListener.getImage(imageBitmap,result);
+                        Toast.makeText(BaseActivity.this, "Fail to pick image " + result, Toast.LENGTH_SHORT).show();
                     }
                 });
 
@@ -183,20 +181,9 @@ public abstract class BaseActivity extends AppCompatActivity {
 
                 try {
                     Bitmap imageBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
-                    /*
-
-                    File myDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-                    myDir.mkdirs();
-                    String fileName = "Image-AbuNaser.jpg";
-                    File file = new File(myDir, fileName);
-                    if (file.exists()) file.delete();
-
-                     */
-
-
                     File file;
                     try {
-                        file = File.createTempFile("Image-AbuNaser","jpg");
+                        file = File.createTempFile("Image-AbuNaser",".jpg");
                     }
                     catch (IOException e){
                         Toast.makeText(activity,e.getMessage(),Toast.LENGTH_LONG).show();
@@ -208,7 +195,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                         out.flush();
                         out.close();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Toast.makeText(activity,e.getMessage(),Toast.LENGTH_LONG).show();
                     }
 
 
@@ -219,14 +206,14 @@ public abstract class BaseActivity extends AppCompatActivity {
                         public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                             String result = new String(responseBody);
                             System.out.println(result);
-                            if(imageListener != null)imageListener.getImage(imageBitmap,result);
+                            if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
                         }
 
                         @Override
                         public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
                             String result = new String(responseBody);
                             System.out.println(result);
-                            if(imageListener != null)imageListener.getImage(imageBitmap,result);
+                            Toast.makeText(BaseActivity.this, "Fail to capture image " + result, Toast.LENGTH_SHORT).show();
                         }
                     });
                 }catch (IOException e){
@@ -334,7 +321,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         return  true;
     }
     public static abstract class onGetImage{
-        public abstract void getImage(Bitmap image,String message) ;
+        public abstract void getImage(Bitmap image,long id) ;
 
     }
 

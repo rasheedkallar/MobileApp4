@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
+import com.google.android.material.internal.FlowLayout;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -52,6 +53,7 @@ public class PopupForm extends Popup {
                AddFormControl(control,_container);
            }
         }
+        listener.onControlAdded(_container);
     }
 
     @Override
@@ -167,6 +169,12 @@ public class PopupForm extends Popup {
         public boolean onDoOk() {
             return true;
         }
+
+        public boolean onControlAdded(FlexboxLayout container) {
+            return true;
+        }
+
+
     }
 
 

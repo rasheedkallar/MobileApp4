@@ -14,6 +14,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,9 +36,9 @@ import java.util.List;
 public class DataService {
 
     //private final String rootUrl = "http://10.207.176.91/api/"; //office
-    //private final String rootUrl = "http://192.168.0.126/api/"; //home
+    private final String rootUrl = "http://192.168.0.126/api/"; //home
 
-    private final String rootUrl = "http://192.168.0.139/api/"; //home wifi
+    //private final String rootUrl = "http://192.168.0.139/api/"; //home wifi
 
 
 
@@ -61,9 +62,18 @@ public class DataService {
         RequestParams params = new RequestParams();
         try{
             params.put("file",file,"image/jpeg");
-        }catch (FileNotFoundException e){
         }
+        catch (FileNotFoundException e){
+            Toast.makeText(context, "Invalid image", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        //params.put("fileName",fileName);
+        //params.put("entity",entity);
+        //params.put("id",id);
+
         String finalUrl= rootUrl + "refFile?fileName=" + fileName + "&entity=" + entity + "&id=" + id;
+
+        //String finalUrl= rootUrl;
         System.out.println(params);
         AsyncHttpClient  cl = new AsyncHttpClient();
         cl.setTimeout(1000);
@@ -93,13 +103,13 @@ public class DataService {
                     response.onSuccess(data);
                 }
                 catch (JSONException ex){
-                    new PopupHtml(context,"getById Error",result);
+                    Toast.makeText(context, "getById Error:" + result, Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 String result = new String(responseBody);
-                new PopupHtml(context,"getById Error",result);
+                Toast.makeText(context, "getById Error:" + result, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -116,13 +126,13 @@ public class DataService {
                      response.onSuccess(true);
                 }
                 catch ( Exception ex) {
-                    new PopupHtml(context,"getById Error",result);
+                    Toast.makeText(context, "deleteById Error:" + result, Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 String result = new String(responseBody);
-                new PopupHtml(context,"getById Error",result);
+                Toast.makeText(context, "deleteById Error:" + result, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -143,7 +153,7 @@ public class DataService {
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 String result = new String(responseBody);
-                new PopupHtml(context,"Get Lookup Error",result);
+                Toast.makeText(context, "getLookup Error:" + result, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -162,11 +172,11 @@ public class DataService {
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 if(responseBody == null){
                     String result = error.toString();
-                    new PopupHtml(context,"Get Lookup Error",result);
+                    Toast.makeText(context, "getLookups Error:" + result, Toast.LENGTH_SHORT).show();
                 }
                 else{
                     String result = new String(responseBody);
-                    new PopupHtml(context,"Get Lookup Error",result);
+                    Toast.makeText(context, "getLookups Error:" + result, Toast.LENGTH_SHORT).show();
                 }
 
 

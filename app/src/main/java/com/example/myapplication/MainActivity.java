@@ -44,9 +44,9 @@ public class MainActivity extends BaseActivity {
             public void onClick(View view) {
                 captureImage("InvCheckIn",0L,new onGetImage() {
                     @Override
-                    public void getImage(Bitmap image, String message) {
+                    public void getImage(Bitmap image, long id) {
                         imageView.setImageBitmap(image);
-                        new PopupHtml(activity,"Alert Success",message);
+
                     }
                 });
             }
@@ -57,9 +57,9 @@ public class MainActivity extends BaseActivity {
             public void onClick(View view) {
                 pickImage("InvCheckIn",0L,new onGetImage() {
                     @Override
-                    public void getImage(Bitmap image,String message) {
+                    public void getImage(Bitmap image,long id) {
                         imageView.setImageBitmap(image);
-                        new PopupHtml(activity,"Alert Success",message);
+
                     }
                 });
             }
