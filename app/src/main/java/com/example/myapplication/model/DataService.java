@@ -9,6 +9,7 @@ import com.loopj.android.http.ResponseHandlerInterface;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.FileEntity;
+import kotlin.text.Charsets;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -28,37 +29,55 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class DataService {
 
-    //private final String rootUrl = "http://10.207.176.91/api/"; //office
-    private final String rootUrl = "http://192.168.0.126/api/"; //home
-
-    //private final String rootUrl = "http://192.168.0.139/api/"; //home wifi
 
 
+    //private static String serverIp = "10.207.176.91"; //office
+    private static String serverIp = "192.168.0.126"; //home
+    //private static String serverIp = "192.168.0.139"; //homewifi
+
+    private static String  serverPort = "80";
+    public static String getRootUrl(){
+        if(serverPort == "80")return  "http://" + serverIp + "/api/";
+        else return  "http://" + serverIp + ":" + serverPort + "/api/";
+    }
 
     public  void get(String url, AsyncHttpResponseHandler response){
         System.out.println(url);
-        String finalUrl= rootUrl + url;  //office
+        String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().get(finalUrl, response);
     }
 
     public  void put(String url, RequestParams params, AsyncHttpResponseHandler response){
         System.out.println(params);
-        String finalUrl= rootUrl + url;  //office
+        String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().put(finalUrl,params, response);
     }
 
     public static abstract   class onImageUpload{
         public abstract void imageUpload(Bitmap image,String message);
     }
+    private String URLEncode(String data){
 
-    public  void upload(Context context,File file,String fileName, String entity,Long id, AsyncHttpResponseHandler handler){
+        if(data == null)return  "";
+        try{
+            return URLEncoder.encode(data, Charsets.UTF_8.name());
+        }catch (UnsupportedEncodingException e){
+            return  data;
+        }
+    }
+    public  void upload(Context context,File file,String fileName, String entity,Long id, AsyncHttpResponseHandler handler) {
+        upload( context, file, fileName,  entity, id,null ,null,  handler);
+    }
+    public  void upload(Context context,File file,String fileName, String entity,Long id,String fileGroup , String path, AsyncHttpResponseHandler handler){
         RequestParams params = new RequestParams();
         try{
             params.put("file",file,"image/jpeg");
@@ -67,13 +86,7 @@ public class DataService {
             Toast.makeText(context, "Invalid image", Toast.LENGTH_SHORT).show();
             return;
         }
-        //params.put("fileName",fileName);
-        //params.put("entity",entity);
-        //params.put("id",id);
-
-        String finalUrl= rootUrl + "refFile?fileName=" + fileName + "&entity=" + entity + "&id=" + id;
-
-        //String finalUrl= rootUrl;
+        String finalUrl= getRootUrl() + "refFile?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
         System.out.println(params);
         AsyncHttpClient  cl = new AsyncHttpClient();
         cl.setTimeout(1000);
@@ -84,12 +97,12 @@ public class DataService {
 
     public  void delete(String url, AsyncHttpResponseHandler response){
         System.out.println(url);
-        String finalUrl= rootUrl + url;  //office
+        String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().delete(finalUrl, response);
     }
     public  void post(String url, RequestParams params, AsyncHttpResponseHandler response){
         System.out.println(params);
-        String finalUrl= rootUrl + url;  //office
+        String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().post(finalUrl,params, response);
     }
 

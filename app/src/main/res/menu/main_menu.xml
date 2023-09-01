@@ -10,8 +10,8 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/mnu_purchase_check_in"
-        android:title="Purchase Check In"
+        android:id="@+id/stock_receive"
+        android:title="Stock Receive"
         app:showAsAction="never" />
 
 

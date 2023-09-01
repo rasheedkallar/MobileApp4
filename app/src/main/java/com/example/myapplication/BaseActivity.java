@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -27,6 +28,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.Popup;
@@ -57,6 +59,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     public RadioButton EditButton;
     public RadioButton DeleteButton;
     @Override
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base);
@@ -95,63 +98,20 @@ public abstract class BaseActivity extends AppCompatActivity {
         new ActivityResultContracts.StartActivityForResult(),
         result -> {
             if (result.getResultCode() == Activity.RESULT_OK) {
-                Bundle extras = result.getData().getExtras();
-                Bitmap imageBitmap = (Bitmap) extras.get("data");
-                File myDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-                myDir.mkdirs();
-                //String fileName = "Image-AbuNaser.jpg";
-                /*
-
-                File file = new File(myDir, fileName);
-                if (file.exists()){
-                    //new SecurityManager().checkDelete(file.getAbsolutePath());
-
-
-                    try {
-
-
-                        file.delete();
-                    }catch (Exception e){
-                        Toast.makeText(activity,"deleted",Toast.LENGTH_SHORT).show();
-                    }
-
-
-
-                }
-                else{
-                     new PopupHtml(getBaseContext(),"file not exist","message");
-                }
-
-                //Toast.makeText(activity,"hi",Toast.LENGTH_LONG).show();
-                //Toast.makeText(getBaseContext(), "Reason can not be blank", Toast.LENGTH_SHORT).show();
-                //boolean e1 = file.exists();
-
-                 */
-                File file;
-                try {
-                    file = File.createTempFile("Image-AbuNaser",".jpg");
-                }
-                catch (IOException e){
-                    Toast.makeText(activity,e.getMessage(),Toast.LENGTH_LONG).show();
-                    return;
-                }
-                try {
-                    FileOutputStream out = new FileOutputStream(file);
-                    imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
-                    out.flush();
-                    out.close();
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
-
-                new DataService().upload(activity,file,newFileName,Entity,Id, new AsyncHttpResponseHandler() {
+                new DataService().upload(activity,photoFile,newFileName,Entity,Id, new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                         String result = new String(responseBody);
                         System.out.println(result);
+                        Bitmap imageBitmap;
+                        try {
+                             imageBitmap = MediaStore.Images.Media.getBitmap(getBaseContext().getContentResolver(), photoURI);
+                        }
+                        catch (IOException e){
+                            imageBitmap = null;
+                        }
                         if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
                     }
 
@@ -168,8 +128,6 @@ public abstract class BaseActivity extends AppCompatActivity {
                         Toast.makeText(BaseActivity.this, "Fail to pick image " + result, Toast.LENGTH_SHORT).show();
                     }
                 });
-
-
             }
         });
 
@@ -197,8 +155,6 @@ public abstract class BaseActivity extends AppCompatActivity {
                     } catch (Exception e) {
                         Toast.makeText(activity,e.getMessage(),Toast.LENGTH_LONG).show();
                     }
-
-
                     DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                     String newFileName = dateFormat.format(new Date());
                     new DataService().upload(activity,file,newFileName,Entity,Id, new AsyncHttpResponseHandler() {
@@ -222,17 +178,26 @@ public abstract class BaseActivity extends AppCompatActivity {
             }
         });
     }
+
+    private  File photoFile;
+    private Uri photoURI;
     private    void  ImageCapture(){
         // Camera permission is granted, you can proceed with camera-related operations
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            takePictureLauncher.launch(takePictureIntent);
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                Toast.makeText(getBaseContext(),"Error in image capture." + ex.getMessage(),Toast.LENGTH_LONG).show();
+            }
+            if (photoFile != null) {
 
+                photoURI = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                takePictureLauncher.launch(takePictureIntent);
 
-            //File f = new File(android.os.Environment.getExternalStorageDirectory(), "temp.jpg");
-            //intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(f));
-
-
+            }
         }
     }
     private    void  ImagePick(){
@@ -240,6 +205,23 @@ public abstract class BaseActivity extends AppCompatActivity {
         pickImageLauncher.launch(pickImageIntent);
     }
 
+
+    //private Uri photoThumbnailURI;
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        //mCurrentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
 
     public void  captureImage(String entity,Long id,onGetImage listener){
 
@@ -306,8 +288,8 @@ public abstract class BaseActivity extends AppCompatActivity {
             case "Home":
                 intent = new Intent(this,MainActivity.class);
                 break;
-            case "Purchase Check In":
-                intent = new Intent(this,PurchaseCheckIn.class);
+            case "Stock Receive":
+                intent = new Intent(this,InvCheckInActivity.class);
                 break;
 
             case "Test":

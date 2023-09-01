@@ -55,7 +55,7 @@ public abstract class Popup {
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.setLayoutParams(lllP);
 
-        AlertDialogBuilder = new AlertDialog.Builder(context);
+
 
         TextView caption = new TextView(context);
         TableLayout.LayoutParams cParam= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 500);
@@ -70,7 +70,7 @@ public abstract class Popup {
 
 
 
-
+        AlertDialogBuilder = new AlertDialog.Builder(context);
         AlertDialogBuilder.setCustomTitle(caption);
         AlertDialogBuilder.setView(linearLayout);
         if(getOkButton() != null) {
@@ -80,18 +80,13 @@ public abstract class Popup {
 
             AlertDialogBuilder.setNegativeButton(getCancelButton(),null);
 
-            /*
-            AlertDialogBuilder.setNegativeButton(getCancelButton(),new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    //DoCancel();
-                }
-            });
 
-             */
         }
 
         AddControls(linearLayout);
+
+
+
         AlertDialog = AlertDialogBuilder.create();
         AlertDialog.setTitle(title);
         AlertDialog.setCancelable(false);
@@ -120,6 +115,11 @@ public abstract class Popup {
 
         AlertDialog.show();
     }
+
+
+
+
+
     public void DoOk(){
         //System.out.println("DoCancel dismiss " + this.Title + " " + this.getClass().getName());
         if(getListener().onDoOk()){
