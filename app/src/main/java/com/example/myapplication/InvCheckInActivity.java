@@ -19,7 +19,11 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
+
+import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
+import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
@@ -54,12 +58,18 @@ public class InvCheckInActivity extends BaseActivity {
         fbl.setFlexWrap(FlexWrap.WRAP);
         Container.addView(fbl);
 
-        fromControl = new Utility.Control(Utility.ControlType.Date,"from","From Date", Utility.AddDay(new Date(),-10),null,false);
-        toControl  = new Utility.Control(Utility.ControlType.Date,"to","To Date", Utility.AddDay(new Date(),1),null,false);
+        //fromControl = new Utility.Control(Utility.ControlType.Date,"from","From Date", Utility.AddDay(new Date(),-10),null,false);
+        //toControl  = new Utility.Control(Utility.ControlType.Date,"to","To Date", Utility.AddDay(new Date(),1),null,false);
 
 
-        fbl.addView(fromControl.GenerateView(this,310));
-        fbl.addView(toControl.GenerateView(this,310));
+        //fbl.addView(fromControl.GenerateView(this,310));
+        //fbl.addView(toControl.GenerateView(this,310));
+
+        fromControl = Control.getDateControl(this,"from","From").setValue(Utility.AddDay(new Date(),-10)).setControlSize(310);
+        toControl = Control.getDateControl(this,"to","To").setValue(Utility.AddDay(new Date(),1)).setControlSize(310);
+
+        fbl.addView(fromControl.getFillView());
+        fbl.addView(toControl.getFillView());
 
 
         Button btn = new Button(this);
@@ -112,43 +122,47 @@ public class InvCheckInActivity extends BaseActivity {
     List<DataService.Lookup> suppliers;
     List<DataService.Lookup> employees;
 
-    Utility.Control fromControl;
-    Utility.Control toControl;
+    Control.DateControl fromControl;
+    Control.DateControl toControl;
 
     TableLayout table;
 
     private void  RefreshList(){
+        Context context = this;
+
         EditButton.setEnabled(false);
         DeleteButton.setEnabled(false);
-        ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
-        controls.add(new Utility.Control(Utility.ControlType.DateTime,"header_date","Date", new Date(),null,false));
-        controls.add(new Utility.Control(Utility.ControlType.Text,"header_number","Ref#",null,null,false));
-        controls.add(new Utility.Control(Utility.ControlType.Text,"header_employee_name","Emp",null,null,false));
-        controls.add(new Utility.Control(Utility.ControlType.Lookup,"header_supplier","Supplier",null,suppliers,true));
-        controls.add(new Utility.Control(Utility.ControlType.Text, "header_status", "Status", null, null, false));
+        ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
+        controls.add(Control.getDateTimeControl(context,"header_date","Date").setValue(new Date()));
+        controls.add(Control.getEditTextControl(context,"header_number","Ref#"));
+        controls.add(Control.getEditTextControl(context,"header_employee_name","Emp"));
+        controls.add(Control.getLookupControl(context,"header_supplier","Supplier",suppliers));
+        controls.add(Control.getEditTextControl(context, "header_status", "Status"));
 
-        new DataService().get("InvCheckIn?" + fromControl.GetUrlParam() + "&" + toControl.GetUrlParam(), new AsyncHttpResponseHandler() {
+
+
+        new DataService().get("InvCheckIn?" + fromControl.getUrlParam() + "&" + toControl.getUrlParam(), new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
                 try {
                     JSONArray data = new JSONArray(result);
-                    Utility.CreateGrid(getBaseContext(), table, controls, data, new Utility.onGridListener() {
-                                @Override
-                                public boolean onRowSelected(TableRow row, JSONObject data) {
-                                    try {
-                                        SelectedId = data.getLong("header_id");
-                                        EditButton.setEnabled(true);
-                                        DeleteButton.setEnabled(true);
-                                        return true;
-                                    }
-                                    catch (JSONException ex){
-                                        SelectedId = 0L;
-                                        EditButton.setEnabled(false);
-                                        DeleteButton.setEnabled(false);
-                                        return false;
-                                    }
-                                }
+                    Utility.CreateGrid(context, table, controls, data, new Utility.onGridListener() {
+                        @Override
+                        public boolean onRowSelected(TableRow row, JSONObject data) {
+                            try {
+                                SelectedId = data.getLong("header_id");
+                                EditButton.setEnabled(true);
+                                DeleteButton.setEnabled(true);
+                                return true;
+                            }
+                            catch (JSONException ex){
+                                SelectedId = 0L;
+                                EditButton.setEnabled(false);
+                                DeleteButton.setEnabled(false);
+                                return false;
+                            }
+                        }
 
                         @Override
                         public boolean isSelected(TableRow row, JSONObject data)   {
@@ -186,22 +200,45 @@ public class InvCheckInActivity extends BaseActivity {
 
     private Long SelectedId= 0L;
     private LinearLayout popup_stockReceive;
-    private void AddImage(long id,Bitmap image,FlexboxLayout layout){
-        ImageView imageView = GetImageView(id,layout);
+    private void AddImage(long id,Bitmap image,FlexboxLayout layout,RadioButton delete_button){
+        ImageView imageView = GetImageView(id,layout,delete_button);
         imageView.setImageBitmap(image);
     }
-    private ImageView GetImageView(long id,FlexboxLayout layout){
-        ImageView imageView = new ImageView(getBaseContext());
+    private ImageView GetImageView(long id,FlexboxLayout layout,RadioButton delete_button){
+        ImageView imageView = new ImageView(this);
         FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(230, 230);
         lllP.setMargins(2,2,2,2);
-        imageView.setBackgroundColor(Color.parseColor("#008477"));
+        imageView.setBackgroundColor(Color.parseColor("#8CD0E4"));
         imageView.setLayoutParams(lllP);
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                invCheckInSelectedImage = null;
+                delete_button.setEnabled(false);
+                for (int i = 0; i < layout.getChildCount(); i++) {
+                    ImageView iv = (ImageView)layout.getChildAt(i);
+                    if(view == iv) {
+                        invCheckInSelectedImage = iv;
+                        iv.setBackgroundColor(Color.parseColor("#225C6E"));
+                        delete_button.setEnabled(true);
+
+                    }else{
+                        iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
+                    }
+                }
+            }
+        });
+
         imageView.setTag(id);
         layout.addView(imageView);
         return imageView;
     }
-    private void AddImage(long id,FlexboxLayout layout) throws MalformedURLException,IOException {
-        ImageView imageView = GetImageView(id,layout);
+    private ImageView invCheckInSelectedImage = null;
+    private void AddImage(long id,FlexboxLayout layout,RadioButton delete_button) throws MalformedURLException,IOException {
+        ImageView imageView = GetImageView(id,layout,delete_button);
+
+
+
         new DataService().get("refFile/" + id, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
@@ -216,21 +253,105 @@ public class InvCheckInActivity extends BaseActivity {
             }
         });
     }
+
+
+
+
     private FlexboxLayout image_layout;
-    private void  configPopup_stockReceive(FlexboxLayout container,Utility.Control id){
+    private void  configPopup_stockReceive(FlexboxLayout container,Control.ControlBase id){
         LayoutInflater li = LayoutInflater.from(this );
-        popup_stockReceive = (LinearLayout)li.inflate(R.layout.popup_stockreceive, null);
+        popup_stockReceive = (LinearLayout)li.inflate(R.layout.inv_check_in, null);
         container.addView(popup_stockReceive);
         image_layout = container.findViewById(R.id.image_layout);
+        image_delete = container.findViewById(R.id.image_delete);
+        final Context context = this;
+        image_delete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                new PopupConfirmation(context, "Are you sure you want to delete?", new PopupConfirmation.onFormPopupConfirmListener() {
+                    @Override
+                    public void onConfirm() {
+
+                        if(invCheckInSelectedImage != null){
+                            new DataService().deleteById(context, "refFile", (Long)invCheckInSelectedImage.getTag(), new DataService.DeleteByIdResponse() {
+                                @Override
+                                public void onSuccess(Boolean deleted) {
+                                    image_layout.removeView(invCheckInSelectedImage);
+                                    image_delete.setEnabled(false);
+                                }
+                            });
+                        }
+                    }
+                });
+
+            }
+        });
+
+
+        item_add = container.findViewById(R.id.item_add);
+        item_add.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+
+
+                ArrayList<Control.ControlBase> newControls = new ArrayList<Control.ControlBase>();
+
+                newControls.add(new Control.HiddenControl(context,"item_id",null));
+                newControls.add(new Control.EditTextControl(context,"item_barcode","Barcode"));
+
+
+                PopupForm from = new PopupForm(context, "Stock Receive New", newControls, new PopupForm.onFormPopupFormListener() {
+                    @Override
+                    public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
+                        Long selid = Long.valueOf(result);
+                        RefreshList();
+                        SelectedId = selid;
+                        if(id.getValue() == null || id.getValue().equals(0L)){
+                            id.setValue(selid);
+                            this.getPopup().AlertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                            popup_stockReceive.setVisibility(LinearLayout.VISIBLE);
+                            return false;
+                        }
+                        else{
+                            return true;
+                        }
+                    }
+
+                    @Override
+                    public boolean onControlAdded(FlexboxLayout container) {
+                        configPopup_stockReceive(container,id);
+                        popup_stockReceive.setVisibility(LinearLayout.GONE);
+                        return super.onControlAdded(container);
+                    }
+
+                    @Override
+                    public String getUrl() {
+                        return "InvCheckIn";
+                    }
+                });
+
+
+
+
+            }
+        });
+
+
+
+        item_edit = container.findViewById(R.id.item_edit);
+        item_delete = container.findViewById(R.id.item_delete);
+
         TableLayout item_table = container.findViewById(R.id.item_table);
         RadioButton image_camera = container.findViewById(R.id.image_camera);
         image_camera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                captureImage("InvCheckIn",Long.parseLong(id.DefaultValue.toString()),new onGetImage() {
+                captureImage("InvCheckIn",Long.parseLong(id.getValue().toString()),new onGetImage() {
                     @Override
                     public void getImage(Bitmap image, long id) {
-                        AddImage(id,image,image_layout)  ;
+                        AddImage(id,image,image_layout,item_delete)  ;
                     }
                 });
             }
@@ -239,25 +360,24 @@ public class InvCheckInActivity extends BaseActivity {
         image_gallery.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                pickImage("InvCheckIn",Long.parseLong(id.DefaultValue.toString()),new onGetImage() {
+                pickImage("InvCheckIn",Long.parseLong(id.getValue().toString()),new onGetImage() {
                     @Override
                     public void getImage(Bitmap image, long id) {
-                        AddImage(id,image,image_layout) ;
+                        AddImage(id,image,image_layout,item_delete) ;
                     }
                 });
             }
         });
-        RadioButton image_delete = container.findViewById(R.id.image_delete);
-        RadioButton item_add = container.findViewById(R.id.item_add);
-        RadioButton item_edit = container.findViewById(R.id.item_edit);
-        RadioButton item_delete = container.findViewById(R.id.item_delete);
+
     }
 
+    private RadioButton image_delete ;
+    private RadioButton item_add  ;
+    private RadioButton item_edit ;
+    private RadioButton item_delete ;
     @Override
     public void onButtonClick(String action, RadioButton button) {
-
         final Context context = this;
-
         if(action == "Add"){
             new PopupLookup(context, "Supplier", suppliers, new PopupLookup.onFormPopupLookupListener() {
                 @Override
@@ -267,22 +387,22 @@ public class InvCheckInActivity extends BaseActivity {
                         @Override
                         public boolean onPick(DataService.Lookup lookup) {
                             final DataService.Lookup employee = lookup;
-                            ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
-                            Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue, "header_id", "Id", null, null, false);
+                            ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
+                            Control.HiddenControl id = Control.getHiddenControl(context, "header_id", null);
                             controls.add(id);
-                            controls.add(new Utility.Control(Utility.ControlType.DateTime, "header_date", "Check In Date", new Date(), null, false));
-                            controls.add(new Utility.Control(Utility.ControlType.Text, "header_number", "Ref Number", null, null, false));
-                            controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", suppler, suppliers, true));
-                            controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", employee, employees, true));
+                            controls.add(Control.getDateTimeControl(context,"header_date", "Check In Date").setValue(new Date()));
+                            controls.add(Control.getEditTextControl(context, "header_number", "Ref Number"));
+                            controls.add(Control.getLookupControl(context, "header_supplier", "Supplier", suppliers).setValue(suppler.Id));
+                            controls.add(Control.getLookupControl(context, "header_employee", "Employee", employees).setValue(employee.Id));
 
-                            PopupForm from = new PopupForm(context, "Purchase Check In New", controls, new PopupForm.onFormPopupFormListener() {
+                            PopupForm from = new PopupForm(context, "Stock Receive New", controls, new PopupForm.onFormPopupFormListener() {
                                 @Override
                                 public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
                                     Long selid = Long.valueOf(result);
                                     RefreshList();
                                     SelectedId = selid;
-                                    if(id.DefaultValue == null || id.DefaultValue.equals(0)){
-                                        id.DefaultValue = selid;
+                                    if(id.getValue() == null || id.getValue().equals(0L)){
+                                        id.setValue(selid);
                                         this.getPopup().AlertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                                         popup_stockReceive.setVisibility(LinearLayout.VISIBLE);
                                         return false;
@@ -315,23 +435,23 @@ public class InvCheckInActivity extends BaseActivity {
             new DataService().getById(context, "InvCheckIn", SelectedId, new DataService.GetByIdResponse() {
                 @Override
                 public void onSuccess(JSONObject data) {
-                    ArrayList<Utility.Control> controls = new ArrayList<Utility.Control>();
-                    Utility.Control id = new Utility.Control(Utility.ControlType.HiddenValue, "header_id", "Id", null, null, false);
+                    ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
+                    Control.HiddenControl id = Control.getHiddenControl(context, "header_id", null).readValue(data);
                     controls.add(id);
-                    controls.add(new Utility.Control(Utility.ControlType.DateTime, "header_date", "Check In Date", new Date(), null, false));
-                    controls.add(new Utility.Control(Utility.ControlType.Text, "header_number", "Ref Number", null, null, false));
-                    controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_supplier", "Supplier", null, suppliers, true));
-                    controls.add(new Utility.Control(Utility.ControlType.Lookup, "header_employee", "Employee", null, employees, true));
+                    controls.add(Control.getDateTimeControl(context,"header_date", "Check In Date").readValue(data));
+                    controls.add(Control.getEditTextControl(context, "header_number", "Ref Number").readValue(data));
+                    controls.add(Control.getLookupControl(context, "header_supplier", "Supplier", suppliers).readValue(data));
+                    controls.add(Control.getLookupControl(context, "header_employee", "Employee", employees).readValue(data));
                     JSONArray imageList;
                     try {
-                        Utility.applyValues(data,controls);
+                        //Utility.applyValues(data,controls);
                         imageList = data.getJSONArray("header_images");
                     }
                     catch ( JSONException ex){
                         Toast.makeText(context, "Error in loading data " +  ex.getMessage(), Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    new PopupForm(context, "Purchase Check In Edit", controls, new PopupForm.onFormPopupFormListener() {
+                    new PopupForm(context, "Stock Receive Edit", controls, new PopupForm.onFormPopupFormListener() {
                         @Override
                         public boolean onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, String result) {
                             RefreshList();
@@ -344,7 +464,7 @@ public class InvCheckInActivity extends BaseActivity {
 
                             for (int i = 0; i < imageList.length(); i++) {
                                 try {
-                                    AddImage(Long.parseLong(imageList.get(i).toString()),image_layout);
+                                    AddImage(Long.parseLong(imageList.get(i).toString()),image_layout,image_delete);
                                 }
                                 catch (Exception e){
                                     Toast.makeText(context, "Error in loading images " +  e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -363,26 +483,17 @@ public class InvCheckInActivity extends BaseActivity {
             });
         }
         else if(action == "Delete"){
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Delete Confirmation")
-                    .setMessage("Are you sure you wnat to delete?")
-                    .setPositiveButton("YES", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            new DataService().deleteById(context, "InvCheckIn", SelectedId, new DataService.DeleteByIdResponse() {
-                                @Override
-                                public void onSuccess(Boolean deleted) {
-                                    RefreshList();
-                                }
-                            });
-                        }
-                    })
-                    .setNegativeButton("NO", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            dialog.dismiss();
+            new PopupConfirmation(this, "Are you sure you want to delete?", new PopupConfirmation.onFormPopupConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    new DataService().deleteById(context, "InvCheckIn", SelectedId, new DataService.DeleteByIdResponse() {
+                        @Override
+                        public void onSuccess(Boolean deleted) {
+                            RefreshList();
                         }
                     });
-            AlertDialog alertDialog = builder.create();
-            alertDialog.show();
+                }
+            });
         }
     }
     @Override

@@ -43,6 +43,7 @@
                 android:layout_height="50dp"
                 android:button="@null"
                 android:background="@drawable/radio_button_edit"
+                android:enabled="false"
                 android:text="" />
 
             <RadioButton
@@ -51,6 +52,7 @@
                 android:layout_height="50dp"
                 android:button="@null"
                 android:background="@drawable/radio_button_delete"
+                android:enabled="false"
                 android:text="" />
         </RadioGroup>
     </RelativeLayout>
@@ -123,6 +125,7 @@
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:button="@null"
+                android:enabled="false"
                 android:background="@drawable/radio_button_delete"
                 android:text="" />
         </RadioGroup>

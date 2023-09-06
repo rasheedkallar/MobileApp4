@@ -36,7 +36,7 @@ import java.util.Locale;
 import cz.msebera.android.httpclient.Header;
 
 public class PopupForm extends Popup {
-    public final List<Utility.Control> Controls;
+    public final List<Control.ControlBase> Controls;
     private FlexboxLayout _container;
 
 
@@ -45,16 +45,36 @@ public class PopupForm extends Popup {
         return (onFormPopupFormListener)super.getListener();
     }
 
-    public PopupForm(android.content.Context context, String title , List<Utility.Control> controls,  onFormPopupFormListener listener){
+
+    public PopupForm(android.content.Context context, String title , List<Control.ControlBase> controls,  onFormPopupFormListener listener){
         super(context,title,listener);
         Controls = controls;
-        for (Utility.Control control : Controls) {
-           if(control.Type != Utility.ControlType.HiddenValue){
-               AddFormControl(control,_container);
-           }
+
+
+        if(Controls != null) {
+
+
+            for (Control.ControlBase control : Controls) {
+                //if (contr/ol.Type != Utility.ControlType.HiddenValue) {
+                View view = control.getFillView();
+                if(view != null){
+                    _container.addView(view);
+                }
+
+                //_container.addView(control.getFillView());
+                //}
+            }
         }
+
+
+
         listener.onControlAdded(_container);
     }
+
+
+
+
+
 
     @Override
     public void DoOk() {
@@ -85,19 +105,17 @@ public class PopupForm extends Popup {
     public RequestParams getPostRequestParams(){
         //2023-01-01T00:00:00
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
-        //DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-
         RequestParams params = new RequestParams();
-        for (Utility.Control control : Controls) {
+        for (Control.ControlBase control : Controls) {
             //System.out.println(control.Name);
 
             Object value = control.getValue();
             if (value != null && value instanceof Date) {
                 String formattedDate = dateFormat.format(value);
-                params.put(control.Name, formattedDate);
+                params.put(control.getName(), formattedDate);
             }
             else{
-                params.put(control.Name,value);
+                params.put(control.getName(),value);
             }
 
             /*
@@ -154,9 +172,9 @@ public class PopupForm extends Popup {
 
 
 
-    public void AddFormControl(Utility.Control control,FlexboxLayout container){
-        container.addView(control.GenerateView(Context, control));
-    }
+    //public void AddFormControl(Utility.Control control,FlexboxLayout container){
+    //    container.addView(control.GenerateView(Context, control));
+    //}
 
 
     public  static abstract  class  onFormPopupFormListener extends  Popup.onFormPopupListener{

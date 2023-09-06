@@ -43,9 +43,9 @@ public class PopupHtml extends Popup{
         WebView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
     }
 
-    private  Boolean pickerLocked = true;
-    private  DatePicker dtp;
-    private  LinearLayout linearLayout;
+    //private  Boolean pickerLocked = true;
+    //private  DatePicker dtp;
+    //private  LinearLayout linearLayout;
     @Override
     public void AddControls(LinearLayout container) {
         /*
@@ -60,6 +60,7 @@ public class PopupHtml extends Popup{
         WebView.setLayoutParams(lpWv);
         WebView.setVerticalScrollBarEnabled(true);
         WebView.setHorizontalScrollBarEnabled(true);
+
         container.addView(WebView);
     }
 
