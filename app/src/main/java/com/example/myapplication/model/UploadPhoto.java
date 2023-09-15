@@ -67,12 +67,17 @@ public class UploadPhoto {
 
 
     public void  PickImage(){
+
+
+
         ArrayList<DataService.Lookup> lookups = new ArrayList<DataService.Lookup>();
         DataService.Lookup l = new DataService.Lookup(1L,"Take Photo");
 
         lookups.add(new DataService.Lookup(1L,"Pick Photo From Gallery"));
         lookups.add(new DataService.Lookup(2L,"Take Photo By Camera"));
-        new PopupLookup(Activity, "Image Source", lookups, new PopupLookup.onFormPopupLookupListener() {
+
+        /*
+        new PopupLookup("Image Source", lookups, new PopupLookup.onFormPopupLookupListener() {
             @Override
             public boolean onPick(DataService.Lookup lookup) {
                 if(lookup.Id == 1L){
@@ -80,17 +85,9 @@ public class UploadPhoto {
                     if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
                         ImagePick();
                     } else {
-                        /*
 
-                        Activity.setPermissionGrantedListener(new BaseActivity.onPermissionGrantedListener() {
-                            @Override
-                            public void onPermissionGranted(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-                                if (requestCode == GALLERY_PERMISSION_REQUEST_CODE && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                                    ImagePick();
-                                }
-                            }
-                        });
-                        */
+
+
                         ActivityCompat.requestPermissions(Activity, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, GALLERY_PERMISSION_REQUEST_CODE);
                         galleryPermission = ContextCompat.checkSelfPermission(Activity, Manifest.permission.READ_EXTERNAL_STORAGE);
                         if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
@@ -109,6 +106,7 @@ public class UploadPhoto {
                 return true;
             }
         });
+        */
 
     }
 

@@ -2,11 +2,9 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -15,7 +13,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -31,21 +28,26 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import com.example.myapplication.model.DataService;
-import com.example.myapplication.model.Popup;
+import com.example.myapplication.model.PopupBase;
+import com.example.myapplication.model.PopupDate;
 import com.example.myapplication.model.PopupHtml;
+import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpResponseHandler;
-
-import org.json.JSONException;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.Permission;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
-
-import cz.msebera.android.httpclient.Header;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 public abstract class BaseActivity extends AppCompatActivity {
     public static final int GALLERY_PERMISSION_REQUEST_CODE = 1;
@@ -58,9 +60,60 @@ public abstract class BaseActivity extends AppCompatActivity {
     public RadioButton AddButton;
     public RadioButton EditButton;
     public RadioButton DeleteButton;
+
+    public Function<String,Boolean> OnAction;
+
+    public List<PopupBase.PopupListener> PopupListeners = new ArrayList<PopupBase.PopupListener>();
+
+
+
+
+
+
+    public <T extends PopupBase<T,U,V>,U extends PopupBase.PopupArgs<U,V>,V extends PopupBase.PopupListener> T registerPopup(T popup,U args,V listener){
+        try{
+            popup.setArgs(args);
+            listener.setKey(args.getKey());
+            Optional<V> val = (Optional<V>)PopupListeners.stream().filter(x -> x.getKey().equals(args.getKey())).findFirst();
+            if(val.isPresent()){
+                PopupListeners.remove(val.get());
+            }
+            PopupListeners.add(listener);
+            return popup;
+        }
+        catch (Exception e){
+            return  popup;
+        }
+    }
+
+    //public Function<Date,Boolean> DateFunction ;
+
+
     @Override
 
     protected void onCreate(Bundle savedInstanceState) {
+
+        /*
+        PopupDate.PopupDateListener listener = new PopupDate.PopupDateListener() {
+            @Override
+            public boolean onDateChanged(Date value) {
+                if(DateFunction != null)return DateFunction.apply(value);
+                else return true;
+
+                //setValue(value);
+
+
+            }
+        };
+        listener.setKey("DatePickerListener");
+        PopupListeners.add(listener);
+
+        */
+
+
+
+
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base);
         Container = (LinearLayout) findViewById(R.id.container);

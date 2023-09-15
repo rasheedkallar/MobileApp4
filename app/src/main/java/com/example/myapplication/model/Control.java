@@ -1,9 +1,12 @@
 package com.example.myapplication.model;
 
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateUtils;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -14,6 +17,7 @@ import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 
+import com.example.myapplication.BaseActivity;
 import com.example.myapplication.R;
 
 import org.json.JSONException;
@@ -58,27 +62,13 @@ public class Control {
         }
         public EditTextControl(Context context, String name, String caption){
             super( context,name, caption);
-            EditTextControl = new EditText(getContext());
-            TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            EditTextControl.setLayoutParams(txtP);
-        }
-        @Override
-        public String getValue() {
-            if(EditTextControl.getText() == null || EditTextControl.getText().toString().length() == 0)return  null;
-            else  return EditTextControl.getText().toString();
+
         }
 
-        @Override
-        public EditTextControl setValue(String value) {
-
-            if(value == null)EditTextControl.setText(null);
-            else EditTextControl.setText(value.toString());
-            return  this;
-        }
 
         @Override
         public Control.EditTextControl readValue(Object value) {
-            if(value == null)setValue(null);
+            if(value== null)setValue(null);
             else{
                 setValue(value.toString());
             }
@@ -87,8 +77,40 @@ public class Control {
 
         @Override
         public View getView() {
+            EditTextControl = new EditText(getContext());
+            EditTextControl.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
+                }
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+                @Override
+                public void afterTextChanged(Editable editable) {
+                    if(EditTextControl.getText() ==null || EditTextControl.getText().toString().length() == 0)setValue(null);
+                    else setValue(EditTextControl.getText().toString());
+                }
+            });
+
+
+            EditTextControl.setText(getValue());
+            TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            EditTextControl.setLayoutParams(txtP);
             return EditTextControl;
+        }
+
+        @Override
+        public void valueChange(String oldValue, String newValue) {
+            //if(EditTextControl != null) {
+                if ((EditTextControl.getText()==null || EditTextControl.getText().toString().length() == 0) && getValue()==null)
+                    return;
+                if (!EditTextControl.getText().toString().equals(newValue)){
+                    EditTextControl.setText(newValue);
+                }
+                    //
+            //}
         }
     }
     public static class LookupControl extends BrowseControlBase<LookupControl,Long>{
@@ -105,23 +127,27 @@ public class Control {
             super(context, name, caption);
             Lookups = lookups;
 
-            LookupTextView = new TextView(context);
-            LookupTextView.setPadding(5, 5, 5, 5);
+
+
+
         }
-        private Long Value = null;
-        @Override
-        public Long getValue() {
-            return Value;
-        }
+
+
+
+        //private Long Value = null;
+        //@Override
+        //public Long getValue() {
+        //    return Value;
+        //}
 
         @Override
         public String getFormatValue(Object value) {
-            if(value == null)return super.getFormatValue(null);
+            if(value==null)return super.getFormatValue(null);
             try{
                 long longValue = Long.parseLong(value.toString());
-                Optional<DataService.Lookup> l = Lookups.stream().filter(itm->itm.Id.equals(longValue)).findAny();
+                Optional<DataService.Lookup> l = Lookups.stream().filter(itm->itm.getId().equals(longValue)).findAny();
                 if(l.isPresent()){
-                    return l.get().Name;
+                    return l.get().getName();
                 }
                 else {
                     return  "[Unknown]";
@@ -133,22 +159,23 @@ public class Control {
         }
 
         @Override
-        public LookupControl setValue(Long value) {
-            Value = (Long)value;
-            Optional<DataService.Lookup> l = Lookups.stream().filter(itm->itm.Id.equals(Value)).findAny();
-            if(l.isPresent()){
-                LookupTextView.setText(l.get().Name);
-            }
-            else {
-                LookupTextView.setText("[Unknown]");
-            }
-            return this;
+        public void valueChange(Long oldValue, Long newValue) {
+            //if(LookupTextView != null) {
+                Optional<DataService.Lookup> l = Lookups.stream().filter(itm -> itm.getId().equals(newValue)).findAny();
+                if (l.isPresent()) {
+                    LookupTextView.setText(l.get().getName());
+                } else {
+                    LookupTextView.setText("[Unknown]");
+                }
+            //}
         }
+
+
 
         @Override
         public LookupControl readValue(Object value) {
-            if(value == null)setValue(null);
-            else if(value.getClass() == Long.class){
+            if(value==null)setValue(null);
+            else if(value.getClass().equals(Long.class)){
                 setValue((Long)value);
             }
             else{
@@ -162,18 +189,37 @@ public class Control {
             return this;
         }
 
+
+
+
+
         @Override
         public void onBrowse(Button button) {
-            new PopupLookup(getContext(), getCaption(), getLookups(), new PopupLookup.onFormPopupLookupListener() {
+            BaseActivity activity = (BaseActivity)getContext();
+            PopupLookup test1 = activity.registerPopup(new PopupLookup(),new PopupLookup.PopupLookupArgs("LookupPickerListener",getCaption(),getLookups(),getValue()), new PopupLookup.PopupLookupListener(){
                 @Override
-                public boolean onPick( DataService.Lookup lookup) {
-                    setValue(lookup.Id);
+                public boolean onLookupChanged(DataService.Lookup lookup) {
+                    setValue(lookup.getId());
                     return true;
                 }
-            });
+            } );
+            test1.show(activity.getSupportFragmentManager(),null);
         }
         @Override
         public View getBrowseView() {
+            LookupTextView = new TextView(getContext());
+            LookupTextView.setPadding(5, 5, 5, 5);
+            if(getValue()!=null){
+                Optional<DataService.Lookup> l = Lookups.stream().filter(itm->itm.getId().equals(getValue())).findAny();
+                if(l.isPresent()){
+                    LookupTextView.setText(l.get().getName());
+                }
+                else {
+                    LookupTextView.setText("[Unknown]");
+                }
+            }
+
+
             LinearLayout.LayoutParams tvlP= new LinearLayout.LayoutParams(getWidth()- getButtonSize()+10, ViewGroup.LayoutParams.WRAP_CONTENT);
             LookupTextView.setLayoutParams(tvlP);
             return LookupTextView;
@@ -187,17 +233,18 @@ public class Control {
         public DateTimeControl(android.content.Context context, String name, String caption) {
             super(context, name, caption);
         }
+
         @Override
         public void onBrowse(Button button) {
-            Date date = null;
-            if(getValue() != null)date = (Date) getValue();
-            new PopupDate(getContext(), getCaption(), date,true, new PopupDate.onFormPopupDateListener() {
+            BaseActivity activity = (BaseActivity)getContext();
+            PopupDate test1 = activity.registerPopup(new PopupDate(),new PopupDate.PopupDateArgs("DatePickerListener","Delete Confirmation", getValue()).setShowTime(true), new PopupDate.PopupDateListener() {
                 @Override
-                public boolean onPick(Date date) {
-                    setValue(date);
-                    return  true;
+                public boolean onDateChanged(Date value) {
+                    setValue(value);
+                    return true;
                 }
             });
+            test1.show(activity.getSupportFragmentManager(),null);
         }
     }
     public static class DateControl extends DateControlBase<DateControl>{
@@ -208,21 +255,43 @@ public class Control {
         public DateControl(android.content.Context context, String name, String caption) {
             super(context, name, caption);
         }
+        public static class BrowseDatePopup extends PopupDate
+        {
+            @Override
+            public void onDestroyView() {
+                super.onDestroyView();
+                doCancel();
+            }
+        }
+
+        @Override
+        public ControlBase<DateControl, Date> setValue(Date value) {
+            Date today = value;
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            try{
+                today = sdf.parse(sdf.format(today));
+            }
+            catch (Exception e){
+
+            }
+            return super.setValue(today);
+        }
+
         @Override
         public void onBrowse(Button button) {
-            Date date = null;
-            if(getValue() != null)date = (Date) getValue();
-            new PopupDate(getContext(), getCaption(), date,false, new PopupDate.onFormPopupDateListener() {
+            BaseActivity activity = (BaseActivity)getContext();
+            PopupDate test1 = activity.registerPopup(new BrowseDatePopup(),new PopupDate.PopupDateArgs("DatePickerListener","Delete Confirmation", getValue()), new PopupDate.PopupDateListener() {
                 @Override
-                public boolean onPick(Date date) {
-                    setValue(date);
-                    return  true;
+                public boolean onDateChanged(Date value) {
+                    setValue(value);
+                    return true;
                 }
             });
+            test1.show(activity.getSupportFragmentManager(),null);
         }
     }
 
-    public static abstract class DateControlBase<T> extends BrowseControlBase<T,Date>{
+    public static abstract class DateControlBase<T extends ControlBase<T,Date>> extends BrowseControlBase<T,Date>{
         private EditText EditTextControl;
         public abstract  String getFormat();
 
@@ -230,32 +299,15 @@ public class Control {
         public DateControlBase(Context context, String name, String caption) {
             super(context, name, caption);
             setControlSize(CONTROL_SIZE_SINGLE);
-            EditTextControl = new EditText(context);
-            EditTextControl.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
-                }
-                @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                }
-                @Override
-                public void afterTextChanged(Editable editable) {
-                    Date currentDate = null;
-                    if(EditTextControl.getTag() != null) currentDate = (Date)EditTextControl.getTag();
-                    Date date = validateDate(context, EditTextControl,currentDate);
-                    if(date != null || EditTextControl.getText() == null || EditTextControl.getText().toString() == null || EditTextControl.getText().toString().length() == 0)EditTextControl.setTag(date);
-                }
-            });
         }
 
         @Override
         public T readValue(Object value) {
-            if(value == null){
+            if(value==null){
                 setValue(null);
             }
-            else if(value.getClass() == Date.class){
+            else if(value.getClass().equals(Date.class)){
                 setValue((Date)value);
             }
             else{
@@ -291,10 +343,10 @@ public class Control {
 
         @Override
         public String getFormatValue(Object value) {
-            if(value == null)super.getFormatValue(null);
+            if(value==null)super.getFormatValue(null);
             Date dateValue;
             DateFormat format;
-            if(value.getClass() == Date.class) {
+            if(value.getClass().equals(Date.class)) {
                 dateValue = (Date) value;
             }
             else{
@@ -332,25 +384,25 @@ public class Control {
         }
         private  Date validateDate(Context context,EditText tvl,Date currentDate){
             Calendar currentCalendar = null;
-            if(currentDate != null){
+            if(currentDate!=null){
                 currentCalendar = Calendar.getInstance();
                 currentCalendar.setTime(currentDate);
             }
             String text = null;
             Date date = null;
             boolean invalid = false;
-            if(tvl.getText() != null) text = tvl.getText().toString();
+            if(tvl.getText()!=null) text = tvl.getText().toString();
             if(text != null && text.length() != 0){
                 date = isInvalidDate(text, "dd/MM/yy");
-                if(date == null){
+                if(date==null){
                     date = isInvalidDate(text, "dd/MM/yy HH:mm");
-                    if(date == null) {
+                    if(date==null) {
                         date = isInvalidDate(text, "dd/MM/yy HH:mm:ss");
-                        if(date == null){
+                        if(date==null){
                             date = isInvalidDate(text, "dd/MM/yy HH:mm:ss.SSS");
                         }
                         else{
-                            if(currentCalendar != null){
+                            if(currentCalendar!=null){
                                 Calendar calendar = Calendar.getInstance();
                                 calendar.setTime(date);
                                 calendar.set(Calendar.MILLISECOND,currentCalendar.get(Calendar.MILLISECOND));
@@ -359,7 +411,7 @@ public class Control {
                         }
                     }
                     else {
-                        if(currentCalendar != null){
+                        if(currentCalendar!=null ){
                             Calendar calendar = Calendar.getInstance();
                             calendar.setTime(date);
                             calendar.set(Calendar.SECOND,currentCalendar.get(Calendar.SECOND));
@@ -368,7 +420,7 @@ public class Control {
                         }
                     }
                 }
-                if(date == null)invalid = true;
+                if(date==null)invalid = true;
             }
             if(invalid){
                 tvl.setTextColor(ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_error));
@@ -384,21 +436,83 @@ public class Control {
         }
         @Override
         public View getBrowseView() {
+
+            EditTextControl = new EditText(getContext());
+            if(getValue()!=null){
+                DateFormat dateFormat = new SimpleDateFormat(getFormat());
+                String newText = dateFormat.format(getValue());
+                EditTextControl.setText(newText);
+            }
+
+
+            EditTextControl.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+                @Override
+                public void afterTextChanged(Editable editable) {
+
+                    if(EditTextControl.getText()==null || EditTextControl.getText().toString().length() == 0){
+                        if(getValue()!= null ) setValue(null);
+                    }
+                    else{
+                        Date currentDate = getValue();
+                        //if(EditTextControl.getTag() != null) currentDate = (Date)EditTextControl.getTag();
+                        Date date = validateDate(getContext(), EditTextControl,currentDate);
+                        if(date!=null && !date.equals( currentDate))setValue(date);
+                    }
+                }
+            });
+
             LinearLayout.LayoutParams tvlP= new LinearLayout.LayoutParams(getWidth()- getButtonSize()+10, ViewGroup.LayoutParams.WRAP_CONTENT);
             EditTextControl.setLayoutParams(tvlP);
             return EditTextControl;
         }
+
+
+
+        @Override
+        public void valueChange(Date oldValue, Date newValue) {
+            //if(EditTextControl != null) {
+
+                if (newValue== null && (EditTextControl.getText()== null || EditTextControl.getText().length() == 0))
+                    return;
+                String currentText = null;
+                if (EditTextControl.getText()!= null && EditTextControl.getText().length() != 0)
+                    currentText = EditTextControl.getText().toString();
+
+                String newText = null;
+                if(newValue!=null){
+                    DateFormat dateFormat = new SimpleDateFormat(getFormat());
+                    newText = dateFormat.format(newValue);
+                    //EditTextControl.setText(dateFormat.format(value));
+                }
+                if(!currentText.equals(newText)){
+                    EditTextControl.setText(newText);
+                }
+
+            //}
+        }
+        /*
 
         @Override
         public Date getValue() {
             return (Date)EditTextControl.getTag();
         }
 
+         */
+
         @Override
         public boolean onValidate() {
             if(!isInputValid)return false;
             else return super.onValidate();
         }
+        /*
 
         @Override
         public T setValue(Date value) {
@@ -413,9 +527,11 @@ public class Control {
             EditTextControl.setTag(value);
             return (T)this;
         }
+
+         */
     }
 
-    public static abstract class BrowseControlBase<T,U> extends ControlBase<T,U>{
+    public static abstract class BrowseControlBase<T extends ControlBase<T,U>,U> extends ControlBase<T,U>{
         private Button BrowsButton;
         public Button getBrowsButton() {
             return BrowsButton;
@@ -433,7 +549,6 @@ public class Control {
         public abstract void onBrowse(Button button);
         @Override
         public View getView() {
-
             LinearLayout BrowseLayoutControl = new LinearLayout(getContext());
             LinearLayout.LayoutParams lllP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             BrowseLayoutControl.setOrientation(LinearLayout.HORIZONTAL);
@@ -450,7 +565,7 @@ public class Control {
             BrowsButton.setLayoutParams(btlp);
 
             View valueView = getBrowseView();
-            if(valueView != null){
+            if(valueView!=null){
                 BrowseLayoutControl.addView(valueView);
             }
             BrowseLayoutControl.addView(BrowsButton);
@@ -461,31 +576,22 @@ public class Control {
 
 
     public static class HiddenControl extends ControlBase<HiddenControl,Object>{
-
-        private Object Value;
-
         public HiddenControl(Context context, String name, Object value){
             super( context,name, null);
-            Value = value;
+            setValue(value);
             setIsRequired(false);
         }
-        @Override
-        public Object getValue() {
-            return Value;
-        }
-
-        @Override
-        public HiddenControl setValue(Object value) {
-
-            Value = value;
-            return  this;
-        }
-
         @Override
         public View getView() {
 
             return null;
         }
+
+        @Override
+        public void valueChange(Object oldValue, Object newValue) {
+
+        }
+
         @Override
         public View getFillView() {
             return null;
@@ -500,7 +606,7 @@ public class Control {
 
     }
 
-    public static abstract   class ControlBase<T,U>{
+    public static abstract   class ControlBase<T extends ControlBase<T,U>,U>{
 
         public ControlBase(Context context,String name,String caption){
             Caption = caption;
@@ -515,18 +621,18 @@ public class Control {
         }
 
 
-        public T setIsRequired(boolean required) {
+        public ControlBase<T,U> setIsRequired(boolean required) {
             IsRequired = required;
-            return  (T)this;
+            return  this;
         }
 
         private int ControlSize = -1;
         public int getControlSize(){
             return ControlSize;
         }
-        public T setControlSize(int size){
+        public ControlBase<T,U> setControlSize(int size){
             ControlSize = size;
-            return  (T)this;
+            return  this;
         }
 
 
@@ -563,11 +669,27 @@ public class Control {
         }
         public String getFormatValue(Object value)
         {
-            if(value == null)return null;
+            if(value==null)return null;
             else return value.toString();
         }
-        public abstract U getValue();
-        public abstract T setValue(U value);
+        private U Value;
+        public U getValue(){
+            return Value;
+        }
+        public  ControlBase<T,U> setValue(U value){
+            if(Value == null && value == null)return this;
+            U oldValue = Value;
+            Value = value;
+            if(viewCreated && (oldValue == null || value == null || !oldValue.equals(value))){
+
+                valueChange(Value,value);
+            }
+
+            return this;
+        }
+        public abstract void valueChange(U oldValue, U newValue);
+
+        private boolean viewCreated =false;
         public View getFillView()
         {
             LinearLayout ll = new LinearLayout(Context);
@@ -575,6 +697,7 @@ public class Control {
             ll.setOrientation(LinearLayout.VERTICAL);
             llParam.setMargins(2, 2, 2, 2);
             ll.setLayoutParams(llParam);
+
             if(Caption != null) {
                 CaptionTextView = new TextView(Context);
                 TableLayout.LayoutParams cParam= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 60);
@@ -586,16 +709,18 @@ public class Control {
                 ll.addView(CaptionTextView);
             }
             ValueView = getView();
-            if(ValueView != null){
+            if(ValueView!=null){
                 ll.addView(ValueView);
             }
+            viewCreated = true;
             return ll;
+
         }
 
         public  String getUrlParam(){
             Object value = getValue();
-            if (value == null)return  Name + "=" ;
-            else  if(value.getClass() == Date.class){
+            if (value==null)return  Name + "=" ;
+            else  if(value.getClass().equals(Date.class)){
                 DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
                 return  Name + "=" + dateFormat.format(value);
             }
@@ -603,8 +728,8 @@ public class Control {
                 return  Name + "=" + value.toString();
             }
         }
-        public abstract T readValue(Object value);
-        public T readValue(JSONObject data){
+        public abstract ControlBase<T,U> readValue(Object value);
+        public  ControlBase<T,U> readValue(JSONObject data){
             try{
                 Object value = data.get(getName());
                 readValue(value);
@@ -612,13 +737,13 @@ public class Control {
             catch (JSONException e){
 
             }
-            return  (T)this;
+            return  this;
         }
 
         public boolean validate(){
             boolean valid = onValidate();
 
-            if(CaptionTextView != null) {
+            if(CaptionTextView!=null) {
                 if (valid) {
                     CaptionTextView.setBackgroundColor(Color.parseColor("#008477"));
                 } else {
@@ -629,7 +754,7 @@ public class Control {
 
         }
         public boolean onValidate(){
-            if(getValue() == null && getIsRequired()) return  false;
+            if(getValue()==null && getIsRequired()) return  false;
             else return true;
         }
 

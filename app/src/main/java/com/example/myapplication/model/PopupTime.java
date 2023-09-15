@@ -14,15 +14,12 @@ import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
 
-public class PopupTime extends Popup{
+public class PopupTime extends PopupBase<PopupTime,PopupBase.PopupArgsDefault, PopupBase.PopupListener>{
     public Date DefaultValue;
-    @Override
-    public onFormPopupTimeListener getListener(){
-        return (onFormPopupTimeListener)super.getListener();
-    }
-    public PopupTime(Context context, String title , Date defaultValue, onFormPopupTimeListener listener)
+
+    public PopupTime( String title , Date defaultValue)
     {
-        super(context,title,listener);
+        //super(title,listener);
         DefaultValue = defaultValue;
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(DefaultValue);
@@ -32,20 +29,20 @@ public class PopupTime extends Popup{
         millisecondsPicker.setValue(calendar.get(Calendar.MILLISECOND));
     }
 
+    //@Override
+    //public String getOkButton() {
+    //    return "Ok";
+    //}
     @Override
-    public String getOkButton() {
-        return "Ok";
-    }
-    @Override
-    public void DoOk() {
+    public void doOk() {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(DefaultValue);
         calendar.set(Calendar.HOUR,tp.getHour());
         calendar.set(Calendar.MINUTE,tp.getMinute());
         calendar.set(Calendar.SECOND,secondsPicker.getValue());
         calendar.set(Calendar.MILLISECOND,millisecondsPicker.getValue());
-        getListener().onPick(calendar.getTime());
-        super.DoOk();
+
+        super.doOk();
     }
     private TimePicker tp;
     private NumberPicker secondsPicker;
@@ -53,13 +50,13 @@ public class PopupTime extends Popup{
     @Override
     public void AddControls(LinearLayout container) {
 
-        ScrollView sv = new ScrollView(Context);
+        ScrollView sv = new ScrollView(getContext());
         ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
         scP.setLayoutDirection(LinearLayout.VERTICAL);
         sv.setLayoutParams(scP);
         container.addView(sv);
 
-        LinearLayout main = new LinearLayout(Context);
+        LinearLayout main = new LinearLayout(getContext());
         LinearLayout.LayoutParams mainP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         //mainP.setMargins(0, 0, 0, 0);
         //main.setPadding(0, 0, 0, 0);
@@ -67,18 +64,18 @@ public class PopupTime extends Popup{
         main.setLayoutParams(mainP);
         sv.addView(main);
 
-        LinearLayout linearLayout = new LinearLayout(Context);
+        LinearLayout linearLayout = new LinearLayout(getContext());
         LinearLayout.LayoutParams lllP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         linearLayout.setLayoutParams(lllP);
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
-        secondsPicker = new NumberPicker(Context);
+        secondsPicker = new NumberPicker(getContext());
         secondsPicker.setMinValue(0);
         secondsPicker.setMaxValue(59);
         LinearLayout.LayoutParams secondsLayoutParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         secondsPicker.setLayoutParams(secondsLayoutParams);
 
-        millisecondsPicker = new NumberPicker(Context);
+        millisecondsPicker = new NumberPicker(getContext());
         millisecondsPicker.setMinValue(0);
         millisecondsPicker.setMaxValue(999);
         LinearLayout.LayoutParams millisecondsLayoutParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
@@ -88,7 +85,7 @@ public class PopupTime extends Popup{
         linearLayout.addView(millisecondsPicker);
         main.addView(linearLayout);
 
-        tp = new TimePicker(Context);
+        tp = new TimePicker(getContext());
         TimePicker.LayoutParams txtT= new TimePicker.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         tp.setLayoutParams(txtT);
         tp.setIs24HourView(true);
@@ -96,14 +93,25 @@ public class PopupTime extends Popup{
 
     }
     public void Pick(Date date){
-        if(getListener().onPick(date))super.DoOk();
+
     }
-    public  static abstract  class  onFormPopupTimeListener extends  onFormPopupListener{
-        @Override
-        public PopupTime getPopup(){
-            return  (PopupTime)super.getPopup();
+
+
+    public static class  PopupDateTimeArgs extends PopupArgs<PopupDateTimeArgs,PopupListener> {
+        public PopupDateTimeArgs(String key,String header,Date defaultValue){
+            super(key,header);
+            setOkButton("Ok");
+            setCancelButton("Cancel");
         }
-        public abstract boolean onPick(Date date);
+        private Date DefaultValue;
+
+        public Date getDefaultValue() {
+            return DefaultValue;
+        }
+        public PopupDateTimeArgs setDefaultValue(Date defaultValue) {
+            DefaultValue = defaultValue;
+            return this;
+        }
     }
 
 }

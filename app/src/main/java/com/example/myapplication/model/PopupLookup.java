@@ -22,43 +22,28 @@ import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-public class PopupLookup extends Popup{
-    public final List<DataService.Lookup> Lookups;
+public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupArgs, PopupLookup.PopupLookupListener>{
+
     private FlexboxLayout _container;
     @Override
-    public onFormPopupLookupListener getListener(){
-        return (onFormPopupLookupListener)super.getListener();
-    }
-    public PopupLookup(Context context,  String title , List<DataService.Lookup> lookups,onFormPopupLookupListener listener)
-    {
-        super(context,title,listener);
-        Lookups = lookups;
-
-        for (DataService.Lookup lookup : Lookups) {
-            onAddLookup(_container,lookup);
-        }
-    }
-
-
-
-    @Override
     public void AddControls(LinearLayout container) {
+        PopupLookupArgs args = getArgs();
 
-        ScrollView sv = new ScrollView(Context);
+        ScrollView sv = new ScrollView(getContext());
         ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
         scP.setLayoutDirection(LinearLayout.HORIZONTAL);
         sv.setLayoutParams(scP);
 
-
-        FlexboxLayout fbl = new FlexboxLayout(Context);
+        FlexboxLayout fbl = new FlexboxLayout(getContext());
         TableLayout.LayoutParams fblP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         fbl.setLayoutParams(fblP);
         fbl.setFlexWrap(FlexWrap.WRAP);
 
-
-        EditText txt = new EditText(Context);
+        EditText txt = new EditText(getContext());
         TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         txt.setLayoutParams(txtP);
         txt.addTextChangedListener(new TextWatcher() {
@@ -81,7 +66,6 @@ public class PopupLookup extends Popup{
                     }
                 }
             }
-
             @Override
             public void afterTextChanged(Editable editable) {
 
@@ -92,37 +76,35 @@ public class PopupLookup extends Popup{
         sv.addView(fbl);
         container.addView(sv);
         _container = fbl;
+
+        for (DataService.Lookup lookup : args.getLookups()) {
+            onAddLookup(_container,lookup);
+        }
     }
 
     public void onAddLookup(FlexboxLayout container, DataService.Lookup lookup){
-
-        Button button = new Button(Context);
+        Button button = new Button(getContext());
         LinearLayout.LayoutParams btlp= new LinearLayout.LayoutParams(GetButtonWidth(), GetButtonHeight());
         btlp.setMargins(5, 5, 5, 5);
         button.setLayoutParams(btlp);
         button.setBackgroundColor(Color.parseColor("#008477"));
-        button.setTextColor(ContextCompat.getColor(Context, R.color.white));
-        button.setText(lookup.Name);
+        button.setTextColor(ContextCompat.getColor(getContext(), R.color.white));
+        button.setText(lookup.getName());
         button.setTag(lookup);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                PopupLookupListener listener = getListener();
                 if(view.getTag() == null){
-                    Pick(null);
+                    if(listener.onLookupChanged(null))doOk();
                 }
                 else{
                     DataService.Lookup l = (DataService.Lookup)view.getTag();
-                    Pick(l);
+                    if(listener.onLookupChanged(l))doOk();
                 }
-
             }
         });
         container.addView(button);
-    }
-
-    public void Pick(DataService.Lookup lookup){
-        getListener().onPick(lookup);
-        super.DoOk();
     }
 
     public  int GetButtonWidth(){
@@ -131,14 +113,36 @@ public class PopupLookup extends Popup{
     public  int GetButtonHeight(){
         return  190;
     }
-    public  static abstract  class  onFormPopupLookupListener extends  Popup.onFormPopupListener{
 
-        @Override
-        public PopupLookup getPopup(){
-            return  (PopupLookup)super.getPopup();
+    public static class  PopupLookupArgs extends PopupArgs<PopupLookupArgs, PopupLookupListener> {
+        public PopupLookupArgs(String key, String header, List<DataService.Lookup> lookups,Long value){
+            super(key,header);
+            setCancelButton("Close");
+            setValue(value);
+            if(lookups == null)setLookups(new ArrayList<DataService.Lookup>());
+            else setLookups(lookups);
+        }
+        private List<DataService.Lookup> Lookups;
+        public List<DataService.Lookup> getLookups() {
+            return Lookups;
         }
 
-        public abstract boolean onPick(DataService.Lookup lookup);
+        private Long Value;
+        public Long getValue() {
+            return Value;
+        }
+        public PopupLookupArgs setValue(Long value) {
+            Value = value;
+            return this;
+        }
+
+        public PopupLookupArgs setLookups(List<DataService.Lookup> lookups) {
+            Lookups = lookups;
+            return this;
+        }
     }
 
+    public abstract static class PopupLookupListener extends  PopupListener{
+        public abstract boolean onLookupChanged(DataService.Lookup lookup);
+    }
 }

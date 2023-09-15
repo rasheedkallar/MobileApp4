@@ -65,7 +65,15 @@ public class Utility {
         }
         return valid;
     }
-
+    public static void applyValues(JSONObject value, ArrayList<Control.ControlBase> controls) throws JSONException {
+        for (Iterator<String> it = value.keys(); it.hasNext(); ) {
+            String key = it.next();
+            Optional<Control.ControlBase> control = controls.stream().filter(i->i.getName().equals(key)).findAny();
+            if(control.isPresent()){
+                control.get().readValue(value.get(key));
+            }
+        }
+    }
 
     public static   void CreateGrid(Context context, TableLayout table, List<Control.ControlBase> controls, JSONArray list,onGridListener listener) throws JSONException, ParseException {
 
@@ -115,9 +123,11 @@ public class Utility {
                 TextView hc = new TextView(context);
                 TableRow.LayoutParams hcP = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
                 hc.setLayoutParams(hcP);
-                Object value = obj.get(control.getName());
-                if (value != null) {
-                    hc.setText(control.getFormatValue(value));
+                if(obj.has(control.getName())) {
+                    Object value = obj.get(control.getName());
+                    if (value != null) {
+                        hc.setText(control.getFormatValue(value));
+                    }
                 }
                 item.addView(hc);
             }

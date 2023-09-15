@@ -40,8 +40,8 @@ public class DataService {
 
 
 
-    //private static String serverIp = "10.207.176.91"; //office
-    private static String serverIp = "192.168.0.126"; //home
+    private static String serverIp = "10.207.176.91"; //office
+    //private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homewifi
 
     private static String  serverPort = "80";
@@ -225,10 +225,40 @@ public class DataService {
             Name = name;
         }
 
-        public Long Id;
-        public String Name;
-        public String Properties;
-        public JSONObject getDatas() throws JSONException {
+        private Long Id;
+
+        public Long getId() {
+            return Id;
+        }
+
+        public void setId(Long id) {
+            Id = id;
+        }
+
+        private String Name;
+
+        public String getName() {
+            return Name;
+        }
+
+        public void setName(String name) {
+            Name = name;
+        }
+
+        private String Properties;
+
+        public String getProperties() {
+            return Properties;
+        }
+
+        public void setProperties(String properties) {
+            Properties = properties;
+        }
+        //public JSONObject getDatas() throws JSONException {
+        //    return  new JSONObject(Properties);
+        //}
+
+        public JSONObject convertProperties() throws JSONException{
             return  new JSONObject(Properties);
         }
     }

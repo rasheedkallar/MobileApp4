@@ -41,16 +41,15 @@
 
         <activity
             android:name=".InvCheckInActivity"
-            android:screenOrientation="portrait"
             android:exported="false" />
 
         <activity
-            android:screenOrientation="portrait"
+
             android:name=".TestActivity"
             android:exported="false" />
 
         <activity
-            android:screenOrientation="portrait"
+
             android:name=".MainActivity"
             android:exported="true" >
             <intent-filter>

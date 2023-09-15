@@ -1,32 +1,18 @@
 package com.example.myapplication;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
-import android.app.Activity;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RadioButton;
+import android.widget.Toast;
 
-import android.Manifest;
-
+import com.example.myapplication.model.PopupConfirmation;
+import com.example.myapplication.model.PopupDate;
 import com.example.myapplication.model.PopupHtml;
-import com.example.myapplication.model.UploadPhoto;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.Date;
 
 
 public class MainActivity extends BaseActivity {
@@ -34,6 +20,31 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+
+        PopupDate test1 = registerPopup(new PopupDate(),new PopupDate.PopupDateArgs("test","Delete Confirmation", new Date()), new PopupDate.PopupDateListener() {
+            @Override
+            public boolean onDateChanged(Date value) {
+                Toast.makeText(getBaseContext(),value.toString(),Toast.LENGTH_SHORT).show();
+
+                return true;
+            }
+        });
+
+        /*
+
+
+        PopupConfirmation.PopupConfirmationArgs deleteConfirmation = new PopupConfirmation.PopupConfirmationArgs("New Confirm Delete","Are you sure you want to delete").setOnAction(action->{
+            PopupHtml.create("Header passed",action).show(getSupportFragmentManager(),null);
+            return true;
+        });
+
+
+
+        deleteConfirmation.setKey("MainDeleteConfirmation");
+        this.PopupArgs.add(deleteConfirmation);
+
+        */
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         imageView = findViewById(R.id.imageView);
@@ -42,13 +53,17 @@ public class MainActivity extends BaseActivity {
         btnCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                captureImage("InvCheckIn",0L,new onGetImage() {
-                    @Override
-                    public void getImage(Bitmap image, long id) {
-                        imageView.setImageBitmap(image);
 
-                    }
-                });
+                test1.show(getSupportFragmentManager(),null);
+
+                //PopupConfirmation.create(deleteConfirmation).show(getSupportFragmentManager(),null);;
+
+
+
+
+
+
+
             }
         });
         Button btnGallery = findViewById(R.id.btnGallery);
@@ -78,4 +93,7 @@ public class MainActivity extends BaseActivity {
     public String getHeaderText() {
         return null;
     }
+
+
+
 }

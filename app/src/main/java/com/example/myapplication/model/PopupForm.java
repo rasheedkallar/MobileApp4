@@ -1,11 +1,14 @@
 package com.example.myapplication.model;
 import android.app.AlertDialog;
+import android.app.Notification;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.location.GnssAntennaInfo;
 import android.opengl.Visibility;
+import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -14,6 +17,8 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentManager;
+
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
@@ -32,168 +37,192 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import cz.msebera.android.httpclient.Header;
 
-public class PopupForm extends Popup {
-    public final List<Control.ControlBase> Controls;
-    private FlexboxLayout _container;
-
-
-    @Override
-    public  onFormPopupFormListener getListener(){
-        return (onFormPopupFormListener)super.getListener();
+public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs, PopupForm.PopupFormListener> {
+    private FlexboxLayout FieldsContainer;
+    public FlexboxLayout getFieldsContainer() {
+        return FieldsContainer;
     }
+    public void afterSaved(Long id){
+        PopupFormListener listener = getListener();
+        if(listener == null)PopupForm.super.doOk();
+        else if(listener.onAfterSaved(id))PopupForm.super.doOk();
+        else{
+            getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        }
+    }
+    @Override
+    public void doOk() {
 
-
-    public PopupForm(android.content.Context context, String title , List<Control.ControlBase> controls,  onFormPopupFormListener listener){
-        super(context,title,listener);
-        Controls = controls;
-
-
-        if(Controls != null) {
-
-
-            for (Control.ControlBase control : Controls) {
-                //if (contr/ol.Type != Utility.ControlType.HiddenValue) {
-                View view = control.getFillView();
-                if(view != null){
-                    _container.addView(view);
-                }
-
-                //_container.addView(control.getFillView());
-                //}
-            }
+        PopupFormArgs args = this.getArgs();
+        String entityName = args.getEntityName();
+        if(entityName == null){
+            entityName = getRootActivity().getLocalClassName();
+            if(entityName.endsWith("Activity"))entityName = entityName.substring(0,entityName.length() - 8);
         }
 
 
-
-        listener.onControlAdded(_container);
-    }
-
-
-
-
-
-
-    @Override
-    public void DoOk() {
-        if(!Utility.validate(this.Controls)){
-            new PopupHtml(Context,"Validation Error", "Invalid input");
-            AlertDialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        if(!Utility.validate(args.getControls())){
+            getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
         }
         else {
-            new DataService().post(getListener().getUrl(), getPostRequestParams(), new AsyncHttpResponseHandler() {
+            new DataService().post(entityName, getPostRequestParams(), new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                     String result = new String(responseBody);
-                    System.out.println("Response: " + result);
-                    if (getListener().onSuccess(statusCode, headers, responseBody, result)) {
-                        PopupForm.super.DoOk();
-                    }
+                    Long id = Long.parseLong(result);
+                    afterSaved(id);
                 }
                 @Override
                 public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                     String result = new String(responseBody);
                     System.out.println("Response Error: " + result);
-                    new PopupHtml(Context, "Save Error", result);
+                    getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                 }
             });
         }
     }
-
     public RequestParams getPostRequestParams(){
         //2023-01-01T00:00:00
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
         RequestParams params = new RequestParams();
-        for (Control.ControlBase control : Controls) {
+
+        PopupFormArgs args = this.getArgs();
+        if(args.getValue() != null && args.getIdName() != null && args.getIdName().length() != 0){
+            params.put(args.getIdName(),args.getValue());
+        }
+
+
+        for (Control.ControlBase control : getArgs().getControls()) {
             //System.out.println(control.Name);
 
             Object value = control.getValue();
             if (value != null && value instanceof Date) {
                 String formattedDate = dateFormat.format(value);
-                params.put(control.getName(), formattedDate);
+                value = formattedDate;
+                //params.put(control.getName(), formattedDate);
             }
-            else{
-                params.put(control.getName(),value);
-            }
+            //if(params.has(control.getName())){
+            //    params.p
+            //}
+            //else {
 
-            /*
+                params.put(control.getName(), value);
+            //}
 
-            Object value = control.getValue();
-            if (value != null && value instanceof Date) {
-                String formattedDate = dateFormat.format(value); // + "T" + timeFormat.format(value);
-                params.put(control.Name,formattedDate);
-                //params.put(control.Name,"2023-01-10T00:00:00");
-
-
-            }else{
-                params.put(control.Name,value);
-            }
-
-             */
         }
 
         return params;
     }
 
-    @Override
-    public  String getOkButton(){
-        return "Save";
-    }
+
     @Override
     public void AddControls(LinearLayout container) {
 
-        ScrollView sv = new ScrollView(Context);
+        ScrollView sv = new ScrollView(getContext());
         ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
         scP.setLayoutDirection(LinearLayout.HORIZONTAL);
         sv.setLayoutParams(scP);
-        container.addView(sv);
 
 
-
-        FlexboxLayout fbl = new FlexboxLayout(Context);
+        FieldsContainer = new FlexboxLayout(getContext());
         TableLayout.LayoutParams fblP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        fbl.setLayoutParams(fblP);
-        fbl.setFlexWrap(FlexWrap.WRAP);
-        sv.addView(fbl);
+        FieldsContainer.setLayoutParams(fblP);
+        FieldsContainer.setFlexWrap(FlexWrap.WRAP);
+        sv.addView(FieldsContainer);
 
-        EditText txt = new EditText(Context);
+
+
+        EditText txt = new EditText(getContext());
         TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         txt.setLayoutParams(txtP);
         txt.setVisibility(View.GONE);
-        fbl.addView(txt);
-        _container = fbl;
-    }
-
-    private TableLayout table = null;
+        FieldsContainer.addView(txt);
 
 
 
+        if(getArgs().getControls() != null) {
+            for (Control.ControlBase control : getArgs().getControls()) {
+                View view = control.getFillView();
+                if(view != null){
+                    FieldsContainer.addView(view);
+                }
 
-
-    //public void AddFormControl(Utility.Control control,FlexboxLayout container){
-    //    container.addView(control.GenerateView(Context, control));
-    //}
-
-
-    public  static abstract  class  onFormPopupFormListener extends  Popup.onFormPopupListener{
-
-        public abstract boolean onSuccess(int statusCode, Header[] headers, byte[] responseBody,String result);
-
-        public abstract String getUrl();
-
-        @Override
-        public boolean onDoOk() {
-            return true;
-        }
-
-        public boolean onControlAdded(FlexboxLayout container) {
-            return true;
+            }
         }
 
 
+        container.addView(sv);
     }
+
+    //public ScrollView sv;
+
+
+    //private TableLayout table = null;
+
+
+
+    public static class  PopupFormArgs extends PopupArgs<PopupFormArgs, PopupFormListener> {
+        public PopupFormArgs(String key, String header,List<Control.ControlBase> controls,Long value){
+            super(key,header);
+            setCanceledOnTouchOutside(false);
+            setCancelOnDestroyView(false);
+            setCancelButton("Cancel");
+            setOkButton("Save");
+            setValue(value);
+            //setEntityName(entityName);
+            setIdName("Id");
+            if(controls == null)setControls(new ArrayList<Control.ControlBase>());
+            else setControls(controls);
+        }
+        private List<Control.ControlBase> Controls;
+        public List<Control.ControlBase> getControls() {
+            return Controls;
+        }
+
+        private String EntityName;
+        public String getEntityName() {
+            return EntityName;
+        }
+        public PopupFormArgs setEntityName(String entityName) {
+            EntityName = entityName;
+            return this;
+        }
+
+
+        private String IdName;
+        public String getIdName() {
+            return IdName;
+        }
+        public PopupFormArgs setIdName(String idName) {
+            IdName = idName;
+            return this;
+        }
+
+
+        private Long Value;
+        public Long getValue() {
+            return Value;
+        }
+        public PopupFormArgs setValue(Long value) {
+            Value = value;
+            return this;
+        }
+
+        public PopupFormArgs setControls(List<Control.ControlBase> controls) {
+            Controls = controls;
+            return this;
+        }
+    }
+
+    public abstract static class PopupFormListener extends  PopupListener{
+        public abstract boolean onAfterSaved(Long id);
+    }
+
 
 
 }
