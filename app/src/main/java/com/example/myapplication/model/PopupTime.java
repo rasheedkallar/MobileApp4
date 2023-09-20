@@ -13,34 +13,25 @@ import android.widget.TimePicker;
 import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.function.Function;
 
-public class PopupTime extends PopupBase<PopupTime,PopupBase.PopupArgsDefault, PopupBase.PopupListener>{
-    public Date DefaultValue;
-
-    public PopupTime( String title , Date defaultValue)
-    {
-        //super(title,listener);
-        DefaultValue = defaultValue;
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(DefaultValue);
-        tp.setHour(calendar.get(Calendar.HOUR));
-        tp.setMinute(calendar.get(Calendar.MINUTE));
-        secondsPicker.setValue(calendar.get(Calendar.SECOND));
-        millisecondsPicker.setValue(calendar.get(Calendar.MILLISECOND));
+public class PopupTime extends PopupBase<PopupTime, PopupTime.PopupTimeArgs>{
+    public static PopupTime create(String header,Date value,Function<Date,Boolean> onTimeChanged){
+        PopupTime popup = new PopupTime();
+        popup.setArgs(new PopupTime.PopupTimeArgs(header,value));
+        popup.setOnTimeChanged(onTimeChanged);
+        return popup;
+    }
+    public static PopupTime create(PopupTimeArgs args,Function<Date,Boolean> onTimeChanged){
+        PopupTime popup = new PopupTime();
+        popup.setArgs(args);
+        popup.setOnTimeChanged(onTimeChanged);
+        return popup;
     }
 
-    //@Override
-    //public String getOkButton() {
-    //    return "Ok";
-    //}
     @Override
     public void doOk() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(DefaultValue);
-        calendar.set(Calendar.HOUR,tp.getHour());
-        calendar.set(Calendar.MINUTE,tp.getMinute());
-        calendar.set(Calendar.SECOND,secondsPicker.getValue());
-        calendar.set(Calendar.MILLISECOND,millisecondsPicker.getValue());
+
 
         super.doOk();
     }
@@ -92,23 +83,35 @@ public class PopupTime extends PopupBase<PopupTime,PopupBase.PopupArgsDefault, P
         main.addView(tp);
 
     }
-    public void Pick(Date date){
-
+    private void doTimeChanged(Date date){
+        if(onTimeChanged == null)super.doOk();
+        else if(onTimeChanged.apply(date))super.doOk();
     }
 
 
-    public static class  PopupDateTimeArgs extends PopupArgs<PopupDateTimeArgs,PopupListener> {
-        public PopupDateTimeArgs(String key,String header,Date defaultValue){
-            super(key,header);
-            setOkButton("Ok");
-            setCancelButton("Cancel");
+    private Function<Date,Boolean> onTimeChanged;
+
+    public PopupTime setOnTimeChanged(Function<Date, Boolean> onDateChanged) {
+        this.onTimeChanged = onDateChanged;
+        return this;
+    }
+
+    public Function<Date, Boolean> getOnTimeChanged() {
+        return onTimeChanged;
+    }
+
+
+    public static class  PopupTimeArgs extends PopupArgs<PopupTimeArgs> {
+        public PopupTimeArgs(String header,Date defaultValue){
+            super(header);
+            setCancelButton("Close");
         }
         private Date DefaultValue;
 
         public Date getDefaultValue() {
             return DefaultValue;
         }
-        public PopupDateTimeArgs setDefaultValue(Date defaultValue) {
+        public PopupTimeArgs setDefaultValue(Date defaultValue) {
             DefaultValue = defaultValue;
             return this;
         }

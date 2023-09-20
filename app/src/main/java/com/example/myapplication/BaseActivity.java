@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -63,55 +64,9 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     public Function<String,Boolean> OnAction;
 
-    public List<PopupBase.PopupListener> PopupListeners = new ArrayList<PopupBase.PopupListener>();
-
-
-
-
-
-
-    public <T extends PopupBase<T,U,V>,U extends PopupBase.PopupArgs<U,V>,V extends PopupBase.PopupListener> T registerPopup(T popup,U args,V listener){
-        try{
-            popup.setArgs(args);
-            listener.setKey(args.getKey());
-            Optional<V> val = (Optional<V>)PopupListeners.stream().filter(x -> x.getKey().equals(args.getKey())).findFirst();
-            if(val.isPresent()){
-                PopupListeners.remove(val.get());
-            }
-            PopupListeners.add(listener);
-            return popup;
-        }
-        catch (Exception e){
-            return  popup;
-        }
-    }
-
-    //public Function<Date,Boolean> DateFunction ;
-
-
     @Override
 
     protected void onCreate(Bundle savedInstanceState) {
-
-        /*
-        PopupDate.PopupDateListener listener = new PopupDate.PopupDateListener() {
-            @Override
-            public boolean onDateChanged(Date value) {
-                if(DateFunction != null)return DateFunction.apply(value);
-                else return true;
-
-                //setValue(value);
-
-
-            }
-        };
-        listener.setKey("DatePickerListener");
-        PopupListeners.add(listener);
-
-        */
-
-
-
 
 
         super.onCreate(savedInstanceState);
@@ -151,6 +106,9 @@ public abstract class BaseActivity extends AppCompatActivity {
         new ActivityResultContracts.StartActivityForResult(),
         result -> {
             if (result.getResultCode() == Activity.RESULT_OK) {
+
+
+
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
                 new DataService().upload(activity,photoFile,newFileName,Entity,Id, new AsyncHttpResponseHandler() {
@@ -165,7 +123,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                         catch (IOException e){
                             imageBitmap = null;
                         }
-                        if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
+                        onCapturedImage( RequestId ,imageBitmap,Long.parseLong(result));
                     }
 
                     @Override
@@ -215,7 +173,9 @@ public abstract class BaseActivity extends AppCompatActivity {
                         public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                             String result = new String(responseBody);
                             System.out.println(result);
-                            if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
+                            //if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
+
+                            onCapturedImage( RequestId ,imageBitmap,Long.parseLong(result));
                         }
 
                         @Override
@@ -237,6 +197,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     private    void  ImageCapture(){
         // Camera permission is granted, you can proceed with camera-related operations
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
             try {
                 photoFile = createImageFile();
@@ -247,8 +208,16 @@ public abstract class BaseActivity extends AppCompatActivity {
 
                 photoURI = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                //takePictureIntent.putExtra(MediaStore.,requestId);
                 takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                takePictureLauncher.launch(takePictureIntent);
+
+                try {
+                    takePictureLauncher.launch(takePictureIntent);
+                }catch (Exception err){
+                    int a = 0;
+                }
+
+
 
             }
         }
@@ -276,36 +245,45 @@ public abstract class BaseActivity extends AppCompatActivity {
         return image;
     }
 
-    public void  captureImage(String entity,Long id,onGetImage listener){
+    public void  captureImage(int requestId,String entity,Long id,onGetImage listener){
+        RequestId = requestId;
+        if(requestId <0){
+            Entity = entity;
+            Id = id;
+            imageListener  = listener;
+            int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
+                ImagePick();
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, GALLERY_PERMISSION_REQUEST_CODE);
+            }
+        }
+        else{
+            Entity = entity;
+            Id = id;
+            imageListener  = listener;
 
-        Entity = entity;
-        Id = id;
-        imageListener  = listener;
-        int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
-        if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
-            ImageCapture();
-        } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
+            int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
+            if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
+                ImageCapture();
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
+            }
         }
     }
-
+    public void onCapturedImage(int requestId,Bitmap image,Long id){
+        if(imageListener != null)imageListener.getImage(requestId,image,id);
+    }
     private String Entity;
     private long Id;
 
     private onGetImage imageListener = null;
+    private int RequestId = 0;
 
-    public void pickImage(String entity,long id,onGetImage listener){
 
-        Entity = entity;
-        Id = id;
-        imageListener  = listener;
-        int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
-            ImagePick();
-        } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, GALLERY_PERMISSION_REQUEST_CODE);
-        }
-    }
+
+
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -356,7 +334,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         return  true;
     }
     public static abstract class onGetImage{
-        public abstract void getImage(Bitmap image,long id) ;
+        public abstract void getImage(int requestId,Bitmap image,long id) ;
 
     }
 

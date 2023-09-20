@@ -42,18 +42,26 @@ import java.util.function.Predicate;
 
 import cz.msebera.android.httpclient.Header;
 
-public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs, PopupForm.PopupFormListener> {
+public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
     private FlexboxLayout FieldsContainer;
     public FlexboxLayout getFieldsContainer() {
         return FieldsContainer;
     }
-    public void afterSaved(Long id){
-        PopupFormListener listener = getListener();
-        if(listener == null)PopupForm.super.doOk();
-        else if(listener.onAfterSaved(id))PopupForm.super.doOk();
-        else{
-            getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-        }
+
+
+    private Function<Long,Boolean> onAfterSaved;
+
+    public Function<Long, Boolean> getOnAfterSaved() {
+        return onAfterSaved;
+    }
+
+    public PopupForm setOnAfterSaved(Function<Long, Boolean> onAfterSaved) {
+        this.onAfterSaved = onAfterSaved;
+        return this;
+    }
+    public void doAfterSaved(Long id){
+        if(onAfterSaved == null)super.doOk();
+        else if(onAfterSaved.apply(id))super.doOk();
     }
     @Override
     public void doOk() {
@@ -75,7 +83,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs, Pop
                 public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                     String result = new String(responseBody);
                     Long id = Long.parseLong(result);
-                    afterSaved(id);
+                    doAfterSaved(id);
                 }
                 @Override
                 public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
@@ -147,10 +155,17 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs, Pop
 
         if(getArgs().getControls() != null) {
             for (Control.ControlBase control : getArgs().getControls()) {
-                View view = control.getFillView();
-                if(view != null){
-                    FieldsContainer.addView(view);
-                }
+
+                control.addView(FieldsContainer);
+
+
+                //View view = control.generateFillView(getContext());
+
+                //View view = Control.getView(getContext(),control);
+
+                //if(view != null){
+                //    FieldsContainer.addView(view);
+                //}
 
             }
         }
@@ -166,9 +181,9 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs, Pop
 
 
 
-    public static class  PopupFormArgs extends PopupArgs<PopupFormArgs, PopupFormListener> {
-        public PopupFormArgs(String key, String header,List<Control.ControlBase> controls,Long value){
-            super(key,header);
+    public static class  PopupFormArgs extends PopupArgs<PopupFormArgs> {
+        public PopupFormArgs( String header,List<Control.ControlBase> controls,Long value){
+            super(header);
             setCanceledOnTouchOutside(false);
             setCancelOnDestroyView(false);
             setCancelButton("Cancel");
@@ -219,9 +234,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs, Pop
         }
     }
 
-    public abstract static class PopupFormListener extends  PopupListener{
-        public abstract boolean onAfterSaved(Long id);
-    }
+
 
 
 

@@ -15,6 +15,7 @@ import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
 
@@ -30,16 +31,15 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public abstract class PopupBase<T extends PopupBase<T,U,V>,U extends PopupBase.PopupArgs<U,V>,V extends PopupBase.PopupListener> extends DialogFragment {
+public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.PopupArgs<U>> extends DialogFragment {
     public U getArgs() {
         Bundle arg = getArguments();
         return (U)arg.get("args");
     }
-    public PopupBase<T,U,V> setArgs(U args) {
+    public PopupBase<T,U> setArgs(U args) {
         Serializable obj = (Serializable)args;
         Bundle a = new Bundle();
         a.putSerializable("args", obj);
-        a.putString("key",args.getKey());
         setArguments(a);
         return this;
     }
@@ -60,25 +60,6 @@ public abstract class PopupBase<T extends PopupBase<T,U,V>,U extends PopupBase.P
         }
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if(getArgs().getCancelOnDestroyView()) {
-            doCancel();
-        }
-    }
-
-
-    public V getListener(){
-        //Class type = ((V) new Object()).getClass();
-        String key = getArgs().getKey();
-        if(RootActivity == null)return null;;
-        if(RootActivity.PopupListeners== null)return  null;
-        Optional<V> val = (Optional<V>)RootActivity.PopupListeners.stream().filter(x -> x.getKey().equals(key)).findFirst();
-        if(val.isPresent())return val.get();
-        else return null;
-        //.collect(Collectors.toList());
-    }
     private AlertDialog Popup;
 
     public AlertDialog getPopup() {
@@ -87,6 +68,11 @@ public abstract class PopupBase<T extends PopupBase<T,U,V>,U extends PopupBase.P
 
     public LinearLayout container;
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (savedInstanceState != null && getArgs().getCancelOnDestroyView()) doCancel();
+    }
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -118,9 +104,7 @@ public abstract class PopupBase<T extends PopupBase<T,U,V>,U extends PopupBase.P
         if (args.getCancelButton() != null) {
             AlertDialogBuilder.setNegativeButton(args.getCancelButton(), null);
         }
-
         AddControls(linearLayout);
-
 
         Popup = AlertDialogBuilder.create();
         Popup.setCancelable(false);
@@ -128,7 +112,6 @@ public abstract class PopupBase<T extends PopupBase<T,U,V>,U extends PopupBase.P
             Popup.setOnShowListener(dialog -> {
                 Popup.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
                     Popup.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(false);
-                    //if(OnAction != null)OnAction.apply("hihihih");
                     doCancel();
 
                 });
@@ -140,79 +123,72 @@ public abstract class PopupBase<T extends PopupBase<T,U,V>,U extends PopupBase.P
                 Popup.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                     Popup.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
                     doOk();
-
                 });
             });
         }
         Popup.setCanceledOnTouchOutside(args.getCanceledOnTouchOutside());
         return Popup;
     }
-    public void doOk() {
-        V listener = getListener();
-        if(listener == null){
-            this.dismiss();
-        }
-        else if(listener.onDoOk()){
-            this.dismiss();
-        }
-        else{
-            getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-        }
+    public Function<Void,Boolean> onDoOk;
+
+    public Function<Void, Boolean> getOnDoOk() {
+        return onDoOk;
     }
-    public void doCancel() {
-        V listener = getListener();
-        if(listener == null){
-            this.dismiss();
-        }
-        else if(listener.onDoOk()){
-            this.dismiss();
-        }
+
+    public void setOnDoOk(Function<Void, Boolean> onDoOk) {
+        this.onDoOk = onDoOk;
+    }
+
+    public Function<Void,Boolean> onDoCancel;
+
+    public Function<Void, Boolean> getOnDoCancel() {
+        return onDoCancel;
+    }
+
+    public void setOnDoCancel(Function<Void, Boolean> onDoCancel) {
+        this.onDoOk = onDoCancel;
+    }
+
+    public void doOk(){
+        if(onDoOk == null)dismiss();
+        else if(onDoOk.apply(null))dismiss();
+    }
+    public void doCancel( ){
+        if(onDoCancel == null)dismiss();
+        else if(onDoCancel.apply(null))dismiss();
     }
     public abstract void AddControls(LinearLayout container);
 
 
-    public static class  PopupArgs<U extends PopupArgs<U,V>,V  extends  PopupListener> implements Serializable{
+    public static class  PopupArgs<U extends PopupArgs<U>> implements Serializable{
 
-        public PopupArgs(String key, String header){
+        public PopupArgs( String header){
             setHeader(header);
-            setKey(key);
             setCanceledOnTouchOutside(true);
             setCancelOnDestroyView(true);
             Header = header;
-            Key = key;
         }
 
         private boolean CancelOnDestroyView;
         public boolean getCancelOnDestroyView() {
             return CancelOnDestroyView;
         }
-        public PopupArgs<U,V> setCancelOnDestroyView(boolean cancelOnDestroyView) {
+        public PopupArgs<U> setCancelOnDestroyView(boolean cancelOnDestroyView) {
             CancelOnDestroyView = cancelOnDestroyView;
             return this;
         }
-
-
-        private String Key;
-        public String getKey() {
-            return Key;
-        }
-        public void setKey(String key) {
-
-            Key = key;
-        }
-
         private boolean CanceledOnTouchOutside;
         public boolean getCanceledOnTouchOutside(){
             return CanceledOnTouchOutside;
         }
 
-        public PopupArgs<U,V> setCanceledOnTouchOutside(boolean canceledOnTouchOutside) {
+        public PopupArgs<U> setCanceledOnTouchOutside(boolean canceledOnTouchOutside) {
             CanceledOnTouchOutside = canceledOnTouchOutside;
             return  this;
         }
 
         private String Header;
-        public PopupArgs<U,V> setHeader(String header) {
+        public PopupArgs<U> setHeader(String header) {
             Header = header;
             return this;
         }
@@ -226,7 +202,7 @@ public abstract class PopupBase<T extends PopupBase<T,U,V>,U extends PopupBase.P
             return CancelButton;
         }
 
-        public PopupArgs<U,V> setCancelButton(String cancelButton) {
+        public PopupArgs<U> setCancelButton(String cancelButton) {
             CancelButton = cancelButton;
             return this;
         }
@@ -237,38 +213,11 @@ public abstract class PopupBase<T extends PopupBase<T,U,V>,U extends PopupBase.P
             return OkButton;
         }
 
-        public PopupArgs<U,V> setOkButton(String okButton) {
+        public PopupArgs<U> setOkButton(String okButton) {
             OkButton = okButton;
             return this;
         }
     }
-    public  static abstract   class  PopupListener{
-
-        private String Key;
-        public String getKey() {
-            return Key;
-        }
-        public void setKey(String key) {
-
-            Key = key;
-        }
-
-        public boolean onDoCancel() {
-            return true;
-        }
-        public boolean onDoOk() {
-            return true;
-
-        }
-    }
-    public static class  PopupArgsDefault extends PopupArgs<PopupBase.PopupArgsDefault, PopupBase.PopupListener> {
-        public PopupArgsDefault(String key, String header){
-            super(key,header);
-        }
-    }
-
-    //pe parameter 'com.example.myapplication.model.PopupBase.PopupArgsDefault' is not within its bound; should extend 'com.example.myapplication.model.PopupBase.PopupArgs<com.example.myapplication.model.PopupBase.PopupArgsDefault,com.example.myapplication.model.PopupBase.PopupListener>'
-
 
 }
 

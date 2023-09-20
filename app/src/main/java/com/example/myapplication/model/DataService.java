@@ -29,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
@@ -40,8 +41,8 @@ public class DataService {
 
 
 
-    private static String serverIp = "10.207.176.91"; //office
-    //private static String serverIp = "192.168.0.126"; //home
+    //private static String serverIp = "10.207.176.91"; //office
+    private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homewifi
 
     private static String  serverPort = "80";
@@ -215,7 +216,12 @@ public class DataService {
     public static abstract  class LookupsResponse {
         public abstract void onSuccess(List<Lookup>[] lookups);
     }
-    public static class Lookup{
+    public static class Lookup implements Serializable {
+
+        private String Properties;
+        private Long Id;
+        private String Name;
+
         public  Lookup()
         {
 
@@ -225,7 +231,7 @@ public class DataService {
             Name = name;
         }
 
-        private Long Id;
+
 
         public Long getId() {
             return Id;
@@ -235,7 +241,7 @@ public class DataService {
             Id = id;
         }
 
-        private String Name;
+
 
         public String getName() {
             return Name;
@@ -245,7 +251,7 @@ public class DataService {
             Name = name;
         }
 
-        private String Properties;
+
 
         public String getProperties() {
             return Properties;

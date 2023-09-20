@@ -32,20 +32,21 @@ import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
 
-public class PopupDate extends PopupBase<PopupDate, PopupDate.PopupDateArgs, PopupDate.PopupDateListener>{
+public class PopupDate extends PopupBase<PopupDate, PopupDate.PopupDateArgs>{
 
-    //public Date DefaultValue;
-    //public boolean AllowTime;
-
-    public PopupDate()
-    {
-
+    public static PopupDate create(String header,Date value,Function<Date,Boolean> onDateChanged){
+        PopupDate popup = new PopupDate();
+        popup.setArgs(new PopupDateArgs(header,value));
+        popup.setOnDateChanged(onDateChanged);
+        return popup;
     }
 
-
-
-
-
+    public static PopupDate create(PopupDateArgs args,Function<Date,Boolean> onDateChanged){
+        PopupDate popup = new PopupDate();
+        popup.setArgs(args);
+        popup.setOnDateChanged(onDateChanged);
+        return popup;
+    }
 
     private  Boolean pickerLocked = true;
     private  DatePicker dtp;
@@ -87,17 +88,7 @@ public class PopupDate extends PopupBase<PopupDate, PopupDate.PopupDateArgs, Pop
                     Calendar calendar = Calendar.getInstance();
                     calendar.setTime(dateArg.getValue());
                     calendar.set(i, i1, i2);
-
-
-
-
-
-
-
-                    //DefaultValue = calendar.getTime();
-                    PopupDateListener listener = getListener();
-                    if(listener == null)doOk();
-                    else if(listener.onDateChanged(calendar.getTime()))doOk();
+                    doDateChanged(calendar.getTime());
                 }
             }
         });
@@ -169,9 +160,26 @@ public class PopupDate extends PopupBase<PopupDate, PopupDate.PopupDateArgs, Pop
         linearLayout.addView(dtp);
     }
 
-    public static class  PopupDateArgs extends PopupArgs<PopupDateArgs, PopupDateListener> {
-        public PopupDateArgs(String key,String header,Date value){
-            super(key,header);
+    private void doDateChanged(Date date){
+        if(onDateChanged == null)super.doOk();
+        else if(onDateChanged.apply(date))super.doOk();
+    }
+
+
+    private Function<Date,Boolean> onDateChanged;
+
+    public PopupDate setOnDateChanged(Function<Date, Boolean> onDateChanged) {
+        this.onDateChanged = onDateChanged;
+        return this;
+    }
+
+    public Function<Date, Boolean> getOnDateChanged() {
+        return onDateChanged;
+    }
+
+    public static class  PopupDateArgs extends PopupArgs<PopupDateArgs> {
+        public PopupDateArgs(String header,Date value){
+            super(header);
             setCancelButton("Close");
             setShowTime(false);
             if(value == null)Value = new Date();
@@ -196,9 +204,7 @@ public class PopupDate extends PopupBase<PopupDate, PopupDate.PopupDateArgs, Pop
 
     }
 
-    public abstract static class PopupDateListener extends  PopupListener{
-        public abstract boolean onDateChanged(Date value);
-    }
+
 
 
 }

@@ -14,7 +14,31 @@ import java.util.function.Function;
 
 import cz.msebera.android.httpclient.Header;
 
-public class PopupConfirmation extends PopupBase<PopupConfirmation,PopupConfirmation.PopupConfirmationArgs, PopupConfirmation.PopupConfirmationListener>{
+public class PopupConfirmation extends PopupBase<PopupConfirmation,PopupConfirmation.PopupConfirmationArgs>{
+
+    public static PopupConfirmation create(String header,String confirmationMessage,Function<Void,Boolean> onConfirmed){
+        PopupConfirmation confirm = new PopupConfirmation();
+        confirm.setArgs(new PopupConfirmationArgs(header,confirmationMessage));
+        confirm.setOnConfirmed(onConfirmed);
+        return confirm;
+    }
+    public static PopupConfirmation create(PopupConfirmationArgs args,Function<Void,Boolean> onConfirmed){
+        PopupConfirmation confirm = new PopupConfirmation();
+        confirm.setArgs(args);
+        confirm.setOnConfirmed(onConfirmed);
+        return confirm;
+    }
+
+
+    public Function<Void,Boolean> onConfirmed;
+
+    public Function<Void, Boolean> getOnConfirmed() {
+        return onConfirmed;
+    }
+    public PopupConfirmation setOnConfirmed(Function<Void, Boolean> onConfirmed) {
+        this.onConfirmed = onConfirmed;
+        return this;
+    }
     private TextView textView;
     @Override
     public void AddControls(LinearLayout container) {
@@ -31,13 +55,17 @@ public class PopupConfirmation extends PopupBase<PopupConfirmation,PopupConfirma
     }
     @Override
     public void doOk() {
-        PopupConfirmationListener listener = getListener();
-        if(listener == null)super.doOk();
-        else if(listener.onConfirmed())super.doOk();
+        doConformed();
     }
-    public static class  PopupConfirmationArgs extends PopupArgs<PopupConfirmationArgs, PopupConfirmationListener> {
-        public PopupConfirmationArgs(String key,String header,String confirmationMessage){
-            super(key,header);
+    public void doConformed(){
+        if(onConfirmed == null)super.doOk();
+        else if(onConfirmed.apply(null))super.doOk();
+    }
+
+
+    public static class  PopupConfirmationArgs extends PopupArgs<PopupConfirmationArgs> {
+        public PopupConfirmationArgs(String header,String confirmationMessage){
+            super(header);
             setOkButton("Yes");
             setCancelButton("No");
             ConfirmationMessage = confirmationMessage;
@@ -52,10 +80,4 @@ public class PopupConfirmation extends PopupBase<PopupConfirmation,PopupConfirma
             return this;
         }
     }
-
-    public abstract static class PopupConfirmationListener extends  PopupListener{
-        public abstract boolean onConfirmed();
-    }
-
-
 }

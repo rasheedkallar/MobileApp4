@@ -1,6 +1,5 @@
 package com.example.myapplication;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -18,12 +17,8 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
-
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
-import com.example.myapplication.model.Popup;
-import com.example.myapplication.model.PopupBase;
 import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupLookup;
@@ -42,6 +37,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 
 public  class InvCheckInActivity extends BaseActivity {
 
@@ -86,6 +82,7 @@ public  class InvCheckInActivity extends BaseActivity {
             };
 
 
+
             for (int i = 0; i < args.Images.size(); i++) {
                 try {
                     AddImage(getContext(),Long.parseLong(args.Images.get(i).toString()),image_layout,image_delete,imageClick);
@@ -96,35 +93,31 @@ public  class InvCheckInActivity extends BaseActivity {
             }
 
 
-
-
-
             image_delete.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    getRootActivity().registerPopup(new PopupConfirmation(), new PopupConfirmation.PopupConfirmationArgs("MainImageDeleteConfirm", "Delete Confirmation", "Are you sure you want to delete?"), new PopupConfirmation.PopupConfirmationListener() {
-                        @Override
-                        public boolean onConfirmed() {
-                            new DataService().deleteById(getContext(), "refFile", (Long)invCheckInSelectedImage.getTag(), new DataService.DeleteByIdResponse() {
-                                @Override
-                                public void onSuccess(Boolean deleted) {
-                                    Long id = (Long)invCheckInSelectedImage.getTag();
+                    PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)->{
+                        Long id = (Long)invCheckInSelectedImage.getTag();
+                        new DataService().deleteById(getActivity(), "RefFile", id, new DataService.DeleteByIdResponse() {
+                            @Override
+                            public void onSuccess(Boolean deleted) {
+                                if(deleted) {
                                     args.Images.remove(id);
                                     image_layout.removeView(invCheckInSelectedImage);
                                     image_delete.setEnabled(false);
                                 }
-                            });
-                            return true;
-                        }
+                            }
+                        });
+                        return true;
                     }).show(getRootActivity().getSupportFragmentManager(),null);
                 }
             });
             image_camera.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    getRootActivity().captureImage("InvCheckIn",Long.parseLong(args.getValue().toString()),new onGetImage() {
+                    getRootActivity().captureImage(100,"InvCheckIn", args.getValue(), new onGetImage() {
                         @Override
-                        public void getImage(Bitmap image, long id) {
+                        public void getImage(int requestId,Bitmap image, long id) {
                             AddImage(getContext(),id,image,image_layout,item_delete,imageClick)  ;
                         }
                     });
@@ -133,9 +126,9 @@ public  class InvCheckInActivity extends BaseActivity {
             image_gallery.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    getRootActivity().pickImage("InvCheckIn",Long.parseLong(args.getValue().toString()),new onGetImage() {
+                    getRootActivity().captureImage(-100,"InvCheckIn",args.getValue(),new onGetImage() {
                         @Override
-                        public void getImage(Bitmap image, long id) {
+                        public void getImage(int requestId,Bitmap image, long id) {
                             AddImage(getContext(),id,image,image_layout,item_delete,imageClick) ;
                         }
                     });
@@ -143,28 +136,33 @@ public  class InvCheckInActivity extends BaseActivity {
             });
         }
         @Override
-        public void afterSaved(Long id) {
+        public InvCheckInActivity getRootActivity() {
+            return (InvCheckInActivity)super.getRootActivity();
+        }
+        @Override
+        public void doAfterSaved(Long id) {
+
+
             PopupFormArgsInvCheckIn args = (PopupFormArgsInvCheckIn)this.getArgs();
             if(args.getValue() == null || args.getValue() ==0){
                 args.setValue(id);
-                args.getControls().get(InvCheckInActivity.ID_INDEX).setValue(id);
-                PopupFormListener listener = getListener();
+                //args.getControls().get(InvCheckInActivity.ID_INDEX).setValue(id);
                 getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                 popup_stockReceive.setVisibility(LinearLayout.VISIBLE);
-                listener.onAfterSaved(id);
+                getRootActivity().afterInvCheckInSaved(id);
             }
             else{
-                super.afterSaved(id);
+                getRootActivity().afterInvCheckInSaved(id);
+                dismiss();
             }
+
+
         }
-
-
         private ImageView invCheckInSelectedImage = null;
-
-
-
     }
-
+    public void afterInvCheckInSaved(Long id){
+        RefreshList();
+    }
     private static void AddImage(Context context,long id,FlexboxLayout layout,RadioButton delete_button,View.OnClickListener listener) throws MalformedURLException,IOException {
         ImageView imageView = GetImageView(context,id,layout,delete_button,listener);
         new DataService().get("refFile/" + id, new AsyncHttpResponseHandler() {
@@ -181,6 +179,26 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         });
     }
+
+    public static class  PopupFormArgsInvCheckIn extends PopupForm.PopupFormArgs {
+        public PopupFormArgsInvCheckIn(List<Control.ControlBase> controls,Long value,List<Long> images){
+            super( "Stock Receive", controls, value);
+            setImages(images);
+        }
+
+        private List<Long> Images;
+        public List<Long> getImages() {
+            return Images;
+        }
+        public PopupForm.PopupFormArgs setImages(List<Long> images) {
+            Images = images;
+            return this;
+        }
+
+
+    }
+
+
     private static void AddImage(Context context,long id,Bitmap image,FlexboxLayout layout,RadioButton delete_button,View.OnClickListener listener){
         ImageView imageView = GetImageView(context,id,layout,delete_button,listener);
         imageView.setImageBitmap(image);
@@ -200,57 +218,29 @@ public  class InvCheckInActivity extends BaseActivity {
         return imageView;
     }
 
-
-
-    public static class  PopupFormArgsInvCheckIn extends PopupForm.PopupFormArgs {
-        public PopupFormArgsInvCheckIn(List<Control.ControlBase> controls,Long value,List<Long> images){
-            super("CheckIn", "Stock Receive", controls, value);
-            setImages(images);
-        }
-
-
-        private List<Long> Images;
-        public List<Long> getImages() {
-            return Images;
-        }
-        public PopupForm.PopupFormArgs setImages(List<Long> images) {
-            Images = images;
-            return this;
-        }
-
-    }
-
-
-
-
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
-
-
-
-
         FlexboxLayout fbl = new FlexboxLayout(this  );
         FlexboxLayout.LayoutParams fblP= new FlexboxLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-
 
         fbl.setLayoutParams(fblP);
         fbl.setFlexWrap(FlexWrap.WRAP);
         Container.addView(fbl);
 
+        fromControl =  Control.getDateControl("from","From").setValue(Utility.AddDay(new Date(),-10)).setControlSize(310);
+        toControl = Control.getDateControl("to","To").setValue(Utility.AddDay(new Date(),1)).setControlSize(310);
 
 
-        fromControl = (Control.DateControl) Control.getDateControl(this,"from","From").setValue(Utility.AddDay(new Date(),-10)).setControlSize(310);
-        toControl = (Control.DateControl)Control.getDateControl(this,"to","To").setValue(Utility.AddDay(new Date(),1)).setControlSize(310);
+        //fromControl.setValue(Utility.AddDay(new Date(),-10));
+        //toControl.setValue(Utility.AddDay(new Date(),1));
 
-        fbl.addView(fromControl.getFillView());
-        fbl.addView(toControl.getFillView());
+        fromControl.addView(fbl);
+        toControl.addView(fbl);
 
+        //fbl.addView(fromControl.generateFillView(this));
+        //fbl.addView(toControl.generateFillView(this));
 
         Button btn = new Button(this);
         FlexboxLayout.LayoutParams btlP= new FlexboxLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, 100);
@@ -273,7 +263,6 @@ public  class InvCheckInActivity extends BaseActivity {
         sv.setLayoutParams(scP);
 
         Container.addView(sv);
-
 
         table = new TableLayout(this);
         TableLayout.LayoutParams tableP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -299,13 +288,12 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         });
     }
-    List<DataService.Lookup> suppliers;
-    List<DataService.Lookup> employees;
+    private List<DataService.Lookup> suppliers;
+    private List<DataService.Lookup> employees;
+    private Control.DateControl fromControl;
+    private Control.DateControl toControl;
 
-    Control.DateControl fromControl;
-    Control.DateControl toControl;
-
-    TableLayout table;
+    private TableLayout table;
 
     private void  RefreshList(){
         Context context = this;
@@ -313,21 +301,20 @@ public  class InvCheckInActivity extends BaseActivity {
         EditButton.setEnabled(false);
         DeleteButton.setEnabled(false);
         ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-        controls.add(Control.getDateTimeControl(context,"CheckInTime","Date").setValue(new Date()));
-        controls.add(Control.getEditTextControl(context,"RefNum","Ref#"));
-        controls.add(Control.getEditTextControl(context,"EmpName1","Emp"));
-        controls.add(Control.getLookupControl(context,"SupId","Supplier",suppliers));
-        controls.add(Control.getEditTextControl(context, "Status", "Status"));
+        controls.add(Control.getHiddenControl("Id",1L));
 
 
-
-
-
-
-
-
+        controls.add(Control.getDateTimeControl("CheckInTime","Date"));
+        controls.add(Control.getEditTextControl("RefNum","Ref#"));
+        controls.add(Control.getEditTextControl("EmpName","Emp"));
+        controls.add(Control.getLookupControl("SupId","Supplier",suppliers));
+        controls.add(Control.getEditTextControl( "Status", "Status"));
 
         new DataService().get("InvCheckIn?" + fromControl.getUrlParam() + "&" + toControl.getUrlParam(), new AsyncHttpResponseHandler() {
+
+        //new DataService().get("InvCheckIn", new AsyncHttpResponseHandler() {
+
+
             @Override
             public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
@@ -385,247 +372,36 @@ public  class InvCheckInActivity extends BaseActivity {
     }
 
     private Long SelectedId= 0L;
-    private LinearLayout popup_stockReceive;
-
-    /*
-    private void AddImage(long id,Bitmap image,FlexboxLayout layout,RadioButton delete_button){
-        ImageView imageView = GetImageView(id,layout,delete_button);
-        imageView.setImageBitmap(image);
-    }
-    private ImageView GetImageView(long id,FlexboxLayout layout,RadioButton delete_button){
-        ImageView imageView = new ImageView(this);
-        FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(230, 230);
-        lllP.setMargins(2,2,2,2);
-        imageView.setBackgroundColor(Color.parseColor("#8CD0E4"));
-        imageView.setLayoutParams(lllP);
-        imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                invCheckInSelectedImage = null;
-                delete_button.setEnabled(false);
-                for (int i = 0; i < layout.getChildCount(); i++) {
-                    ImageView iv = (ImageView)layout.getChildAt(i);
-                    if(view == iv) {
-                        invCheckInSelectedImage = iv;
-                        iv.setBackgroundColor(Color.parseColor("#225C6E"));
-                        delete_button.setEnabled(true);
-
-                    }else{
-                        iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
-                    }
-                }
-            }
-        });
-
-        imageView.setTag(id);
-        layout.addView(imageView);
-        return imageView;
-    }
-
-     */
-    private ImageView invCheckInSelectedImage = null;
-    /*
-    private void AddImage(long id,FlexboxLayout layout,RadioButton delete_button) throws MalformedURLException,IOException {
-        ImageView imageView = GetImageView(id,layout,delete_button);
-
-
-
-        new DataService().get("refFile/" + id, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
-                Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
-                imageView.setImageBitmap(bmp);
-
-                System.out.println(layout.getChildCount());
-            }
-            @Override
-            public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
-
-            }
-        });
-    }
-*/
-
-
-
-    private FlexboxLayout image_layout;
-    private void  configPopup_stockReceive(FlexboxLayout container,Control.ControlBase id){
-        LayoutInflater li = LayoutInflater.from(this );
-        popup_stockReceive = (LinearLayout)li.inflate(R.layout.inv_check_in, null);
-        container.addView(popup_stockReceive);
-        image_layout = container.findViewById(R.id.image_layout);
-        image_delete = container.findViewById(R.id.image_delete);
-        final Context context = this;
-        image_delete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-               /*
-
-                PopupConfirmation.create("Delete Confirmation","Are you sure you want to delete?",popup->{
-                    if(invCheckInSelectedImage != null){
-                        new DataService().deleteById(context, "refFile", (Long)invCheckInSelectedImage.getTag(), new DataService.DeleteByIdResponse() {
-                            @Override
-                            public void onSuccess(Boolean deleted) {
-                                image_layout.removeView(invCheckInSelectedImage);
-                                image_delete.setEnabled(false);
-                            }
-                        });
-                    }
-                    return true;
-                }).show(getSupportFragmentManager(),null);
-
-                */
-
-
-
-            }
-        });
-
-
-        item_add = container.findViewById(R.id.item_add);
-        item_add.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                /*
-
-                ArrayList<Control.ControlBase> newControls = new ArrayList<Control.ControlBase>();
-                newControls.add(new Control.HiddenControl(context,"item_id",null));
-                newControls.add(new Control.EditTextControl(context,"item_barcode","Barcode"));
-                PopupForm form =new PopupForm();
-                form.setControlAdded(value -> {
-                    configPopup_stockReceive(value,id);
-                    popup_stockReceive.setVisibility(LinearLayout.GONE);
-                }).show(getSupportFragmentManager(), "Stock Receive New", newControls,
-                value -> {
-                    RefreshList();
-                    SelectedId = value;
-                    if(id.getValue() == null || id.getValue().equals(0L)){
-                        id.setValue(value);
-                        form.getPopup().getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                        popup_stockReceive.setVisibility(LinearLayout.VISIBLE);
-                        return false;
-                    }
-                    else{
-                        return true;
-                    }
-                });
-
-                 */
-
-
-
-
-
-
-            }
-        });
-
-
-
-        item_edit = container.findViewById(R.id.item_edit);
-        item_delete = container.findViewById(R.id.item_delete);
-
-        TableLayout item_table = container.findViewById(R.id.item_table);
-        RadioButton image_camera = container.findViewById(R.id.image_camera);
-
-        /*
-        image_camera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                captureImage("InvCheckIn",Long.parseLong(id.getValue().toString()),new onGetImage() {
-                    @Override
-                    public void getImage(Bitmap image, long id) {
-                        AddImage(id,image,image_layout,item_delete)  ;
-                    }
-                });
-            }
-        });
-        RadioButton image_gallery = container.findViewById(R.id.image_gallery);
-        image_gallery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                pickImage("InvCheckIn",Long.parseLong(id.getValue().toString()),new onGetImage() {
-                    @Override
-                    public void getImage(Bitmap image, long id) {
-                        AddImage(id,image,image_layout,item_delete) ;
-                    }
-                });
-            }
-        });
-
-        */
-
-    }
-
-
-
-    private RadioButton image_delete ;
-    private RadioButton item_add  ;
-    private RadioButton item_edit ;
-    private RadioButton item_delete ;
 
     private void ShowForm(ArrayList<Control.ControlBase> controls,Long id,List<Long> images){
-        PopupFormInvCheckIn checkInForm = (PopupFormInvCheckIn) registerPopup(new PopupFormInvCheckIn(), new PopupFormArgsInvCheckIn( controls, id,images), new PopupForm.PopupFormListener() {
-            @Override
-            public boolean onAfterSaved(Long id) {
-                RefreshList();
-                return true;
-            }
-        });
-        checkInForm.show(getSupportFragmentManager(), null);
+        //new PopupFormInvCheckIn().setArgs(new PopupFormArgsInvCheckIn(controls,id,images)).show(getSupportFragmentManager(),null);
+        new PopupFormInvCheckIn().setArgs(new PopupFormArgsInvCheckIn(controls,id,images)).show(getSupportFragmentManager(),null);
+
     }
-
-
     public static int ID_INDEX = 0;
     public static int SUPP_INDEX = 3;
     public static int EMP_INDEX = 4;
 
-
-
-
-
     @Override
     public void onButtonClick(String action, RadioButton button) {
-
         final InvCheckInActivity activity = this;
-
-
-
         if(action == "Add" || action == "Edit"){
-
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-            controls.add(Control.getHiddenControl(activity, "Id", null).setValue(new Date()));
-            controls.add(Control.getDateTimeControl(activity,"CheckInTime", "Check In Date").setValue(new Date()));
-            controls.add(Control.getEditTextControl(activity, "RefNum", "Ref Number"));
-            controls.add(Control.getLookupControl(activity, "SupId", "Supplier", suppliers));// .setValue(supplier.Id));
-            controls.add(Control.getLookupControl(activity, "EmpId", "Employee", employees)); //.setValue(employee.Id));
-
+            controls.add(Control.getHiddenControl("Id", null));
+            controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
+            controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
+            controls.add(Control.getLookupControl( "SupId", "Supplier", suppliers));
+            //controls.add(Control.getLookupControl( "EmpId", "Employee", employees));
             if(action == "Add") {
-
-
-                PopupLookup supp = registerPopup(new PopupLookup(),
-                new PopupLookup.PopupLookupArgs("SupplierPicker", "Supplier", suppliers, 0L),
-                new PopupLookup.PopupLookupListener() {
-                    @Override
-                    public boolean onLookupChanged(DataService.Lookup lookup) {
-                        //DataService.Lookup supplier = lookup;
-                        controls.get(SUPP_INDEX).setValue(lookup.getId());
-                        PopupLookup emp = registerPopup(new PopupLookup(),
-                                new PopupLookup.PopupLookupArgs("EmployeePicker", "Employee", employees, 0L),
-                                new PopupLookup.PopupLookupListener() {
-                                    @Override
-                                    public boolean onLookupChanged(DataService.Lookup lookup) {
-                                        //DataService.Lookup employee = lookup;
-                                        controls.get(EMP_INDEX).setValue(lookup.getId());
-                                        ShowForm(controls,0L,new ArrayList<>());
-                                        return true;
-                                    }
-                                });
-                        emp.show(activity.getSupportFragmentManager(), null);
-                        return true;
-                    }
-                });
-                supp.show(activity.getSupportFragmentManager(), null);
+                PopupLookup.create("SupplierPicker",suppliers,0L,(supplier)->{
+                    controls.get(SUPP_INDEX).setValue(supplier.getId());
+                    PopupLookup.create("EmployeePicker",employees,0L,(employee)->{
+                        controls.get(EMP_INDEX).setValue(employee.getId());
+                        ShowForm(controls,0L,new ArrayList<>());
+                        return  true;
+                    }).show(getSupportFragmentManager(),null);
+                    return  true;
+                }).show(getSupportFragmentManager(),null);
             }
             else
             {
@@ -633,10 +409,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 new DataService().getById(activity, "InvCheckIn", SelectedId, new DataService.GetByIdResponse() {
                     @Override
                     public void onSuccess(JSONObject data) {
-
-
-
-
                         try {
                             Utility.applyValues(data,controls);
                             List<Long> images = new ArrayList<>();
@@ -645,162 +417,34 @@ public  class InvCheckInActivity extends BaseActivity {
                                 for (int i = 0; i < imageList.length(); i++) {
                                     try {
                                         images.add(Long.parseLong(imageList.get(i).toString()));
-
-                                        //AddImage(Long.parseLong(imageList.get(i).toString()),image_layout,image_delete);
                                     }
                                     catch (Exception e){
                                         Toast.makeText(activity, "Error in loading images " +  e.getMessage(), Toast.LENGTH_SHORT).show();
                                     }
                                 }
                             }
-
                             ShowForm(controls,SelectedId,images);
                         }
                         catch ( JSONException ex){
                             Toast.makeText(activity, "Error in loading data " +  ex.getMessage(), Toast.LENGTH_SHORT).show();
                             return;
                         }
-
-                    /*
-
-                    PopupForm from = new PopupForm();
-
-
-                    from.setControlAdded(value -> {
-                                configPopup_stockReceive(value,id);
-                                for (int i = 0; i < imageList.length(); i++) {
-                                    try {
-                                        AddImage(Long.parseLong(imageList.get(i).toString()),image_layout,image_delete);
-                                    }
-                                    catch (Exception e){
-                                        Toast.makeText(context, "Error in loading images " +  e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                            })
-                            .show(getSupportFragmentManager(), "Stock Receive Edit", controls,value->{
-                                RefreshList();
-                                return true;
-                            });
-
-                    */
-
-
                     }
                 });
-
             }
-
-
-
-        }
-
-
-
-
-        /*
-
-        final Context context = this;
-        if(action == "Add"){
-            new PopupLookup("Supplier", suppliers, new PopupLookup.onFormPopupLookupListener() {
-                @Override
-                public boolean onPick(DataService.Lookup lookup) {
-                    final DataService.Lookup suppler = lookup;
-                    new PopupLookup( "Employee", employees, new PopupLookup.onFormPopupLookupListener() {
-                        @Override
-                        public boolean onPick(DataService.Lookup lookup) {
-                            final DataService.Lookup employee = lookup;
-                            ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-                            Control.HiddenControl id = Control.getHiddenControl(context, "header_id", null);
-                            controls.add(id);
-                            controls.add(Control.getDateTimeControl(context,"header_date", "Check In Date").setValue(new Date()));
-                            controls.add(Control.getEditTextControl(context, "header_number", "Ref Number"));
-                            controls.add(Control.getLookupControl(context, "header_supplier", "Supplier", suppliers).setValue(suppler.Id));
-                            controls.add(Control.getLookupControl(context, "header_employee", "Employee", employees).setValue(employee.Id));
-                            PopupForm from = new PopupForm();
-                            from.show(getSupportFragmentManager(),"Stock Receive New", controls,value->{
-                                  SelectedId = value;
-                                if(id.getValue() == null || id.getValue().equals(0L)){
-                                    id.setValue(value);
-                                    from.getPopup().getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                                    popup_stockReceive.setVisibility(LinearLayout.VISIBLE);
-                                    return false;
-                                }
-                                else{
-                                    return true;
-
-                                }
-                            });
-
-
-
-                            return false;
-                        }
-                    });
-                    return true;
-                }
-            });
-        }
-        else if(action == "Edit"){
-            new DataService().getById(context, "InvCheckIn", SelectedId, new DataService.GetByIdResponse() {
-                @Override
-                public void onSuccess(JSONObject data) {
-                    ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-                    Control.HiddenControl id = Control.getHiddenControl(context, "header_id", null).readValue(data);
-                    controls.add(id);
-                    controls.add(Control.getDateTimeControl(context,"header_date", "Check In Date").readValue(data));
-                    controls.add(Control.getEditTextControl(context, "header_number", "Ref Number").readValue(data));
-                    controls.add(Control.getLookupControl(context, "header_supplier", "Supplier", suppliers).readValue(data));
-                    controls.add(Control.getLookupControl(context, "header_employee", "Employee", employees).readValue(data));
-                    JSONArray imageList;
-                    try {
-                        //Utility.applyValues(data,controls);
-                        imageList = data.getJSONArray("header_images");
-                    }
-                    catch ( JSONException ex){
-                        Toast.makeText(context, "Error in loading data " +  ex.getMessage(), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    PopupForm from = new PopupForm();
-
-
-                    from.setControlAdded(value -> {
-                        configPopup_stockReceive(value,id);
-                        for (int i = 0; i < imageList.length(); i++) {
-                            try {
-                                AddImage(Long.parseLong(imageList.get(i).toString()),image_layout,image_delete);
-                            }
-                            catch (Exception e){
-                                Toast.makeText(context, "Error in loading images " +  e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    })
-                    .show(getSupportFragmentManager(), "Stock Receive Edit", controls,value->{
-                        RefreshList();
-                        return true;
-                    });
-
-
-
-
-                }
-            });
         }
         else if(action == "Delete"){
-
-            PopupConfirmation.create("Delete Confirmation","Are you sure you want to delete?",popup->{
-                new DataService().deleteById(context, "InvCheckIn", SelectedId, new DataService.DeleteByIdResponse() {
+            PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)-> {
+                new DataService().deleteById(activity, "InvCheckIn", SelectedId, new DataService.DeleteByIdResponse() {
                     @Override
                     public void onSuccess(Boolean deleted) {
+                        SelectedId = null;
                         RefreshList();
                     }
                 });
                 return true;
-            }).show(getSupportFragmentManager(),null);
-
-
+            }).show(getSupportFragmentManager(), null);
         }
-
-         */
     }
     @Override
     public String getHeaderText() {

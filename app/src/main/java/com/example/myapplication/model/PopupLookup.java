@@ -25,8 +25,22 @@ import com.google.android.flexbox.FlexboxLayout;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 
-public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupArgs, PopupLookup.PopupLookupListener>{
+public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupArgs>{
+
+    public static PopupLookup create(String header, List<DataService.Lookup> lookups,Long value,Function<DataService.Lookup,Boolean> onLookupChanged){
+        PopupLookup popup = new PopupLookup();
+        popup.setArgs(new PopupLookupArgs(header,lookups,value));
+        popup.setOnLookupChanged(onLookupChanged);
+        return popup;
+    }
+    public static PopupLookup create(PopupLookupArgs args,Function<DataService.Lookup,Boolean> onLookupChanged){
+        PopupLookup popup = new PopupLookup();
+        popup.setArgs(args);
+        popup.setOnLookupChanged(onLookupChanged);
+        return popup;
+    }
 
     private FlexboxLayout _container;
     @Override
@@ -94,14 +108,7 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                PopupLookupListener listener = getListener();
-                if(view.getTag() == null){
-                    if(listener.onLookupChanged(null))doOk();
-                }
-                else{
-                    DataService.Lookup l = (DataService.Lookup)view.getTag();
-                    if(listener.onLookupChanged(l))doOk();
-                }
+                doLookupChanged(lookup);
             }
         });
         container.addView(button);
@@ -114,9 +121,25 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
         return  190;
     }
 
-    public static class  PopupLookupArgs extends PopupArgs<PopupLookupArgs, PopupLookupListener> {
-        public PopupLookupArgs(String key, String header, List<DataService.Lookup> lookups,Long value){
-            super(key,header);
+    public void doLookupChanged(DataService.Lookup lookup){
+        if(onLookupChanged == null)super.doOk();
+        else if(onLookupChanged.apply(lookup))super.doOk();
+    }
+
+    public Function<DataService.Lookup,Boolean> onLookupChanged;
+
+    public Function<DataService.Lookup, Boolean> getOnLookupChanged() {
+        return onLookupChanged;
+    }
+
+    public PopupLookup setOnLookupChanged(Function<DataService.Lookup, Boolean> onLookupChanged) {
+        this.onLookupChanged = onLookupChanged;
+        return this;
+    }
+
+    public static class  PopupLookupArgs extends PopupArgs<PopupLookupArgs> {
+        public PopupLookupArgs( String header, List<DataService.Lookup> lookups,Long value){
+            super(header);
             setCancelButton("Close");
             setValue(value);
             if(lookups == null)setLookups(new ArrayList<DataService.Lookup>());
@@ -142,7 +165,5 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
         }
     }
 
-    public abstract static class PopupLookupListener extends  PopupListener{
-        public abstract boolean onLookupChanged(DataService.Lookup lookup);
-    }
+
 }

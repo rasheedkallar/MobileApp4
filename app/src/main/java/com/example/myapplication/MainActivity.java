@@ -22,14 +22,7 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
 
-        PopupDate test1 = registerPopup(new PopupDate(),new PopupDate.PopupDateArgs("test","Delete Confirmation", new Date()), new PopupDate.PopupDateListener() {
-            @Override
-            public boolean onDateChanged(Date value) {
-                Toast.makeText(getBaseContext(),value.toString(),Toast.LENGTH_SHORT).show();
 
-                return true;
-            }
-        });
 
         /*
 
@@ -54,7 +47,7 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onClick(View view) {
 
-                test1.show(getSupportFragmentManager(),null);
+                //test1.show(getSupportFragmentManager(),null);
 
                 //PopupConfirmation.create(deleteConfirmation).show(getSupportFragmentManager(),null);;
 
@@ -67,6 +60,8 @@ public class MainActivity extends BaseActivity {
             }
         });
         Button btnGallery = findViewById(R.id.btnGallery);
+
+        /*
         btnGallery.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -79,6 +74,8 @@ public class MainActivity extends BaseActivity {
                 });
             }
         });
+
+         */
     }
 
 

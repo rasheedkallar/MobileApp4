@@ -23,8 +23,20 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.function.Function;
 
-public class PopupHtml extends PopupBase<PopupHtml,PopupHtml.PopupHtmlArgs, PopupBase.PopupListener>{
+public class PopupHtml extends PopupBase<PopupHtml,PopupHtml.PopupHtmlArgs>{
+
+    public static PopupHtml create(String header,String html){
+        PopupHtml popup = new PopupHtml();
+        popup.setArgs(new PopupHtml.PopupHtmlArgs(header,html));
+        return popup;
+    }
+    public static PopupHtml create(PopupHtmlArgs args){
+        PopupHtml popup = new PopupHtml();
+        popup.setArgs(args);
+        return popup;
+    }
 
     public WebView WebView;
     @Override
@@ -45,10 +57,9 @@ public class PopupHtml extends PopupBase<PopupHtml,PopupHtml.PopupHtmlArgs, Popu
         container.addView(WebView);
     }
 
-
-    public static class  PopupHtmlArgs extends PopupArgs<PopupHtmlArgs,PopupListener> {
-        public PopupHtmlArgs(String key,String header,String html){
-            super(key,header);
+    public static class  PopupHtmlArgs extends PopupArgs<PopupHtmlArgs> {
+        public PopupHtmlArgs(String header,String html){
+            super(header);
             setCancelButton("Close");
             Html = html;
         }
