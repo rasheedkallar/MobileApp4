@@ -106,12 +106,9 @@ public abstract class BaseActivity extends AppCompatActivity {
         new ActivityResultContracts.StartActivityForResult(),
         result -> {
             if (result.getResultCode() == Activity.RESULT_OK) {
-
-
-
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
-                new DataService().upload(activity,photoFile,newFileName,Entity,Id, new AsyncHttpResponseHandler() {
+                new DataService().upload(activity,photoFile,newFileName,getEntityName(),Id, new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                         String result = new String(responseBody);
@@ -125,7 +122,6 @@ public abstract class BaseActivity extends AppCompatActivity {
                         }
                         onCapturedImage( RequestId ,imageBitmap,Long.parseLong(result));
                     }
-
                     @Override
                     public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
                         String result = "Error found";
@@ -141,7 +137,6 @@ public abstract class BaseActivity extends AppCompatActivity {
                 });
             }
         });
-
         pickImageLauncher = registerForActivityResult(
         new ActivityResultContracts.StartActivityForResult(),
         result -> {
@@ -168,7 +163,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                     }
                     DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                     String newFileName = dateFormat.format(new Date());
-                    new DataService().upload(activity,file,newFileName,Entity,Id, new AsyncHttpResponseHandler() {
+                    new DataService().upload(activity,file,newFileName,getEntityName(),Id, new AsyncHttpResponseHandler() {
                         @Override
                         public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                             String result = new String(responseBody);
@@ -192,6 +187,56 @@ public abstract class BaseActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+
+
+        String photoURIString = null;
+        if(photoURI != null)photoURIString = photoURI.getPath();
+        savedInstanceState.putString("photoURIString", photoURIString);
+
+
+        String filePathString = null;
+        if(photoFile != null)
+            filePathString =photoFile.getAbsolutePath();
+        savedInstanceState.putString("filePathString", filePathString);
+
+        savedInstanceState.putLong("Id",Id);
+        savedInstanceState.putInt("RequestId",RequestId);
+
+
+
+
+
+
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+        String photoURIString = savedInstanceState.getString("photoURIString");
+        photoURI = null;
+        if(photoURIString != null)
+            photoURI = Uri.parse(photoURIString);
+
+
+        String filePathString = savedInstanceState.getString("filePathString");
+        photoFile = null;
+        if(filePathString != null)
+            photoFile = new File(filePathString);
+
+        Id = savedInstanceState.getLong("Id");
+        RequestId = savedInstanceState.getInt("RequestId");
+
+    }
+
+
+
+
+
+
     private  File photoFile;
     private Uri photoURI;
     private    void  ImageCapture(){
@@ -208,9 +253,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
                 photoURI = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                //takePictureIntent.putExtra(MediaStore.,requestId);
                 takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
                 try {
                     takePictureLauncher.launch(takePictureIntent);
                 }catch (Exception err){
@@ -245,10 +288,22 @@ public abstract class BaseActivity extends AppCompatActivity {
         return image;
     }
 
-    public void  captureImage(int requestId,String entity,Long id,onGetImage listener){
+
+    protected String getEntityName(){
+        String name = this.getClass().getName();
+        int dot = name.lastIndexOf('.');
+        if(dot >0)name= name.substring(dot + 1);
+
+
+        if(name.endsWith("Activity"))name = name.substring(0,name.length() - 8);
+        return name;
+    }
+
+
+
+    public void  captureImage(int requestId,Long id,onGetImage listener){
         RequestId = requestId;
         if(requestId <0){
-            Entity = entity;
             Id = id;
             imageListener  = listener;
             int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
@@ -259,10 +314,8 @@ public abstract class BaseActivity extends AppCompatActivity {
             }
         }
         else{
-            Entity = entity;
             Id = id;
             imageListener  = listener;
-
             int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
             if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
                 ImageCapture();
@@ -274,10 +327,10 @@ public abstract class BaseActivity extends AppCompatActivity {
     public void onCapturedImage(int requestId,Bitmap image,Long id){
         if(imageListener != null)imageListener.getImage(requestId,image,id);
     }
-    private String Entity;
+
     private long Id;
 
-    private onGetImage imageListener = null;
+    protected onGetImage imageListener = null;
     private int RequestId = 0;
 
 

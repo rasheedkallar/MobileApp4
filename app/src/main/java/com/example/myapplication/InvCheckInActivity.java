@@ -17,6 +17,8 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupConfirmation;
@@ -42,8 +44,10 @@ import java.util.function.Function;
 public  class InvCheckInActivity extends BaseActivity {
 
     public static class PopupFormInvCheckIn extends  PopupForm{
-
         private View popup_stockReceive;
+        public FlexboxLayout image_layout;
+        public RadioButton item_delete;
+        public View.OnClickListener imageClick;
         @Override
         public void AddControls(LinearLayout container) {
             super.AddControls(container);
@@ -56,13 +60,13 @@ public  class InvCheckInActivity extends BaseActivity {
                 popup_stockReceive.setVisibility(LinearLayout.GONE);
             }
             RadioButton item_edit = popup_stockReceive.findViewById(R.id.item_edit);
-            RadioButton item_delete = popup_stockReceive.findViewById(R.id.item_delete);
+            item_delete = popup_stockReceive.findViewById(R.id.item_delete);
             TableLayout item_table = popup_stockReceive.findViewById(R.id.item_table);
             RadioButton image_camera = popup_stockReceive.findViewById(R.id.image_camera);
-            FlexboxLayout image_layout = container.findViewById(R.id.image_layout);
+            image_layout = container.findViewById(R.id.image_layout);
             RadioButton image_delete = container.findViewById(R.id.image_delete);
             RadioButton image_gallery = popup_stockReceive.findViewById(R.id.image_gallery);
-            View.OnClickListener imageClick = new View.OnClickListener() {
+            imageClick = new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     invCheckInSelectedImage = null;
@@ -80,19 +84,14 @@ public  class InvCheckInActivity extends BaseActivity {
                     }
                 }
             };
-
-
-
             for (int i = 0; i < args.Images.size(); i++) {
                 try {
-                    AddImage(getContext(),Long.parseLong(args.Images.get(i).toString()),image_layout,image_delete,imageClick);
+                    AddImage(Long.parseLong(args.Images.get(i).toString()));
                 }
                 catch (Exception e){
                     Toast.makeText(getContext(), "Error in loading images " +  e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
-
-
             image_delete.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -115,38 +114,76 @@ public  class InvCheckInActivity extends BaseActivity {
             image_camera.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    getRootActivity().captureImage(100,"InvCheckIn", args.getValue(), new onGetImage() {
-                        @Override
-                        public void getImage(int requestId,Bitmap image, long id) {
-                            AddImage(getContext(),id,image,image_layout,item_delete,imageClick)  ;
-                        }
-                    });
+                    getRootActivity().captureImage(100,args.getValue(), null);
                 }
             });
             image_gallery.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    getRootActivity().captureImage(-100,"InvCheckIn",args.getValue(),new onGetImage() {
-                        @Override
-                        public void getImage(int requestId,Bitmap image, long id) {
-                            AddImage(getContext(),id,image,image_layout,item_delete,imageClick) ;
-                        }
-                    });
+                    getRootActivity().captureImage(-100,args.getValue(),null);
                 }
             });
         }
+
+        //public void AddImage(long id,Bitmap image){
+        //    ImageView imageView = GetImageView(id,image_layout,item_delete,imageClick);
+        //    imageView.setImageBitmap(image);
+        //    getArgs().getImages().add(id);
+        //}
+
+        public void AddImage(long id) {
+            if(!getArgs().getImages().contains(id)){
+                getArgs().getImages().add(id);
+            }
+            ImageView imageView = GetImageView(id,image_layout,item_delete,imageClick);
+            new DataService().get("refFile/" + id, new AsyncHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
+                    Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
+                    imageView.setImageBitmap(bmp);
+
+                    System.out.println(image_layout.getChildCount());
+                }
+                @Override
+                public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
+
+                }
+            });
+        }
+        private ImageView GetImageView( long id, FlexboxLayout layout, RadioButton delete_button, View.OnClickListener listener){
+            ImageView imageView = new ImageView(getContext());
+            FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(230, 230);
+            lllP.setMargins(2,2,2,2);
+            imageView.setBackgroundColor(Color.parseColor("#8CD0E4"));
+            imageView.setLayoutParams(lllP);
+            imageView.setTag(id);
+            imageView.setOnClickListener(listener);
+
+            //imageView.setTag(id);
+            layout.addView(imageView);
+            return imageView;
+        }
+        @Override
+        public void onAttach(Context context) {
+            super.onAttach(context);
+            getRootActivity().checkForm = this;
+
+        }
+
+        @Override
+        public PopupFormArgsInvCheckIn getArgs() {
+            return (PopupFormArgsInvCheckIn)super.getArgs();
+        }
+
         @Override
         public InvCheckInActivity getRootActivity() {
             return (InvCheckInActivity)super.getRootActivity();
         }
         @Override
         public void doAfterSaved(Long id) {
-
-
             PopupFormArgsInvCheckIn args = (PopupFormArgsInvCheckIn)this.getArgs();
             if(args.getValue() == null || args.getValue() ==0){
                 args.setValue(id);
-                //args.getControls().get(InvCheckInActivity.ID_INDEX).setValue(id);
                 getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                 popup_stockReceive.setVisibility(LinearLayout.VISIBLE);
                 getRootActivity().afterInvCheckInSaved(id);
@@ -155,31 +192,12 @@ public  class InvCheckInActivity extends BaseActivity {
                 getRootActivity().afterInvCheckInSaved(id);
                 dismiss();
             }
-
-
         }
         private ImageView invCheckInSelectedImage = null;
     }
     public void afterInvCheckInSaved(Long id){
         RefreshList();
     }
-    private static void AddImage(Context context,long id,FlexboxLayout layout,RadioButton delete_button,View.OnClickListener listener) throws MalformedURLException,IOException {
-        ImageView imageView = GetImageView(context,id,layout,delete_button,listener);
-        new DataService().get("refFile/" + id, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
-                Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
-                imageView.setImageBitmap(bmp);
-
-                System.out.println(layout.getChildCount());
-            }
-            @Override
-            public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
-
-            }
-        });
-    }
-
     public static class  PopupFormArgsInvCheckIn extends PopupForm.PopupFormArgs {
         public PopupFormArgsInvCheckIn(List<Control.ControlBase> controls,Long value,List<Long> images){
             super( "Stock Receive", controls, value);
@@ -199,24 +217,24 @@ public  class InvCheckInActivity extends BaseActivity {
     }
 
 
-    private static void AddImage(Context context,long id,Bitmap image,FlexboxLayout layout,RadioButton delete_button,View.OnClickListener listener){
-        ImageView imageView = GetImageView(context,id,layout,delete_button,listener);
-        imageView.setImageBitmap(image);
+
+    public PopupFormInvCheckIn checkForm;
+    @Override
+    public void onCapturedImage(int requestId, Bitmap image, Long id) {
+        //super.onCapturedImage(requestId, image, id);
+        checkForm.AddImage(id);
+
+
+        //public FlexboxLayout image_layout;
+        //public RadioButton item_delete;
+        //public View.OnClickListener imageClick;
+
     }
 
-    private static ImageView GetImageView(Context context,long id,FlexboxLayout layout,RadioButton delete_button,View.OnClickListener listener){
-        ImageView imageView = new ImageView(context);
-        FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(230, 230);
-        lllP.setMargins(2,2,2,2);
-        imageView.setBackgroundColor(Color.parseColor("#8CD0E4"));
-        imageView.setLayoutParams(lllP);
-        imageView.setTag(id);
-        imageView.setOnClickListener(listener);
 
-        //imageView.setTag(id);
-        layout.addView(imageView);
-        return imageView;
-    }
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -232,16 +250,8 @@ public  class InvCheckInActivity extends BaseActivity {
         fromControl =  Control.getDateControl("from","From").setValue(Utility.AddDay(new Date(),-10)).setControlSize(310);
         toControl = Control.getDateControl("to","To").setValue(Utility.AddDay(new Date(),1)).setControlSize(310);
 
-
-        //fromControl.setValue(Utility.AddDay(new Date(),-10));
-        //toControl.setValue(Utility.AddDay(new Date(),1));
-
         fromControl.addView(fbl);
         toControl.addView(fbl);
-
-        //fbl.addView(fromControl.generateFillView(this));
-        //fbl.addView(toControl.generateFillView(this));
-
         Button btn = new Button(this);
         FlexboxLayout.LayoutParams btlP= new FlexboxLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, 100);
         btlP.setMargins(0,75,0,0);
@@ -310,9 +320,9 @@ public  class InvCheckInActivity extends BaseActivity {
         controls.add(Control.getLookupControl("SupId","Supplier",suppliers));
         controls.add(Control.getEditTextControl( "Status", "Status"));
 
-        new DataService().get("InvCheckIn?" + fromControl.getUrlParam() + "&" + toControl.getUrlParam(), new AsyncHttpResponseHandler() {
+        new DataService().get(getEntityName() + "?" + fromControl.getUrlParam() + "&" + toControl.getUrlParam(), new AsyncHttpResponseHandler() {
 
-        //new DataService().get("InvCheckIn", new AsyncHttpResponseHandler() {
+        //new DataService().get(getEntityName(), new AsyncHttpResponseHandler() {
 
 
             @Override
