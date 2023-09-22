@@ -43,7 +43,7 @@ public class DataService {
 
     //private static String serverIp = "10.207.176.91"; //office
     private static String serverIp = "192.168.0.126"; //home
-    //private static String serverIp = "192.168.0.139"; //homewifi
+    //private static String serverIp = "192.168.0.139"; //homeWifi
 
     private static String  serverPort = "80";
     public static String getRootUrl(){

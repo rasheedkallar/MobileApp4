@@ -4,8 +4,10 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.format.DateUtils;
+import android.text.method.DigitsKeyListener;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,14 +41,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Control {
     public static int CONTROL_SIZE_DOUBLE = -2;
     public static int CONTROL_SIZE_SINGLE = -1;
-
-
-
-
-
-
-
-
     public static LookupControl getLookupControl( String name, String caption,List<DataService.Lookup> lookups){
         return new LookupControl(name,caption,lookups);
     }
@@ -56,11 +50,11 @@ public class Control {
     public static DateControl getDateControl( String name, String caption){
         return new DateControl(name,caption);
     }
-
+    public static EditDecimalControl getEditDecimalControl( String name, String caption){
+        return new EditDecimalControl(name,caption);
+    }
     public static class LookupControl extends BrowseControlBase<LookupControl,Long>{
-
         private transient TextView LookupTextView;
-
         private List<DataService.Lookup> Lookups;
         public List<DataService.Lookup> getLookups() {
             return Lookups;
@@ -69,24 +63,10 @@ public class Control {
             Lookups = lookups;
             return this;
         }
-
         public LookupControl(String name, String caption, List<DataService.Lookup> lookups) {
             super(name, caption);
             Lookups = lookups;
-
-
-
-
         }
-
-
-
-        //private Long Value = null;
-        //@Override
-        //public Long getValue() {
-        //    return Value;
-        //}
-
         @Override
         public String getFormatValue(Object value) {
             if(value==null)return super.getFormatValue(null);
@@ -114,11 +94,7 @@ public class Control {
             } else {
                 LookupTextView.setText("[Unknown]");
             }
-            //}
         }
-
-
-
         @Override
         public LookupControl readValue(Object value) {
             if(value==null)setValue(null);
@@ -135,11 +111,6 @@ public class Control {
             }
             return this;
         }
-
-
-
-
-
         @Override
         protected void onBrowse(Button button) {
             BaseActivity activity = (BaseActivity)button.getContext();
@@ -152,7 +123,7 @@ public class Control {
         protected void addBrowseView(ViewGroup container) {
             LookupTextView = new TextView(container.getContext());
             LookupTextView.setPadding(5, 5, 5, 5);
-            if(getValue()!=null){
+            if(getValue()!=null && Lookups != null){
                 Optional<DataService.Lookup> l = Lookups.stream().filter(itm->itm.getId().equals(getValue())).findAny();
                 if(l.isPresent()){
                     LookupTextView.setText(l.get().getName());
@@ -189,9 +160,6 @@ public class Control {
     }
     public static class DateControl extends DateControlBase<DateControl>{
 
-
-
-
         @Override
         public String getFormat() {
             return "dd/MM/yy";
@@ -199,7 +167,6 @@ public class Control {
         public DateControl( String name, String caption) {
             super( name, caption);
         }
-
 
         @Override
         public DateControl setValue(Date value) {
@@ -512,14 +479,22 @@ public class Control {
     public static EditTextControl getEditTextControl( String name, String caption){
         return new EditTextControl(name,caption);
     }
-    public static class EditTextControl extends ControlBase<EditTextControl,String>{
+    public static class EditTextControl extends EditTextControlBase<EditTextControl,String> {
         public EditTextControl(String name, String caption){
             super( name, caption);
         }
-        private transient EditText EditTextControl;
-        public EditText getEditTextControl() {
-            return EditTextControl;
+
+        @Override
+        protected String convertValue(Object value) {
+            if(value == null)return  null;
+            else return value.toString();
         }
+
+        @Override
+        protected String getTextValue(String value) {
+            return value;
+        }
+
         @Override
         public EditTextControl readValue(Object value) {
             if(value== null)setValue(null);
@@ -528,9 +503,91 @@ public class Control {
             }
             return this;
         }
+
+    }
+    public static class EditDecimalControl extends EditTextControlBase<EditDecimalControl,Double> {
+        public EditDecimalControl(String name, String caption){
+            super( name, caption);
+            setInputType(android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            setDigits("0123456789.-");
+        }
+
+        @Override
+        protected Double convertValue(Object value) {
+            if(value == null)return  null;
+            else return Double.parseDouble(value.toString());
+        }
+
+        @Override
+        protected String getTextValue(Double value) {
+            return value.toString();
+        }
+
+
+        @Override
+        public EditDecimalControl readValue(Object value) {
+            if(value== null)setValue(null);
+            else{
+                setValue(Double.parseDouble(value.toString()));
+            }
+            return this;
+        }
+
+    }
+
+
+
+    public static abstract class EditTextControlBase<T extends ControlBase<T,U>,U extends  Serializable> extends ControlBase<T,U>{
+        public EditTextControlBase(String name, String caption){
+            super( name, caption);
+        }
+        private transient EditText EditTextControl;
+        public EditText getEditTextControl() {
+            return EditTextControl;
+        }
+
+        private String Digits = null;
+
+        public T setDigits(String digits) {
+            Digits = digits;
+            return (T)this;
+        }
+
+        public String getDigits() {
+            return Digits;
+        }
+
+        private int InputType = 1;
+
+        public T setInputType(int inputType) {
+            InputType = inputType;
+            return (T)this;
+        }
+
+        public int getInputType() {
+            return InputType;
+        }
+
+        private  boolean isInputValid = true;
+
+        @Override
+        public boolean onValidate() {
+            if(!isInputValid)return false;
+            else return super.onValidate();
+        }
+
+        private boolean typing = false;
+
         @Override
         public void addValueView(ViewGroup container) {
             EditTextControl = new EditText(container.getContext());
+            TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            EditTextControl.setLayoutParams(txtP);
+            if(getDigits() != null && getDigits().length() != 0){
+                EditTextControl.setKeyListener(DigitsKeyListener.getInstance(getDigits()));
+            }
+            EditTextControl.setInputType(getInputType());
+            if(getValue() != null)EditTextControl.setText(getValue().toString());
             EditTextControl.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -542,26 +599,63 @@ public class Control {
                 }
                 @Override
                 public void afterTextChanged(Editable editable) {
-                    if(EditTextControl.getText() ==null || EditTextControl.getText().toString().length() == 0)setValue(null);
-                    else setValue(EditTextControl.getText().toString());
+                    typing = true;
+
+                    if(EditTextControl.getText() ==null || EditTextControl.getText().toString().length() == 0) {
+                        isInputValid = true;
+                        EditTextControl.setTextColor(ContextCompat.getColor(EditTextControl.getContext(), R.color.black));
+                        if(getValue() !=null) setValue(null);
+                    }
+                    else {
+                        try{
+
+                            U value = convertValue(EditTextControl.getText());
+                            isInputValid = true;
+                            EditTextControl.setTextColor(ContextCompat.getColor(EditTextControl.getContext(), R.color.black));
+                            if(getValue() != null && value == null)setValue(null);
+                            else if(getValue() == null && value != null)setValue(value);
+                            else if(!getValue().equals(value))setValue(value);
+
+                        }
+                        catch (Exception e){
+                            isInputValid = false;
+                            EditTextControl.setTextColor(ContextCompat.getColor(EditTextControl.getContext(), com.google.android.material.R.color.design_default_color_error));
+
+                        }
+                    }
+                    typing = false;
                 }
             });
-            EditTextControl.setText(getValue());
-            TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            EditTextControl.setLayoutParams(txtP);
+
+
             container.addView(EditTextControl);
         }
         @Override
-        public void valueChange(String oldValue, String newValue) {
-            if ((EditTextControl.getText()==null || EditTextControl.getText().toString().length() == 0) && getValue()==null)
-                return ;
-            if (!EditTextControl.getText().toString().equals(newValue)){
-                EditTextControl.setText(newValue);
+        public void valueChange(U oldValue, U newValue) {
+
+            if(typing = false){
+                EditTextControl.setText(getTextValue(newValue));
             }
+
+
+        }
+        protected abstract  U convertValue(Object value);
+        protected abstract String getTextValue(U value);
+
+        @Override
+        public T readValue(Object value) {
+            if(value == null)setValue(null);
+            else
+            {
+                U newValue = convertValue(value);
+                if(newValue == null && getValue() != null)setValue(null);
+                else if(!newValue.equals(getValue()))setValue(null);
+            }
+            return (T)this;
         }
     }
 
-    public static HiddenControl getHiddenControl( String name, Long value){
+    public static HiddenControl getHiddenControl( String name, Serializable value){
         return new HiddenControl(name,value);
     }
 

@@ -48,6 +48,9 @@ public  class InvCheckInActivity extends BaseActivity {
         public FlexboxLayout image_layout;
         public RadioButton item_delete;
         public View.OnClickListener imageClick;
+
+
+        public RadioButton item_add;
         @Override
         public void AddControls(LinearLayout container) {
             super.AddControls(container);
@@ -59,13 +62,31 @@ public  class InvCheckInActivity extends BaseActivity {
             if(args.getValue() == null || args.getValue() == 0){
                 popup_stockReceive.setVisibility(LinearLayout.GONE);
             }
-            RadioButton item_edit = popup_stockReceive.findViewById(R.id.item_edit);
+            item_add = popup_stockReceive.findViewById(R.id.item_add);
             item_delete = popup_stockReceive.findViewById(R.id.item_delete);
             TableLayout item_table = popup_stockReceive.findViewById(R.id.item_table);
             RadioButton image_camera = popup_stockReceive.findViewById(R.id.image_camera);
             image_layout = container.findViewById(R.id.image_layout);
             RadioButton image_delete = container.findViewById(R.id.image_delete);
             RadioButton image_gallery = popup_stockReceive.findViewById(R.id.image_gallery);
+
+
+            item_add.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
+                    controls.add(Control.getHiddenControl("Id", null));
+                    controls.add(Control.getHiddenControl("CheckInId", getArgs().getValue()));
+                    controls.add(Control.getDateTimeControl("Barcode", "Barcode").setValue(new Date()));
+                    controls.add(Control.getEditTextControl("Description", "Description"));
+                    controls.add(Control.getEditDecimalControl("Qty", "Qty"));
+                    new PopupForm().setArgs(new PopupFormArgs("Receive Item",controls,0L)).show(getRootActivity().getSupportFragmentManager(),null);
+                    //new PopupFormInvCheckIn().setArgs(new PopupFormArgsInvCheckIn(controls,id,images)).show(getSupportFragmentManager(),null);
+                }
+            });
+
+
+
             imageClick = new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -114,23 +135,16 @@ public  class InvCheckInActivity extends BaseActivity {
             image_camera.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    getRootActivity().captureImage(100,args.getValue(), null);
+                    getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,args.getValue());
                 }
             });
             image_gallery.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    getRootActivity().captureImage(-100,args.getValue(),null);
+                    getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,args.getValue());
                 }
             });
         }
-
-        //public void AddImage(long id,Bitmap image){
-        //    ImageView imageView = GetImageView(id,image_layout,item_delete,imageClick);
-        //    imageView.setImageBitmap(image);
-        //    getArgs().getImages().add(id);
-        //}
-
         public void AddImage(long id) {
             if(!getArgs().getImages().contains(id)){
                 getArgs().getImages().add(id);
@@ -181,6 +195,7 @@ public  class InvCheckInActivity extends BaseActivity {
         }
         @Override
         public void doAfterSaved(Long id) {
+
             PopupFormArgsInvCheckIn args = (PopupFormArgsInvCheckIn)this.getArgs();
             if(args.getValue() == null || args.getValue() ==0){
                 args.setValue(id);
@@ -196,6 +211,7 @@ public  class InvCheckInActivity extends BaseActivity {
         private ImageView invCheckInSelectedImage = null;
     }
     public void afterInvCheckInSaved(Long id){
+        SelectedId = id;
         RefreshList();
     }
     public static class  PopupFormArgsInvCheckIn extends PopupForm.PopupFormArgs {
@@ -321,16 +337,12 @@ public  class InvCheckInActivity extends BaseActivity {
         controls.add(Control.getEditTextControl( "Status", "Status"));
 
         new DataService().get(getEntityName() + "?" + fromControl.getUrlParam() + "&" + toControl.getUrlParam(), new AsyncHttpResponseHandler() {
-
-        //new DataService().get(getEntityName(), new AsyncHttpResponseHandler() {
-
-
             @Override
             public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
                 try {
                     JSONArray data = new JSONArray(result);
-                    Utility.CreateGrid(context, table, controls, data, new Utility.onGridListener() {
+                    Utility.CreateGrid(context, table, "Id",SelectedId,controls, data, new Utility.onGridListener() {
                         @Override
                         public boolean onRowSelected(TableRow row, JSONObject data) {
                             try {
@@ -401,7 +413,7 @@ public  class InvCheckInActivity extends BaseActivity {
             controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
             controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
             controls.add(Control.getLookupControl( "SupId", "Supplier", suppliers));
-            //controls.add(Control.getLookupControl( "EmpId", "Employee", employees));
+            controls.add(Control.getLookupControl( "EmpId", "Employee", employees));
             if(action == "Add") {
                 PopupLookup.create("SupplierPicker",suppliers,0L,(supplier)->{
                     controls.get(SUPP_INDEX).setValue(supplier.getId());

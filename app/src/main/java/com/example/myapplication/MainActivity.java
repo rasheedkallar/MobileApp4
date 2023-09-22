@@ -8,6 +8,8 @@ import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupDate;
 import com.example.myapplication.model.PopupHtml;
@@ -16,70 +18,12 @@ import java.util.Date;
 
 
 public class MainActivity extends BaseActivity {
-   private ImageView imageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-
-
-
-        /*
-
-
-        PopupConfirmation.PopupConfirmationArgs deleteConfirmation = new PopupConfirmation.PopupConfirmationArgs("New Confirm Delete","Are you sure you want to delete").setOnAction(action->{
-            PopupHtml.create("Header passed",action).show(getSupportFragmentManager(),null);
-            return true;
-        });
-
-
-
-        deleteConfirmation.setKey("MainDeleteConfirmation");
-        this.PopupArgs.add(deleteConfirmation);
-
-        */
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        imageView = findViewById(R.id.imageView);
-        Button btnCamera = findViewById(R.id.btnCamera);
-        final BaseActivity activity = this;
-        btnCamera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                //test1.show(getSupportFragmentManager(),null);
-
-                //PopupConfirmation.create(deleteConfirmation).show(getSupportFragmentManager(),null);;
-
-
-
-
-
-
-
-            }
-        });
-        Button btnGallery = findViewById(R.id.btnGallery);
-
-        /*
-        btnGallery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                pickImage("InvCheckIn",0L,new onGetImage() {
-                    @Override
-                    public void getImage(Bitmap image,long id) {
-                        imageView.setImageBitmap(image);
-
-                    }
-                });
-            }
-        });
-
-         */
     }
-
-
-
 
     @Override
     public void onButtonClick(String action, RadioButton button) {
@@ -90,7 +34,6 @@ public class MainActivity extends BaseActivity {
     public String getHeaderText() {
         return null;
     }
-
 
 
 }

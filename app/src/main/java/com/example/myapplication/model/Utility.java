@@ -75,7 +75,7 @@ public class Utility {
         }
     }
 
-    public static   void CreateGrid(Context context, TableLayout table, List<Control.ControlBase> controls, JSONArray list,onGridListener listener) throws JSONException, ParseException {
+    public static   void CreateGrid(Context context, TableLayout table,String idField,Long selectedValue ,List<Control.ControlBase> controls, JSONArray list,onGridListener listener) throws JSONException, ParseException {
 
         if (table == null) {
             table = new TableLayout(context);
@@ -130,6 +130,10 @@ public class Utility {
                     }
                 }
                 item.addView(hc);
+            }
+            if(Long.parseLong(obj.get(idField).toString()) == selectedValue){
+                selectRow(item, header, parentTable);
+                listener.onRowSelected(item, (JSONObject) item.getTag());
             }
         }
     }

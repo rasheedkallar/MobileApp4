@@ -51,8 +51,13 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public abstract class BaseActivity extends AppCompatActivity {
-    public static final int GALLERY_PERMISSION_REQUEST_CODE = 1;
-    public static final int CAMERA_PERMISSION_REQUEST_CODE  = 2;
+    public static  final int TAKE_IMAGE_FROM_CAMERA = 1;
+    public static  final int TAKE_IMAGE_FROM_GALLERY = -1;
+
+
+
+    private static final int GALLERY_PERMISSION_REQUEST_CODE = 1;
+    private static final int CAMERA_PERMISSION_REQUEST_CODE  = 2;
     private ActivityResultLauncher<Intent> takePictureLauncher;
     private ActivityResultLauncher<Intent> pickImageLauncher;
     public LinearLayout Container;
@@ -120,7 +125,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                         catch (IOException e){
                             imageBitmap = null;
                         }
-                        onCapturedImage( RequestId ,imageBitmap,Long.parseLong(result));
+                        onCapturedImage( Action ,imageBitmap,Long.parseLong(result));
                     }
                     @Override
                     public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
@@ -170,7 +175,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                             System.out.println(result);
                             //if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
 
-                            onCapturedImage( RequestId ,imageBitmap,Long.parseLong(result));
+                            onCapturedImage( Action ,imageBitmap,Long.parseLong(result));
                         }
 
                         @Override
@@ -203,7 +208,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         savedInstanceState.putString("filePathString", filePathString);
 
         savedInstanceState.putLong("Id",Id);
-        savedInstanceState.putInt("RequestId",RequestId);
+        savedInstanceState.putInt("Action",Action);
 
 
 
@@ -228,7 +233,7 @@ public abstract class BaseActivity extends AppCompatActivity {
             photoFile = new File(filePathString);
 
         Id = savedInstanceState.getLong("Id");
-        RequestId = savedInstanceState.getInt("RequestId");
+        Action = savedInstanceState.getInt("Action");
 
     }
 
@@ -301,11 +306,10 @@ public abstract class BaseActivity extends AppCompatActivity {
 
 
 
-    public void  captureImage(int requestId,Long id,onGetImage listener){
-        RequestId = requestId;
-        if(requestId <0){
+    public void  captureImage(int action,Long id){
+        Action = action;
+        if(Action <0){
             Id = id;
-            imageListener  = listener;
             int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
             if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
                 ImagePick();
@@ -315,7 +319,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
         else{
             Id = id;
-            imageListener  = listener;
+
             int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
             if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
                 ImageCapture();
@@ -324,18 +328,12 @@ public abstract class BaseActivity extends AppCompatActivity {
             }
         }
     }
-    public void onCapturedImage(int requestId,Bitmap image,Long id){
-        if(imageListener != null)imageListener.getImage(requestId,image,id);
-    }
+    public void onCapturedImage(int action,Bitmap image,Long id){
 
+    }
     private long Id;
 
-    protected onGetImage imageListener = null;
-    private int RequestId = 0;
-
-
-
-
+    private int Action = 0;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -386,10 +384,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         startActivity(intent);
         return  true;
     }
-    public static abstract class onGetImage{
-        public abstract void getImage(int requestId,Bitmap image,long id) ;
 
-    }
 
 
 }
