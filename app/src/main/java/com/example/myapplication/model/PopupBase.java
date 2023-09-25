@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -54,11 +55,18 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
         //OnAction = getArgs().getOnAction();
         try {
             RootActivity=(BaseActivity) context;
+            RootActivity.Popups.add(this);
+
         }
         catch (ClassCastException e) {
             Log.d("MyDialog", "Popup allowed only under BaseActivity");
         }
     }
+    public void onCapturedImage(int action, Bitmap image, String entityName, Long entityId, Long id){
+
+    }
+
+
 
     private AlertDialog Popup;
 

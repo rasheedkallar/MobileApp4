@@ -31,6 +31,7 @@ import androidx.core.content.FileProvider;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupBase;
 import com.example.myapplication.model.PopupDate;
+import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupHtml;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -125,7 +127,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                         catch (IOException e){
                             imageBitmap = null;
                         }
-                        onCapturedImage( Action ,imageBitmap,Long.parseLong(result));
+                        onCapturedImage( Action ,imageBitmap,EntityName,Id,Long.parseLong(result));
                     }
                     @Override
                     public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
@@ -175,7 +177,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                             System.out.println(result);
                             //if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
 
-                            onCapturedImage( Action ,imageBitmap,Long.parseLong(result));
+                            onCapturedImage( Action ,imageBitmap,EntityName,Id,Long.parseLong(result));
                         }
 
                         @Override
@@ -209,6 +211,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         savedInstanceState.putLong("Id",Id);
         savedInstanceState.putInt("Action",Action);
+        savedInstanceState.putString("EntityName",EntityName);
 
 
 
@@ -234,7 +237,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         Id = savedInstanceState.getLong("Id");
         Action = savedInstanceState.getInt("Action");
-
+        EntityName = savedInstanceState.getString("EntityName");
     }
 
 
@@ -304,7 +307,29 @@ public abstract class BaseActivity extends AppCompatActivity {
         return name;
     }
 
+    public void  captureImage(int action,String entityName,Long id){
+        Action = action;
+        EntityName  = entityName;
+        if(Action <0){
+            Id = id;
+            int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
+                ImagePick();
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, GALLERY_PERMISSION_REQUEST_CODE);
+            }
+        }
+        else{
+            Id = id;
 
+            int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
+            if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
+                ImageCapture();
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
+            }
+        }
+    }
 
     public void  captureImage(int action,Long id){
         Action = action;
@@ -328,10 +353,15 @@ public abstract class BaseActivity extends AppCompatActivity {
             }
         }
     }
-    public void onCapturedImage(int action,Bitmap image,Long id){
-
+    public ArrayList<PopupBase> Popups = new ArrayList<PopupBase>();
+    public void onCapturedImage(int action,Bitmap image,String entityName,Long entityId,Long id){
+        for (int i = 0; i < Popups.size(); i++) {
+            Popups.get(i).onCapturedImage(action,image,entityName,entityId,id);
+        }
     }
     private long Id;
+
+    private String EntityName;
 
     private int Action = 0;
 

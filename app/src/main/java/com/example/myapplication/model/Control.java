@@ -2,18 +2,24 @@ package com.example.myapplication.model;
 
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.renderscript.Sampler;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.format.DateUtils;
 import android.text.method.DigitsKeyListener;
 import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.TableLayout;
 import android.widget.TextView;
 
@@ -21,7 +27,10 @@ import androidx.core.content.ContextCompat;
 
 import com.example.myapplication.BaseActivity;
 import com.example.myapplication.R;
+import com.google.android.flexbox.FlexboxLayout;
+import com.loopj.android.http.AsyncHttpResponseHandler;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -30,8 +39,10 @@ import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +50,202 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Control {
+    public static ImageControl getImageControl( String name, String caption){
+        return new ImageControl(name,caption);
+    }
+
+    public static class ImageControl extends ControlBase<ImageControl, ArrayList<Long>>
+    {
+
+        private transient View image_control;
+        private transient RadioButton image_delete;
+        private transient FlexboxLayout image_layout;
+        public void ShowImages(){
+            image_control.setVisibility(View.VISIBLE);
+        }
+        public void onCapturedImage(int action, Bitmap image, Long id){
+            addImage(id);
+        }
+
+        @Override
+        public void addView(ViewGroup container) {
+            LayoutInflater li = LayoutInflater.from(container.getContext());
+            image_control = li.inflate(R.layout.control_images, null);
+            image_layout = image_control.findViewById(R.id.image_layout);
+            image_delete = image_control.findViewById(R.id.image_delete);
+            RadioButton image_gallery = image_control.findViewById(R.id.image_gallery);
+            RadioButton image_camera = image_control.findViewById(R.id.image_camera);
+            image_camera.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getId());
+                }
+            });
+            if(getId() == null || getId() == 0L){
+                image_control.setVisibility(View.GONE);
+            }
+            for (int i = 0; i < getValue().size(); i++) {
+                addImage(getValue().get(i));
+            }
+
+
+            container.addView(image_control);
+        }
+
+
+
+
+
+
+
+        private ImageView GetImageView(long id){
+            ImageView imageView = new ImageView(image_layout.getContext());
+            FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(230, 230);
+            lllP.setMargins(2,2,2,2);
+            imageView.setLayoutParams(lllP);
+            imageView.setTag(id);
+            if(id == SelectedImage){
+                imageView.setBackgroundColor(Color.parseColor("#225C6E"));
+                image_delete.setEnabled(true);
+            }
+            else{
+                imageView.setBackgroundColor(Color.parseColor("#8CD0E4"));
+            }
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    SelectedImage = null;
+                    image_delete.setEnabled(false);
+                    for (int i = 0; i < image_layout.getChildCount(); i++) {
+                        ImageView iv = (ImageView)image_layout.getChildAt(i);
+                        if(view == iv) {
+                            SelectedImage = id;
+                            iv.setBackgroundColor(Color.parseColor("#225C6E"));
+                            image_delete.setEnabled(true);
+
+                        }
+                        else{
+                            iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
+                        }
+                    }
+                }
+            });
+
+            //imageView.setTag(id);
+            image_layout.addView(imageView);
+            return imageView;
+        }
+        public void addImage(long id) {
+            if(!getValue().contains(id)){
+                getValue().add(id);
+            }
+            ImageView imageView = GetImageView(id);
+            new DataService().get("refFile/" + id, new AsyncHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
+                    Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
+                    imageView.setImageBitmap(bmp);
+
+                    System.out.println(image_layout.getChildCount());
+                }
+                @Override
+                public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
+
+                }
+            });
+        }
+
+
+        private Long SelectedImage = 0L;
+
+        private void setSelectedImage(Long selectedImage) {
+            SelectedImage = selectedImage;
+        }
+
+        public Long getSelectedImage() {
+            return SelectedImage;
+        }
+
+
+        private Long Id;
+
+        public ImageControl setId(Long id) {
+            Id = id;
+            return this;
+        }
+        public Long getId() {
+            return Id;
+        }
+
+        private String EntityName;
+
+        public String getEntityName() {
+            return EntityName;
+        }
+
+        public ImageControl setEntityName(String entityName) {
+            EntityName = entityName;
+            return this;
+        }
+
+        //private FlexboxLayout image_layout;
+        //public RadioButton item_delete;
+        //public View.OnClickListener imageClick;
+        public ImageControl(String name, String caption){
+            super(name, caption);
+            setValue(new ArrayList<Long>());
+        }
+
+
+
+        @Override
+        public void valueChange(ArrayList<Long> oldValue, ArrayList<Long> newValue) {
+
+        }
+
+        @Override
+        protected void addValueView(ViewGroup container) {
+
+        }
+
+        @Override
+        protected ArrayList<Long> convertValue(Object value) {
+
+
+
+
+
+            if(value == null) return new ArrayList<Long>();
+            else {
+                if (JSONArray.class.isAssignableFrom(value.getClass())) {
+                    JSONArray jArray = (JSONArray) value;
+                    ArrayList a = new ArrayList<Long>();
+                    for (int i = 0; i < jArray.length(); i++) {
+                        try {
+                            a.add(Long.parseLong(jArray.get(i).toString()));
+                        } catch (Exception e) {
+
+                            return new ArrayList<Long>();
+                        }
+                    }
+                    return a;
+                }
+                else{
+                    try {
+                        return  (ArrayList<Long>)value;
+                    } catch (Exception e) {
+
+                    }
+                }
+            }
+            return new ArrayList<Long>();
+        }
+    }
+
+
+
+
+
     public static int CONTROL_SIZE_DOUBLE = -2;
     public static int CONTROL_SIZE_SINGLE = -1;
     public static LookupControl getLookupControl( String name, String caption,List<DataService.Lookup> lookups){
@@ -96,20 +303,20 @@ public class Control {
             }
         }
         @Override
-        public LookupControl readValue(Object value) {
+        protected Long convertValue(Object value) {
             if(value==null)setValue(null);
             else if(value.getClass().equals(Long.class)){
-                setValue((Long)value);
+                return  (Long)value;
             }
             else{
                 try{
-                    setValue(Long.parseLong(value.toString()));
+                    return Long.parseLong(value.toString());
                 }
                 catch (Exception e){
 
                 }
             }
-            return this;
+            return null;
         }
         @Override
         protected void onBrowse(Button button) {
@@ -206,12 +413,12 @@ public class Control {
         }
 
         @Override
-        public T readValue(Object value) {
+        protected Date convertValue(Object value) {
             if(value==null){
-                setValue(null);
+                return null;
             }
             else if(value.getClass().equals(Date.class)){
-                setValue((Date)value);
+                return  (Date)value;
             }
             else{
                 HashMap<String,Integer> formats = new HashMap<String,Integer>();
@@ -231,7 +438,7 @@ public class Control {
                         DateFormat dateFormat = new SimpleDateFormat(format);
                         try{
                             date = dateFormat.parse(value.toString());
-                            setValue(date);
+                            return date;
                         }
                         catch (ParseException e){
                         }
@@ -239,7 +446,7 @@ public class Control {
                     }
                 }
             }
-            return (T)this;
+            return null;
         }
 
 
@@ -495,20 +702,13 @@ public class Control {
             return value;
         }
 
-        @Override
-        public EditTextControl readValue(Object value) {
-            if(value== null)setValue(null);
-            else{
-                setValue(value.toString());
-            }
-            return this;
-        }
+
 
     }
     public static class EditDecimalControl extends EditTextControlBase<EditDecimalControl,Double> {
         public EditDecimalControl(String name, String caption){
             super( name, caption);
-            setInputType(android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
             setDigits("0123456789.-");
         }
 
@@ -639,7 +839,7 @@ public class Control {
 
 
         }
-        protected abstract  U convertValue(Object value);
+
         protected abstract String getTextValue(U value);
 
         @Override
@@ -679,9 +879,10 @@ public class Control {
 
         }
         @Override
-        public HiddenControl readValue(Object value) {
-            setValue(Long.parseLong(value.toString()));
-            return this;
+        protected Serializable convertValue(Object value) {
+            if(value == null)return null;
+            else if(Serializable.class.isAssignableFrom(value.getClass()))return (Serializable)value;
+            else return value.toString();
         }
     }
 
@@ -691,6 +892,18 @@ public class Control {
             Caption = caption;
             Name = name;
         }
+
+        private transient BaseActivity RootActivity;
+
+        public T setRootActivity(BaseActivity rootActivity) {
+            RootActivity = rootActivity;
+            return (T)this;
+        }
+
+        public BaseActivity getRootActivity() {
+            return RootActivity;
+        }
+
         private boolean IsRequired = true;
         public boolean getIsRequired() {
             return IsRequired;
@@ -786,7 +999,13 @@ public class Control {
                 return  Name + "=" + value.toString();
             }
         }
-        public abstract T readValue(Object value);
+        public T readValue(Object value){
+            setValue(convertValue(value));
+            return (T)this;
+        }
+
+        protected abstract U convertValue(Object value);
+
         public  T readValue(JSONObject data){
             try{
                 Object value = data.get(getName());

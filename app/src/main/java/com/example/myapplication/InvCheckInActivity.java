@@ -69,24 +69,18 @@ public  class InvCheckInActivity extends BaseActivity {
             image_layout = container.findViewById(R.id.image_layout);
             RadioButton image_delete = container.findViewById(R.id.image_delete);
             RadioButton image_gallery = popup_stockReceive.findViewById(R.id.image_gallery);
-
-
             item_add.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
                     controls.add(Control.getHiddenControl("Id", null));
                     controls.add(Control.getHiddenControl("CheckInId", getArgs().getValue()));
-                    controls.add(Control.getDateTimeControl("Barcode", "Barcode").setValue(new Date()));
+                    controls.add(Control.getEditTextControl("Barcode", "Barcode"));
                     controls.add(Control.getEditTextControl("Description", "Description"));
                     controls.add(Control.getEditDecimalControl("Qty", "Qty"));
-                    new PopupForm().setArgs(new PopupFormArgs("Receive Item",controls,0L)).show(getRootActivity().getSupportFragmentManager(),null);
-                    //new PopupFormInvCheckIn().setArgs(new PopupFormArgsInvCheckIn(controls,id,images)).show(getSupportFragmentManager(),null);
+                    new PopupForm().setArgs(new PopupFormArgs("Receive Item",controls,"InvCheckInLine",0L)).show(getRootActivity().getSupportFragmentManager(),null);
                 }
             });
-
-
-
             imageClick = new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -216,7 +210,7 @@ public  class InvCheckInActivity extends BaseActivity {
     }
     public static class  PopupFormArgsInvCheckIn extends PopupForm.PopupFormArgs {
         public PopupFormArgsInvCheckIn(List<Control.ControlBase> controls,Long value,List<Long> images){
-            super( "Stock Receive", controls, value);
+            super( "Stock Receive", controls, "InvCheckIn",value);
             setImages(images);
         }
 
@@ -235,6 +229,9 @@ public  class InvCheckInActivity extends BaseActivity {
 
 
     public PopupFormInvCheckIn checkForm;
+
+    /*
+
     @Override
     public void onCapturedImage(int requestId, Bitmap image, Long id) {
         //super.onCapturedImage(requestId, image, id);
@@ -246,6 +243,8 @@ public  class InvCheckInActivity extends BaseActivity {
         //public View.OnClickListener imageClick;
 
     }
+
+     */
 
 
 
@@ -397,7 +396,8 @@ public  class InvCheckInActivity extends BaseActivity {
 
     private void ShowForm(ArrayList<Control.ControlBase> controls,Long id,List<Long> images){
         //new PopupFormInvCheckIn().setArgs(new PopupFormArgsInvCheckIn(controls,id,images)).show(getSupportFragmentManager(),null);
-        new PopupFormInvCheckIn().setArgs(new PopupFormArgsInvCheckIn(controls,id,images)).show(getSupportFragmentManager(),null);
+        //new PopupFormInvCheckIn().setArgs(new PopupFormArgsInvCheckIn(controls,id,images)).show(getSupportFragmentManager(),null);
+        new PopupForm().setArgs(new PopupForm.PopupFormArgs("Stock Receive",controls,getEntityName(),id)).show(getSupportFragmentManager(),null);
 
     }
     public static int ID_INDEX = 0;
@@ -414,6 +414,10 @@ public  class InvCheckInActivity extends BaseActivity {
             controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
             controls.add(Control.getLookupControl( "SupId", "Supplier", suppliers));
             controls.add(Control.getLookupControl( "EmpId", "Employee", employees));
+            controls.add(Control.getImageControl( "Images", "Images"));
+
+
+
             if(action == "Add") {
                 PopupLookup.create("SupplierPicker",suppliers,0L,(supplier)->{
                     controls.get(SUPP_INDEX).setValue(supplier.getId());

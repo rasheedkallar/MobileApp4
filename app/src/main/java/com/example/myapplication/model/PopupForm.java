@@ -3,6 +3,7 @@ import android.app.AlertDialog;
 import android.app.Notification;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
 import android.location.GnssAntennaInfo;
 import android.opengl.Visibility;
 import android.os.Bundle;
@@ -16,9 +17,12 @@ import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 
+import com.example.myapplication.BaseActivity;
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
@@ -43,6 +47,24 @@ import java.util.function.Predicate;
 import cz.msebera.android.httpclient.Header;
 
 public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
+
+    @Override
+    public PopupForm setArgs(PopupFormArgs args) {
+        super.setArgs(args);
+        for (int i = 0; i < args.getControls().size(); i++) {
+            if(args.getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
+                Control.ImageControl ic = (Control.ImageControl)args.getControls().get(i);
+                if(ic.getId() == null ||  ic.getId() == 0L) {
+                    ic.setId(args.getValue());
+                    ic.setEntityName(args.getEntityName());
+                }
+            }
+        }
+        return this;
+    }
+
+
+
     private FlexboxLayout FieldsContainer;
     public FlexboxLayout getFieldsContainer() {
         return FieldsContainer;
@@ -181,15 +203,34 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
 
 
 
+    @Override
+    public void onCapturedImage(int action,Bitmap image,String entityName,Long entityId,Long id){
+        super.onCapturedImage( action, image, entityName, entityId,id);
+        for (int i = 0; i < getArgs().getControls().size(); i++) {
+            if(getArgs().getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
+                Control.ImageControl ic = (Control.ImageControl)getArgs().getControls().get(i);
+                ic.onCapturedImage(action,image,id);
+            }
+        }
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        for (int i = 0; i < getArgs().getControls().size(); i++) {
+            getArgs().getControls().get(i).setRootActivity(getRootActivity());
+        }
+    }
+
     public static class  PopupFormArgs extends PopupArgs<PopupFormArgs> {
-        public PopupFormArgs( String header,List<Control.ControlBase> controls,Long value){
+        public PopupFormArgs( String header,List<Control.ControlBase> controls,String entityName,Long value){
             super(header);
             setCanceledOnTouchOutside(false);
             setCancelOnDestroyView(false);
             setCancelButton("Cancel");
             setOkButton("Save");
             setValue(value);
-            //setEntityName(entityName);
+            setEntityName(entityName);
             setIdName("Id");
             if(controls == null)setControls(new ArrayList<Control.ControlBase>());
             else setControls(controls);
