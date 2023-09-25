@@ -195,21 +195,12 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
 
         container.addView(sv);
     }
-
-    //public ScrollView sv;
-
-
-    //private TableLayout table = null;
-
-
-
-    @Override
     public void onCapturedImage(int action,Bitmap image,String entityName,Long entityId,Long id){
-        super.onCapturedImage( action, image, entityName, entityId,id);
         for (int i = 0; i < getArgs().getControls().size(); i++) {
             if(getArgs().getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
                 Control.ImageControl ic = (Control.ImageControl)getArgs().getControls().get(i);
-                ic.onCapturedImage(action,image,id);
+                if(ic.getEntityName() != null && ic.getEntityName().equals(entityName) && ic.getId() != null && ic.getId().equals(entityId))
+                    ic.onCapturedImage(action,image,id);
             }
         }
     }

@@ -115,19 +115,19 @@ public abstract class BaseActivity extends AppCompatActivity {
             if (result.getResultCode() == Activity.RESULT_OK) {
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
-                new DataService().upload(activity,photoFile,newFileName,getEntityName(),Id, new AsyncHttpResponseHandler() {
+                new DataService().upload(activity,image_file,newFileName,image_entityName,image_entity_id, new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                         String result = new String(responseBody);
                         System.out.println(result);
                         Bitmap imageBitmap;
                         try {
-                             imageBitmap = MediaStore.Images.Media.getBitmap(getBaseContext().getContentResolver(), photoURI);
+                             imageBitmap = MediaStore.Images.Media.getBitmap(getBaseContext().getContentResolver(), image_uri);
                         }
                         catch (IOException e){
                             imageBitmap = null;
                         }
-                        onCapturedImage( Action ,imageBitmap,EntityName,Id,Long.parseLong(result));
+                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_entity_id,Long.parseLong(result));
                     }
                     @Override
                     public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
@@ -170,14 +170,14 @@ public abstract class BaseActivity extends AppCompatActivity {
                     }
                     DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                     String newFileName = dateFormat.format(new Date());
-                    new DataService().upload(activity,file,newFileName,getEntityName(),Id, new AsyncHttpResponseHandler() {
+                    new DataService().upload(activity,file,newFileName,image_entityName,image_entity_id, new AsyncHttpResponseHandler() {
                         @Override
                         public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                             String result = new String(responseBody);
                             System.out.println(result);
                             //if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
 
-                            onCapturedImage( Action ,imageBitmap,EntityName,Id,Long.parseLong(result));
+                            onCapturedImage( image_action ,imageBitmap,image_entityName,image_entity_id,Long.parseLong(result));
                         }
 
                         @Override
@@ -199,19 +199,19 @@ public abstract class BaseActivity extends AppCompatActivity {
         super.onSaveInstanceState(savedInstanceState);
 
 
-        String photoURIString = null;
-        if(photoURI != null)photoURIString = photoURI.getPath();
-        savedInstanceState.putString("photoURIString", photoURIString);
+        String image_uri_string = null;
+        if(image_uri != null)image_uri_string = image_uri.getPath();
+        savedInstanceState.putString("image_uri_string", image_uri_string);
 
 
-        String filePathString = null;
-        if(photoFile != null)
-            filePathString =photoFile.getAbsolutePath();
-        savedInstanceState.putString("filePathString", filePathString);
+        String image_file_string = null;
+        if(image_file != null)
+            image_file_string =image_file.getAbsolutePath();
+        savedInstanceState.putString("image_file_string", image_file_string);
 
-        savedInstanceState.putLong("Id",Id);
-        savedInstanceState.putInt("Action",Action);
-        savedInstanceState.putString("EntityName",EntityName);
+        savedInstanceState.putLong("image_entity_id",image_entity_id);
+        savedInstanceState.putInt("image_action",image_action);
+        savedInstanceState.putString("image_entityName",image_entityName);
 
 
 
@@ -224,43 +224,42 @@ public abstract class BaseActivity extends AppCompatActivity {
     public void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
 
-        String photoURIString = savedInstanceState.getString("photoURIString");
-        photoURI = null;
-        if(photoURIString != null)
-            photoURI = Uri.parse(photoURIString);
+        String image_uri_string = savedInstanceState.getString("image_uri_string");
+        image_uri = null;
+        if(image_uri_string != null)
+            image_uri = Uri.parse(image_uri_string);
 
 
-        String filePathString = savedInstanceState.getString("filePathString");
-        photoFile = null;
-        if(filePathString != null)
-            photoFile = new File(filePathString);
+        String image_file_string = savedInstanceState.getString("image_file_string");
+        image_file = null;
+        if(image_file_string != null)
+            image_file = new File(image_file_string);
 
-        Id = savedInstanceState.getLong("Id");
-        Action = savedInstanceState.getInt("Action");
-        EntityName = savedInstanceState.getString("EntityName");
+        image_entity_id = savedInstanceState.getLong("image_entity_id");
+        image_action = savedInstanceState.getInt("image_action");
+        image_entityName = savedInstanceState.getString("image_entityName");
     }
 
 
-
-
-
-
-    private  File photoFile;
-    private Uri photoURI;
+    private long image_entity_id;
+    private String image_entityName;
+    private int image_action = 0;
+    private  File image_file;
+    private Uri image_uri;
     private    void  ImageCapture(){
         // Camera permission is granted, you can proceed with camera-related operations
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
             try {
-                photoFile = createImageFile();
+                image_file = createImageFile();
             } catch (IOException ex) {
                 Toast.makeText(getBaseContext(),"Error in image capture." + ex.getMessage(),Toast.LENGTH_LONG).show();
             }
-            if (photoFile != null) {
+            if (image_file != null) {
 
-                photoURI = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", photoFile);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                image_uri = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", image_file);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, image_uri);
                 takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 try {
                     takePictureLauncher.launch(takePictureIntent);
@@ -297,6 +296,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
 
+
     protected String getEntityName(){
         String name = this.getClass().getName();
         int dot = name.lastIndexOf('.');
@@ -307,11 +307,13 @@ public abstract class BaseActivity extends AppCompatActivity {
         return name;
     }
 
-    public void  captureImage(int action,String entityName,Long id){
-        Action = action;
-        EntityName  = entityName;
-        if(Action <0){
-            Id = id;
+
+
+    public void  captureImage(int action,String entityName,Long entityId){
+        image_action = action;
+        image_entityName  = entityName;
+        if(image_action <0){
+            image_entity_id = entityId;
             int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
             if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
                 ImagePick();
@@ -320,7 +322,7 @@ public abstract class BaseActivity extends AppCompatActivity {
             }
         }
         else{
-            Id = id;
+            image_entity_id = entityId;
 
             int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
             if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
@@ -332,9 +334,9 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     public void  captureImage(int action,Long id){
-        Action = action;
-        if(Action <0){
-            Id = id;
+        image_action = action;
+        if(image_action <0){
+            image_entity_id = id;
             int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
             if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
                 ImagePick();
@@ -343,7 +345,7 @@ public abstract class BaseActivity extends AppCompatActivity {
             }
         }
         else{
-            Id = id;
+            image_entity_id = id;
 
             int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
             if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
@@ -356,14 +358,16 @@ public abstract class BaseActivity extends AppCompatActivity {
     public ArrayList<PopupBase> Popups = new ArrayList<PopupBase>();
     public void onCapturedImage(int action,Bitmap image,String entityName,Long entityId,Long id){
         for (int i = 0; i < Popups.size(); i++) {
-            Popups.get(i).onCapturedImage(action,image,entityName,entityId,id);
+            if(PopupForm.class.isAssignableFrom(Popups.get(i).getClass())){
+                PopupForm form = (PopupForm)Popups.get(i);
+                form.onCapturedImage(action,image,entityName,entityId,id);
+            }
+
+
+
         }
     }
-    private long Id;
 
-    private String EntityName;
-
-    private int Action = 0;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

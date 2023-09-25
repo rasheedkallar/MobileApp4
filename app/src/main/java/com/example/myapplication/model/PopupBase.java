@@ -62,9 +62,7 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
             Log.d("MyDialog", "Popup allowed only under BaseActivity");
         }
     }
-    public void onCapturedImage(int action, Bitmap image, String entityName, Long entityId, Long id){
 
-    }
 
 
 
