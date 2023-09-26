@@ -46,9 +46,8 @@ public class TestActivity extends BaseActivity {
         Controls.add(new InvCheckInDetailedControl());
     }
     public static class InvCheckInDetailedControl extends Control.DetailedControl {
-        public InvCheckInDetailedControl(){
-            setCaption("Stock Receive");
-            setEntityName("InvCheckIn");
+        public InvCheckInDetailedControl() {
+            super("InvCheckIns", "Stock Receive","InvCheckIn",null);
         }
         @Override
         public void addDetailedView(ViewGroup container) {

@@ -29,7 +29,7 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 
 import com.example.myapplication.BaseActivity;
-import com.example.myapplication.InvCheckInActivity;
+
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexboxLayout;
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -60,9 +60,8 @@ public class Control {
         return new ImageControl(name,caption,entityName);
     }
     public static abstract class DetailedControl extends DetailedControlBase<ImageControl> {
-        public DetailedControl() {
-            super("InvCheckIns", "Stock Receive","InvCheckIn",null);
-
+        public DetailedControl(String name,String caption,String entityName,String foreignFieldName) {
+            super(name, caption,entityName,foreignFieldName);
         }
         protected transient RadioButton add_button;
         protected transient RadioButton edit_button;
@@ -83,6 +82,7 @@ public class Control {
         }
 
         public boolean doAfterSaved(Long id,boolean defaultClose){
+            setSelectedId(id);
             refreshGrid();
             return defaultClose;
         }
@@ -159,6 +159,8 @@ public class Control {
             }
         }
         protected void refreshGrid(){
+
+
             ArrayList<ControlBase> controls = getControls("List");
             String id_field_name = getIdFieldName();
             if(controls != null && controls.size() != 0){
@@ -176,6 +178,7 @@ public class Control {
                             header.setBackgroundColor(Color.parseColor("#054678"));
                             header.setPadding(5, 5, 5, 5);
                             final TableLayout parentTable = table_layout;
+                            boolean selectionFound = false;
                             for (com.example.myapplication.model.Control.ControlBase control : controls) {
                                 float weight = 1f;
                                 if (control.getControlSize() < -1) weight = 2f;
@@ -227,12 +230,25 @@ public class Control {
                                     try {
                                         setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
                                         selectRow(item, header, parentTable);
+                                        selectionFound =true;
+
                                     }
                                     catch (Exception e){
                                         setSelectedId(null);
+                                        selectionFound =false;
                                     }
                                 }
+
                             }
+                            if(selectionFound){
+                                edit_button.setEnabled(true);
+                                delete_button.setEnabled(true);
+                            }
+                            else{
+                                edit_button.setEnabled(false);
+                                delete_button.setEnabled(false);
+                            }
+
                         }
                         catch (JSONException  e)
                         {
@@ -275,7 +291,7 @@ public class Control {
             }
             else if(action.equals("Delete")){
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)-> {
-                    new DataService().deleteById(activity, "InvCheckIn", getSelectedId(), new DataService.DeleteByIdResponse() {
+                    new DataService().deleteById(activity, getEntityName(), getSelectedId(), new DataService.DeleteByIdResponse() {
                         @Override
                         public void onSuccess(Boolean deleted) {
                             setSelectedId(null);
