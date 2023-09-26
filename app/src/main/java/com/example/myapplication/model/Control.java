@@ -1,5 +1,6 @@
 package com.example.myapplication.model;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
@@ -21,14 +22,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 
 import com.example.myapplication.BaseActivity;
+import com.example.myapplication.InvCheckInActivity;
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexboxLayout;
 import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -46,67 +51,329 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Control {
-    public static ImageControl getImageControl( String name, String caption){
-        return new ImageControl(name,caption);
+    public static ImageControl getImageControl( String name, String caption,String entityName){
+        return new ImageControl(name,caption,entityName);
+    }
+    public static abstract class DetailedControl extends DetailedControlBase<ImageControl> {
+        public DetailedControl() {
+            super("InvCheckIns", "Stock Receive","InvCheckIn",null);
+
+        }
+        protected transient RadioButton add_button;
+        protected transient RadioButton edit_button;
+        protected transient RadioButton delete_button;
+        protected transient RadioButton refresh_button;
+
+        protected transient TableLayout table_layout;
+        protected transient FlexboxLayout filter_layout;
+
+
+
+        protected transient TextView header_text;
+
+        protected List<ControlBase> FilterControls = null;
+        public List<ControlBase> getFilterControls() {
+            if(FilterControls == null)FilterControls= getControls("Filter");
+            return FilterControls;
+        }
+
+        public boolean doAfterSaved(Long id,boolean defaultClose){
+            refreshGrid();
+            return defaultClose;
+        }
+
+
+        @Override
+        public void addDetailedView(ViewGroup container) {
+
+            LayoutInflater li = LayoutInflater.from(container.getContext());
+            View control_detailed = li.inflate(R.layout.control_detailed, null);
+            table_layout = control_detailed.findViewById(R.id.table_layout);
+            add_button = control_detailed.findViewById(R.id.add_button);
+            add_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    onButtonClick("Add",(RadioButton)view);
+                }
+            });
+
+            edit_button = control_detailed.findViewById(R.id.edit_button);
+            edit_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    onButtonClick("Edit",(RadioButton)view);
+                }
+            });
+            delete_button = control_detailed.findViewById(R.id.delete_button);
+            delete_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    onButtonClick("Delete",(RadioButton)view);
+                }
+            });
+            refresh_button = control_detailed.findViewById(R.id.refresh_button);
+            refresh_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    onButtonClick("Refresh",(RadioButton)view);
+                }
+            });
+            filter_layout = control_detailed.findViewById(R.id.filter_layout);
+            List<ControlBase> controls = getFilterControls();
+            if(controls != null){
+                for (int i = 0; i < controls.size(); i++) {
+                    controls.get(i).addView(filter_layout);
+                }
+            }
+            header_text = control_detailed.findViewById(R.id.header_text);
+            header_text.setText(getCaption());
+            container.addView(control_detailed);
+            refreshGrid();
+        }
+        protected String getRefreshUrl(){
+            if(FilterControls == null || FilterControls.size() == 0){
+                return getEntityName();
+            }
+            else{
+                List<String> values = new ArrayList<>();
+                for (ControlBase c : FilterControls) {
+                    values.add(c.getUrlParam());
+                }
+                return getEntityName() + "?" + String.join("&",values);
+            }
+        }
+        private void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
+            row.setBackgroundColor(Color.parseColor("#C5C6C6"));
+            edit_button.setEnabled(true);
+            delete_button.setEnabled(true);
+            for (int i = 0; i < tableLayout.getChildCount(); i++) {
+                TableRow otherRow = (TableRow)tableLayout.getChildAt(i);
+                if(row != otherRow && header != otherRow){
+                    otherRow.setBackgroundResource(android.R.color.transparent);
+                }
+            }
+        }
+        protected void refreshGrid(){
+            ArrayList<ControlBase> controls = getControls("List");
+            String id_field_name = getIdFieldName();
+            if(controls != null && controls.size() != 0){
+                new DataService().get(getRefreshUrl(), new AsyncHttpResponseHandler() {
+                    @Override
+                    public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
+                        String result = new String(responseBody);
+                        try {
+                            JSONArray data = new JSONArray(result);
+                            table_layout.removeAllViews();
+                            final TableRow header = new TableRow(table_layout.getContext());
+                            table_layout.addView(header);
+                            TableLayout.LayoutParams headerP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                            header.setLayoutParams(headerP);
+                            header.setBackgroundColor(Color.parseColor("#054678"));
+                            header.setPadding(5, 5, 5, 5);
+                            final TableLayout parentTable = table_layout;
+                            for (com.example.myapplication.model.Control.ControlBase control : controls) {
+                                float weight = 1f;
+                                if (control.getControlSize() < -1) weight = 2f;
+                                TextView hc = new TextView(table_layout.getContext());
+                                TableRow.LayoutParams hcP = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
+                                hc.setLayoutParams(hcP);
+                                hc.setText(control.getCaption());
+                                hc.setTextColor(Color.parseColor("#C3DEF3"));
+                                header.addView(hc);
+                            }
+
+                            for (int i = 0; i < data.length(); i++) {
+                                JSONObject obj = (JSONObject) data.get(i);
+                                TableRow item = new TableRow(table_layout.getContext());
+                                table_layout.addView(item);
+                                TableLayout.LayoutParams itemP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                                item.setLayoutParams(itemP);
+                                item.setPadding(5, 5, 5, 5);
+                                item.setTag(obj);
+                                item.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+
+                                        try {
+                                            setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
+                                            selectRow(item, header, parentTable);
+                                        }
+                                        catch (Exception e){
+                                            setSelectedId(null);
+                                        }
+                                    }
+                                });
+                                for (com.example.myapplication.model.Control.ControlBase control : controls) {
+                                    float weight = 1f;
+                                    if (control.getControlSize() < -1) weight = 2f;
+                                    TextView hc = new TextView(table_layout.getContext());
+                                    TableRow.LayoutParams hcP = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
+                                    hc.setLayoutParams(hcP);
+                                    if(obj.has(control.getName())) {
+                                        Object value = obj.get(control.getName());
+                                        if (value != null) {
+                                            hc.setText(control.getFormatValue(value));
+                                        }
+                                    }
+                                    item.addView(hc);
+                                }
+                                if(getSelectedId() != null && Long.parseLong(obj.get(getIdFieldName()).toString()) == getSelectedId()){
+
+                                    try {
+                                        setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
+                                        selectRow(item, header, parentTable);
+                                    }
+                                    catch (Exception e){
+                                        setSelectedId(null);
+                                    }
+                                }
+                            }
+                        }
+                        catch (JSONException  e)
+                        {
+                            Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    @Override
+                    public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
+                        String result = new String(responseBody);
+                        Toast.makeText(getRootActivity(), "GetListData Failed," + result, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }
+        protected void onButtonClick(String action, RadioButton button){
+            BaseActivity activity = (BaseActivity)button.getContext();
+            if(action.equals("Add")){
+                new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",getControls("Add"),getEntityName(),0L)).show( activity.getSupportFragmentManager(),null);
+            }
+            else if(action.equals("Edit")){
+                new DataService().getById(activity, getEntityName(), getSelectedId(), new DataService.GetByIdResponse() {
+                    @Override
+                    public void onSuccess(JSONObject data) {
+                    try {
+                        ArrayList<ControlBase> controls = getControls("Edit");
+                        Utility.applyValues(data,controls);
+                        for (int i = 0; i < controls.size(); i++) {
+                            if(DetailedControlBase.class.isAssignableFrom(controls.get(i).getClass())){
+                                DetailedControlBase ctrl = (DetailedControlBase)controls.get(i);
+                                ctrl.setParentId(getSelectedId());
+                            }
+                        }
+                        new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",controls,getEntityName(),getSelectedId())).show( activity.getSupportFragmentManager(),null);
+                    }
+                    catch ( JSONException ex){
+                        Toast.makeText(activity, "Error in loading data " +  ex.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                    }
+                });
+            }
+            else if(action.equals("Delete")){
+                PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)-> {
+                    new DataService().deleteById(activity, "InvCheckIn", getSelectedId(), new DataService.DeleteByIdResponse() {
+                        @Override
+                        public void onSuccess(Boolean deleted) {
+                            setSelectedId(null);
+                            refreshGrid();
+                        }
+                    });
+                    return true;
+                }).show(((BaseActivity)button.getContext()).getSupportFragmentManager(), null);
+
+            }
+            else if(action.equals("Refresh")){
+                refreshGrid();
+            }
+        }
+        protected abstract ArrayList<ControlBase> getControls(String action);
     }
 
-    public static class ImageControl extends ControlBase<ImageControl, ArrayList<Long>>
+
+    public static class ImageControl extends DetailedControlBase<ImageControl>
     {
+        public ImageControl(String name, String caption,String entityName){
+            super(name, caption,entityName,"RefId");
+            setValue(new ArrayList<Long>());
+        }
+
+
 
         private transient View image_control;
-        private transient RadioButton image_delete;
-        private transient FlexboxLayout image_layout;
-        public void ShowImages(){
-            image_control.setVisibility(View.VISIBLE);
-        }
+        private transient RadioButton delete_button;
+        private transient FlexboxLayout main_layout;
+        //public void ShowImages(){
+        //    image_control.setVisibility(View.VISIBLE);
+        //}
         public void onCapturedImage(int action, Bitmap image, Long id){
             addImage(id);
         }
 
         @Override
-        public void addView(ViewGroup container) {
+        public void addDetailedView(ViewGroup container) {
             LayoutInflater li = LayoutInflater.from(container.getContext());
             image_control = li.inflate(R.layout.control_images, null);
-            image_layout = image_control.findViewById(R.id.image_layout);
-            image_delete = image_control.findViewById(R.id.image_delete);
-            RadioButton image_gallery = image_control.findViewById(R.id.image_gallery);
-            RadioButton image_camera = image_control.findViewById(R.id.image_camera);
-            image_camera.setOnClickListener(new View.OnClickListener() {
+            main_layout = image_control.findViewById(R.id.main_layout);
+            delete_button = image_control.findViewById(R.id.delete_button);
+            delete_button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getId());
+                    PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)->{
+                        new DataService().deleteById(view.getContext(), "RefFile", getSelectedId(), new DataService.DeleteByIdResponse() {
+                            @Override
+                            public void onSuccess(Boolean deleted) {
+                            if(deleted) {
+                                getValue().remove(getSelectedId());
+                                for (int i = 0; i < main_layout.getChildCount(); i++) {
+                                    Object id = main_layout.getChildAt(i).getTag();
+                                    if(id != null && id.equals(getSelectedId())){
+                                        main_layout.removeView(main_layout.getChildAt(i));
+                                        break;
+                                    }
+                                }
+                                delete_button.setEnabled(false);
+                            }
+                            }
+                        });
+                        return true;
+                    }).show(getRootActivity().getSupportFragmentManager(),null);
                 }
             });
-            if(getId() == null || getId() == 0L){
-                image_control.setVisibility(View.GONE);
-            }
+
+            RadioButton gallery_button = image_control.findViewById(R.id.gallery_button);
+            gallery_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,getEntityName(),getParentId());
+                }
+            });
+
+            RadioButton camera_button = image_control.findViewById(R.id.camera_button);
+            camera_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getParentId());
+                }
+            });
             for (int i = 0; i < getValue().size(); i++) {
                 addImage(getValue().get(i));
             }
 
-
             container.addView(image_control);
         }
-
-
-
-
-
-
-
         private ImageView GetImageView(long id){
-            ImageView imageView = new ImageView(image_layout.getContext());
+            ImageView imageView = new ImageView(main_layout.getContext());
             FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(230, 230);
             lllP.setMargins(2,2,2,2);
             imageView.setLayoutParams(lllP);
             imageView.setTag(id);
-            if(id == SelectedImage){
+            if(id == getSelectedId()){
                 imageView.setBackgroundColor(Color.parseColor("#225C6E"));
-                image_delete.setEnabled(true);
+                delete_button.setEnabled(true);
             }
             else{
                 imageView.setBackgroundColor(Color.parseColor("#8CD0E4"));
@@ -114,14 +381,14 @@ public class Control {
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    SelectedImage = null;
-                    image_delete.setEnabled(false);
-                    for (int i = 0; i < image_layout.getChildCount(); i++) {
-                        ImageView iv = (ImageView)image_layout.getChildAt(i);
+                   setSelectedId(null);
+                    delete_button.setEnabled(false);
+                    for (int i = 0; i < main_layout.getChildCount(); i++) {
+                        ImageView iv = (ImageView)main_layout.getChildAt(i);
                         if(view == iv) {
-                            SelectedImage = id;
+                            setSelectedId(id);
                             iv.setBackgroundColor(Color.parseColor("#225C6E"));
-                            image_delete.setEnabled(true);
+                            delete_button.setEnabled(true);
 
                         }
                         else{
@@ -132,7 +399,7 @@ public class Control {
             });
 
             //imageView.setTag(id);
-            image_layout.addView(imageView);
+            main_layout.addView(imageView);
             return imageView;
         }
         public void addImage(long id) {
@@ -146,7 +413,7 @@ public class Control {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
                     imageView.setImageBitmap(bmp);
 
-                    System.out.println(image_layout.getChildCount());
+                    System.out.println(main_layout.getChildCount());
                 }
                 @Override
                 public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
@@ -156,25 +423,93 @@ public class Control {
         }
 
 
-        private Long SelectedImage = 0L;
 
-        private void setSelectedImage(Long selectedImage) {
-            SelectedImage = selectedImage;
+    }
+
+    public static abstract class DetailedControlBase<T extends ControlBase<T,ArrayList<Long>>> extends ControlBase<T, ArrayList<Long>> {
+        public DetailedControlBase(String name,String caption,String entityName,String foreignFieldName){
+            super(name,caption);
+            setEntityName(entityName);
+            setForeignFieldName(foreignFieldName);
         }
 
-        public Long getSelectedImage() {
-            return SelectedImage;
+
+        private transient  LinearLayout detailedLayout;
+
+        @Override
+        public void addView(ViewGroup container) {
+            if(getRootActivity() == null)setRootActivity((BaseActivity) container.getContext());
+
+            detailedLayout = new LinearLayout(container.getContext());
+            LinearLayout.LayoutParams llParam= new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            detailedLayout.setOrientation(LinearLayout.VERTICAL);
+            llParam.setMargins(2, 2, 2, 2);
+            detailedLayout.setLayoutParams(llParam);
+
+            container.addView(detailedLayout);
+            addDetailedView(detailedLayout);
         }
 
 
-        private Long Id;
-
-        public ImageControl setId(Long id) {
-            Id = id;
-            return this;
+        @Override
+        public void updateSaveParameters(RequestParams params) {
+            params.put(getForeignFieldName(),getParentId());
         }
-        public Long getId() {
-            return Id;
+
+        private String IdFieldName = "Id";
+
+        public String getIdFieldName() {
+            return IdFieldName;
+        }
+
+        public T setIdFieldName(String idFieldName) {
+            IdFieldName = idFieldName;
+            return (T)this;
+        }
+
+        public abstract void addDetailedView(ViewGroup container);
+
+
+
+
+
+
+        private Long SelectedId = 0L;
+
+        protected void setSelectedId(Long selectedImage) {
+            SelectedId = selectedImage;
+        }
+
+        public Long getSelectedId() {
+            return SelectedId;
+        }
+
+
+        private Long ParentId;
+
+        public void changeVisibility(boolean visible){
+            if(visible)detailedLayout.setVisibility(View.VISIBLE);
+            else detailedLayout.setVisibility(View.GONE);
+
+        }
+        private String ForeignFieldName;
+
+        public String getForeignFieldName() {
+            return ForeignFieldName;
+        }
+
+        public T setForeignFieldName(String foreignFieldName) {
+            ForeignFieldName = foreignFieldName;
+            return (T)this;
+        }
+
+        public T setParentId(Long id) {
+
+            ParentId = id;
+            return (T)this;
+        }
+        public Long getParentId() {
+            return ParentId;
         }
 
         private String EntityName;
@@ -183,21 +518,10 @@ public class Control {
             return EntityName;
         }
 
-        public ImageControl setEntityName(String entityName) {
+        public T setEntityName(String entityName) {
             EntityName = entityName;
-            return this;
+            return (T)this;
         }
-
-        //private FlexboxLayout image_layout;
-        //public RadioButton item_delete;
-        //public View.OnClickListener imageClick;
-        public ImageControl(String name, String caption){
-            super(name, caption);
-            setValue(new ArrayList<Long>());
-        }
-
-
-
         @Override
         public void valueChange(ArrayList<Long> oldValue, ArrayList<Long> newValue) {
 
@@ -210,10 +534,6 @@ public class Control {
 
         @Override
         protected ArrayList<Long> convertValue(Object value) {
-
-
-
-
 
             if(value == null) return new ArrayList<Long>();
             else {
@@ -240,8 +560,8 @@ public class Control {
             }
             return new ArrayList<Long>();
         }
-    }
 
+    }
 
 
 
@@ -413,6 +733,13 @@ public class Control {
         }
 
         @Override
+        public void updateSaveParameters(RequestParams params) {
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
+            String formattedDate = dateFormat.format(getValue());
+            params.put(getName(),formattedDate);
+        }
+
+        @Override
         protected Date convertValue(Object value) {
             if(value==null){
                 return null;
@@ -423,7 +750,9 @@ public class Control {
             else{
                 HashMap<String,Integer> formats = new HashMap<String,Integer>();
                 formats.put("yyyy-MM-dd'T'HH:mm:ss.SSS",23);
-                formats.put("dd/MM/yy HH:mm:ss.SSS",21);
+                formats.put("yyyy-MM-dd'T'HH:mm:ss.SS",22);
+                formats.put("yyyy-MM-dd'T'HH:mm:ss.S",21);
+                formats.put("dd/MM/yy HH:mm:ss.S",21);
                 formats.put("yyyy-MM-dd'T'HH:mm:ss",19);
                 formats.put("dd/MM/yy HH:mm:ss",17);
                 formats.put("yyyy-MM-dd'T'HH:mm",16);
@@ -724,14 +1053,7 @@ public class Control {
         }
 
 
-        @Override
-        public EditDecimalControl readValue(Object value) {
-            if(value== null)setValue(null);
-            else{
-                setValue(Double.parseDouble(value.toString()));
-            }
-            return this;
-        }
+
 
     }
 
@@ -842,17 +1164,7 @@ public class Control {
 
         protected abstract String getTextValue(U value);
 
-        @Override
-        public T readValue(Object value) {
-            if(value == null)setValue(null);
-            else
-            {
-                U newValue = convertValue(value);
-                if(newValue == null && getValue() != null)setValue(null);
-                else if(!newValue.equals(getValue()))setValue(null);
-            }
-            return (T)this;
-        }
+
     }
 
     public static HiddenControl getHiddenControl( String name, Serializable value){
@@ -876,6 +1188,7 @@ public class Control {
         }
         @Override
         public void addView(ViewGroup container) {
+            if(getRootActivity() == null)setRootActivity((BaseActivity) container.getContext());
 
         }
         @Override
@@ -924,6 +1237,12 @@ public class Control {
         public String getName(){
             return  Name;
         }
+
+        public T setName(String name) {
+            Name = name;
+            return (T)this;
+        }
+
         private String Caption = null;
         public String getCaption(){
             return  Caption;
@@ -966,6 +1285,7 @@ public class Control {
         }
         public void addView(ViewGroup container)
         {
+            if(getRootActivity() == null)setRootActivity((BaseActivity) container.getContext());
             viewCreated = false;
             LinearLayout ll = new LinearLayout(container.getContext());
             LinearLayout.LayoutParams llParam= new LinearLayout.LayoutParams(getWidth(), LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -1030,6 +1350,10 @@ public class Control {
         public boolean onValidate(){
             if(getValue()==null && getIsRequired()) return  false;
             else return true;
+        }
+
+        public void updateSaveParameters(RequestParams params){
+            params.put(getName(), getValue());
         }
     }
 }

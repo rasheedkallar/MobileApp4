@@ -46,6 +46,7 @@ import java.util.function.Predicate;
 
 import cz.msebera.android.httpclient.Header;
 
+
 public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
 
     @Override
@@ -54,36 +55,17 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         for (int i = 0; i < args.getControls().size(); i++) {
             if(args.getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
                 Control.ImageControl ic = (Control.ImageControl)args.getControls().get(i);
-                if(ic.getId() == null ||  ic.getId() == 0L) {
-                    ic.setId(args.getValue());
+                if(ic.getParentId() == null ||  ic.getParentId() == 0L) {
+                    ic.setParentId(args.getValue());
                     ic.setEntityName(args.getEntityName());
                 }
             }
         }
         return this;
     }
-
-
-
     private FlexboxLayout FieldsContainer;
     public FlexboxLayout getFieldsContainer() {
         return FieldsContainer;
-    }
-
-
-    private Function<Long,Boolean> onAfterSaved;
-
-    public Function<Long, Boolean> getOnAfterSaved() {
-        return onAfterSaved;
-    }
-
-    public PopupForm setOnAfterSaved(Function<Long, Boolean> onAfterSaved) {
-        this.onAfterSaved = onAfterSaved;
-        return this;
-    }
-    public void doAfterSaved(Long id){
-        if(onAfterSaved == null)super.doOk();
-        else if(onAfterSaved.apply(id))super.doOk();
     }
     @Override
     public void doOk() {
@@ -116,36 +98,60 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             });
         }
     }
-    public RequestParams getPostRequestParams(){
-        //2023-01-01T00:00:00
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
-        RequestParams params = new RequestParams();
+    protected void doAfterSaved(Long id){
+        Long detailedCount = getArgs().getControls().stream().filter(i-> Control.DetailedControlBase.class.isAssignableFrom(i.getClass())).count();
+        boolean defaultClose = (getArgs().getValue() != null && getArgs().getValue() != 0L) || detailedCount == null || detailedCount == 0L;
 
+        if(getArgs().getValue() == null || getArgs().getValue() == 0L){
+            for (int j = 0; j < getArgs().getControls().size(); j++) {
+                if(Control.DetailedControlBase.class.isAssignableFrom(getArgs().getControls().get(j).getClass())){
+                    Control.DetailedControlBase dc = (Control.DetailedControlBase)getArgs().getControls().get(j);
+                    dc.setParentId(id);
+                    dc.changeVisibility(true);
+                }
+            }
+        }
+        getArgs().setValue(id);
+
+        boolean returnVal = defaultClose;
+        for (int i = 0; i < getRootActivity().Controls.size(); i++) {
+            if(Control.DetailedControl.class.isAssignableFrom(getRootActivity().Controls.get(i).getClass())){
+                Control.DetailedControl dc = (Control.DetailedControl)getRootActivity().Controls.get(i);
+                if(dc.getEntityName() != null && dc.getEntityName().equals(getArgs().getEntityName())){
+                    boolean rv = dc.doAfterSaved(id,defaultClose);
+                    if(rv != defaultClose)returnVal = rv;
+                }
+            }
+        }
+        for (int i = 0; i < getRootActivity().Popups.size(); i++) {
+            if(PopupForm.class.isAssignableFrom(getRootActivity().Popups.get(i).getClass())){
+                PopupForm p = (PopupForm)getRootActivity().Popups.get(i);
+                for (int j = 0; j < p.getArgs().getControls().size(); j++) {
+                    if(Control.DetailedControl.class.isAssignableFrom(p.getArgs().getControls().get(j).getClass())){
+                        Control.DetailedControl dc = (Control.DetailedControl)p.getArgs().getControls().get(j);
+                        if(dc.getEntityName() != null && dc.getEntityName().equals(getArgs().getEntityName())){
+                            boolean rv = dc.doAfterSaved(id,defaultClose);
+                            if(rv != defaultClose)returnVal = rv;
+                        }
+                    }
+                }
+
+            }
+        }
+        getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        if(returnVal)super.doOk();
+    }
+
+
+    public RequestParams getPostRequestParams(){
+        RequestParams params = new RequestParams();
         PopupFormArgs args = this.getArgs();
         if(args.getValue() != null && args.getIdName() != null && args.getIdName().length() != 0){
             params.put(args.getIdName(),args.getValue());
         }
-
-
         for (Control.ControlBase control : getArgs().getControls()) {
-            //System.out.println(control.Name);
-
-            Object value = control.getValue();
-            if (value != null && value instanceof Date) {
-                String formattedDate = dateFormat.format(value);
-                value = formattedDate;
-                //params.put(control.getName(), formattedDate);
-            }
-            //if(params.has(control.getName())){
-            //    params.p
-            //}
-            //else {
-
-                params.put(control.getName(), value);
-            //}
-
+            control.updateSaveParameters(params);
         }
-
         return params;
     }
 
@@ -172,23 +178,17 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         txt.setLayoutParams(txtP);
         txt.setVisibility(View.GONE);
         FieldsContainer.addView(txt);
-
-
-
         if(getArgs().getControls() != null) {
             for (Control.ControlBase control : getArgs().getControls()) {
-
                 control.addView(FieldsContainer);
-
-
-                //View view = control.generateFillView(getContext());
-
-                //View view = Control.getView(getContext(),control);
-
-                //if(view != null){
-                //    FieldsContainer.addView(view);
-                //}
-
+            }
+        }
+        if(getArgs().getValue() == null || getArgs().getValue() == 0L){
+            for (int j = 0; j < getArgs().getControls().size(); j++) {
+                if(Control.DetailedControlBase.class.isAssignableFrom(getArgs().getControls().get(j).getClass())){
+                    Control.DetailedControlBase dc = (Control.DetailedControlBase)getArgs().getControls().get(j);
+                    dc.changeVisibility(false);
+                }
             }
         }
 
@@ -199,7 +199,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         for (int i = 0; i < getArgs().getControls().size(); i++) {
             if(getArgs().getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
                 Control.ImageControl ic = (Control.ImageControl)getArgs().getControls().get(i);
-                if(ic.getEntityName() != null && ic.getEntityName().equals(entityName) && ic.getId() != null && ic.getId().equals(entityId))
+                if(ic.getEntityName() != null && ic.getEntityName().equals(entityName) && ic.getParentId() != null && ic.getParentId().equals(entityId))
                     ic.onCapturedImage(action,image,id);
             }
         }

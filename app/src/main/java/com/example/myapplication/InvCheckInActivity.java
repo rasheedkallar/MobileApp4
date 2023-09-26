@@ -201,6 +201,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 getRootActivity().afterInvCheckInSaved(id);
                 dismiss();
             }
+
         }
         private ImageView invCheckInSelectedImage = null;
     }
@@ -295,23 +296,10 @@ public  class InvCheckInActivity extends BaseActivity {
 
         sv.addView(table);
 
-        final Context context = this;
 
-        System.out.println("hi");
 
-        AddButton.setEnabled(false);
-        EditButton.setEnabled(false);
-        DeleteButton.setEnabled(false);
 
-        new DataService().getLookups(this,  new String[] {"Supplier", "Employee"}, new DataService.LookupsResponse() {
-            @Override
-            public void onSuccess(List<DataService.Lookup>[] lookups) {
-                suppliers = lookups[0];
-                employees = lookups[1];
-                AddButton.setEnabled(true);
-                RefreshList();
-            }
-        });
+
     }
     private List<DataService.Lookup> suppliers;
     private List<DataService.Lookup> employees;
@@ -323,8 +311,7 @@ public  class InvCheckInActivity extends BaseActivity {
     private void  RefreshList(){
         Context context = this;
 
-        EditButton.setEnabled(false);
-        DeleteButton.setEnabled(false);
+
         ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
         controls.add(Control.getHiddenControl("Id",1L));
 
@@ -341,19 +328,17 @@ public  class InvCheckInActivity extends BaseActivity {
                 String result = new String(responseBody);
                 try {
                     JSONArray data = new JSONArray(result);
-                    Utility.CreateGrid(context, table, "Id",SelectedId,controls, data, new Utility.onGridListener() {
+                    Utility.CreateGrid( table, "Id",SelectedId,controls, data, new Utility.onGridListener() {
                         @Override
                         public boolean onRowSelected(TableRow row, JSONObject data) {
                             try {
                                 SelectedId = data.getLong("Id");
-                                EditButton.setEnabled(true);
-                                DeleteButton.setEnabled(true);
+
                                 return true;
                             }
                             catch (JSONException ex){
                                 SelectedId = 0L;
-                                EditButton.setEnabled(false);
-                                DeleteButton.setEnabled(false);
+
                                 return false;
                             }
                         }
@@ -367,8 +352,7 @@ public  class InvCheckInActivity extends BaseActivity {
                             try {
                                 Long id = data.getLong("Id");
                                 if(id.equals(SelectedId)){
-                                    EditButton.setEnabled(true);
-                                    DeleteButton.setEnabled(true);
+
                                     return true;
                                 }
                             }
@@ -390,6 +374,9 @@ public  class InvCheckInActivity extends BaseActivity {
                 Toast.makeText(InvCheckInActivity.this, "GetListData Failed," + result, Toast.LENGTH_SHORT).show();
             }
         });
+
+
+
     }
 
     private Long SelectedId= 0L;
@@ -414,9 +401,7 @@ public  class InvCheckInActivity extends BaseActivity {
             controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
             controls.add(Control.getLookupControl( "SupId", "Supplier", suppliers));
             controls.add(Control.getLookupControl( "EmpId", "Employee", employees));
-            controls.add(Control.getImageControl( "Images", "Images"));
-
-
+            //controls.add(Control.getImageControl( "Images", "Images"));
 
             if(action == "Add") {
                 PopupLookup.create("SupplierPicker",suppliers,0L,(supplier)->{

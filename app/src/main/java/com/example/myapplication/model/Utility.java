@@ -75,16 +75,16 @@ public class Utility {
         }
     }
 
-    public static   void CreateGrid(Context context, TableLayout table,String idField,Long selectedValue ,List<Control.ControlBase> controls, JSONArray list,onGridListener listener) throws JSONException, ParseException {
+    public static   void CreateGrid(TableLayout table,String idField,Long selectedValue ,List<Control.ControlBase> controls, JSONArray list,onGridListener listener) throws JSONException, ParseException {
 
         if (table == null) {
-            table = new TableLayout(context);
+            table = new TableLayout(table.getContext());
             TableLayout.LayoutParams tableP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             table.setLayoutParams(tableP);
         }
         table.removeAllViews();
 
-        final TableRow header = new TableRow(context);
+        final TableRow header = new TableRow(table.getContext());
         table.addView(header);
         TableLayout.LayoutParams headerP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         header.setLayoutParams(headerP);
@@ -94,7 +94,7 @@ public class Utility {
         for (com.example.myapplication.model.Control.ControlBase control : controls) {
             float weight = 1f;
             if (control.getControlSize() < -1) weight = 2f;
-            TextView hc = new TextView(context);
+            TextView hc = new TextView(table.getContext());
             TableRow.LayoutParams hcP = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
             hc.setLayoutParams(hcP);
             hc.setText(control.getCaption());
@@ -104,7 +104,7 @@ public class Utility {
 
         for (int i = 0; i < list.length(); i++) {
             JSONObject obj = (JSONObject) list.get(i);
-            TableRow item = new TableRow(context);
+            TableRow item = new TableRow(table.getContext());
             table.addView(item);
             TableLayout.LayoutParams itemP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             item.setLayoutParams(itemP);
@@ -120,7 +120,7 @@ public class Utility {
             for (com.example.myapplication.model.Control.ControlBase control : controls) {
                 float weight = 1f;
                 if (control.getControlSize() < -1) weight = 2f;
-                TextView hc = new TextView(context);
+                TextView hc = new TextView(table.getContext());
                 TableRow.LayoutParams hcP = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
                 hc.setLayoutParams(hcP);
                 if(obj.has(control.getName())) {
@@ -131,7 +131,7 @@ public class Utility {
                 }
                 item.addView(hc);
             }
-            if(Long.parseLong(obj.get(idField).toString()) == selectedValue){
+            if(selectedValue != null && Long.parseLong(obj.get(idField).toString()) == selectedValue){
                 selectRow(item, header, parentTable);
                 listener.onRowSelected(item, (JSONObject) item.getTag());
             }

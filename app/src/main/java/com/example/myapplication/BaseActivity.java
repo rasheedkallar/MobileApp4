@@ -28,6 +28,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
+import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupBase;
 import com.example.myapplication.model.PopupDate;
@@ -55,58 +56,22 @@ import java.util.function.Function;
 public abstract class BaseActivity extends AppCompatActivity {
     public static  final int TAKE_IMAGE_FROM_CAMERA = 1;
     public static  final int TAKE_IMAGE_FROM_GALLERY = -1;
-
-
-
     private static final int GALLERY_PERMISSION_REQUEST_CODE = 1;
     private static final int CAMERA_PERMISSION_REQUEST_CODE  = 2;
     private ActivityResultLauncher<Intent> takePictureLauncher;
     private ActivityResultLauncher<Intent> pickImageLauncher;
     public LinearLayout Container;
-    public TextView Header;
-    public RadioGroup ButtonGroup;
-    public RadioButton AddButton;
-    public RadioButton EditButton;
-    public RadioButton DeleteButton;
-
-    public Function<String,Boolean> OnAction;
+    public ArrayList<Control.ControlBase> Controls = new ArrayList<>();
 
     @Override
-
     protected void onCreate(Bundle savedInstanceState) {
-
-
+        if(savedInstanceState != null) {
+            Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
+        }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base);
         Container = (LinearLayout) findViewById(R.id.container);
-        Header = (TextView) findViewById(R.id.header);
-        ButtonGroup = (RadioGroup) findViewById(R.id.icon_button_group);
 
-        AddButton = (RadioButton) findViewById(R.id.radio_add);
-        EditButton = (RadioButton) findViewById(R.id.radio_edit);
-        DeleteButton = (RadioButton) findViewById(R.id.radio_delete);
-
-        AddButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onButtonClick("Add",(RadioButton) view);
-            }
-        });
-        EditButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onButtonClick("Edit",(RadioButton) view);
-            }
-        });
-
-        DeleteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onButtonClick("Delete",(RadioButton) view);
-            }
-        });
-
-        Header.setText(getHeaderText());
         final BaseActivity activity = this;
 
         takePictureLauncher = registerForActivityResult(
@@ -192,17 +157,21 @@ public abstract class BaseActivity extends AppCompatActivity {
                 }
             }
         });
+        if(Controls != null){
+
+            for (int i = 0; i < Controls.size(); i++) {
+                Controls.get(i).addView(Container);
+            }
+        }
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
 
-
         String image_uri_string = null;
         if(image_uri != null)image_uri_string = image_uri.getPath();
         savedInstanceState.putString("image_uri_string", image_uri_string);
-
 
         String image_file_string = null;
         if(image_file != null)
@@ -213,7 +182,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         savedInstanceState.putInt("image_action",image_action);
         savedInstanceState.putString("image_entityName",image_entityName);
 
-
+        savedInstanceState.putSerializable("Controls",Controls);
 
 
 
@@ -238,6 +207,10 @@ public abstract class BaseActivity extends AppCompatActivity {
         image_entity_id = savedInstanceState.getLong("image_entity_id");
         image_action = savedInstanceState.getInt("image_action");
         image_entityName = savedInstanceState.getString("image_entityName");
+
+        Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
+
+
     }
 
 
