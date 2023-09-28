@@ -21,6 +21,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -67,18 +68,26 @@ public class Control {
         protected transient RadioButton edit_button;
         protected transient RadioButton delete_button;
         protected transient RadioButton refresh_button;
-
         protected transient TableLayout table_layout;
         protected transient FlexboxLayout filter_layout;
-
-
-
         protected transient TextView header_text;
-
+        private transient RelativeLayout header_panel;
         protected List<ControlBase> FilterControls = null;
         public List<ControlBase> getFilterControls() {
             if(FilterControls == null)FilterControls= getControls("Filter");
             return FilterControls;
+        }
+        @Override
+        public boolean onValidate() {
+            boolean valid = super.onValidate();
+            if(header_panel!=null) {
+                if (valid) {
+                    header_panel.setBackgroundColor(Color.parseColor("#008477"));
+                } else {
+                    header_panel.setBackgroundColor(Color.parseColor("#BC3E17"));
+                }
+            }
+            return valid;
         }
 
         public boolean doAfterSaved(Long id,boolean defaultClose){
@@ -93,6 +102,7 @@ public class Control {
 
             LayoutInflater li = LayoutInflater.from(container.getContext());
             View control_detailed = li.inflate(R.layout.control_detailed, null);
+            header_panel =  control_detailed.findViewById(R.id.header_panel);
             table_layout = control_detailed.findViewById(R.id.table_layout);
             add_button = control_detailed.findViewById(R.id.add_button);
             add_button.setOnClickListener(new View.OnClickListener() {
@@ -110,6 +120,9 @@ public class Control {
                 }
             });
             delete_button = control_detailed.findViewById(R.id.delete_button);
+
+
+
             delete_button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -133,19 +146,27 @@ public class Control {
             header_text = control_detailed.findViewById(R.id.header_text);
             header_text.setText(getCaption());
             container.addView(control_detailed);
-            refreshGrid();
+
+            if(getForeignFieldName() == null || getForeignFieldName().length() == 0 || (getParentId() != null && getParentId() >0))
+                refreshGrid();
         }
         protected String getRefreshUrl(){
-            if(FilterControls == null || FilterControls.size() == 0){
-                return getEntityName();
+            List<String> values = new ArrayList<>();
+            if(getForeignFieldName() != null && getForeignFieldName().length() != 0){
+                if(getParentId() == null || getParentId() == 0L){
+                    values.add(getForeignFieldName() + "=");
+                }
+                else{
+                    values.add(getForeignFieldName() + "=" + getParentId().toString());
+                }
             }
-            else{
-                List<String> values = new ArrayList<>();
+            if(FilterControls != null && FilterControls.size() != 0){
                 for (ControlBase c : FilterControls) {
                     values.add(c.getUrlParam());
                 }
-                return getEntityName() + "?" + String.join("&",values);
             }
+            if(values.size() ==0)return getEntityName();
+            else return getEntityName() + "?" + String.join("&",values);
         }
         private void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
             row.setBackgroundColor(Color.parseColor("#C5C6C6"));
@@ -169,6 +190,9 @@ public class Control {
                     public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                         String result = new String(responseBody);
                         try {
+
+                            if(getValue() == null)setValue(new ArrayList<Long>());
+                            getValue().clear();
                             JSONArray data = new JSONArray(result);
                             table_layout.removeAllViews();
                             final TableRow header = new TableRow(table_layout.getContext());
@@ -182,16 +206,20 @@ public class Control {
                             for (com.example.myapplication.model.Control.ControlBase control : controls) {
                                 float weight = 1f;
                                 if (control.getControlSize() < -1) weight = 2f;
+
                                 TextView hc = new TextView(table_layout.getContext());
+                                hc.setPadding(5, 5, 5, 5);
                                 TableRow.LayoutParams hcP = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
                                 hc.setLayoutParams(hcP);
+                                hc.setTextColor(ContextCompat.getColor(table_layout.getContext(), R.color.white));
                                 hc.setText(control.getCaption());
-                                hc.setTextColor(Color.parseColor("#C3DEF3"));
+                                hc.setBackgroundColor(Color.parseColor("#008477"));
                                 header.addView(hc);
                             }
 
                             for (int i = 0; i < data.length(); i++) {
                                 JSONObject obj = (JSONObject) data.get(i);
+                                getValue().add(Long.parseLong(obj.get(getIdFieldName()).toString()));
                                 TableRow item = new TableRow(table_layout.getContext());
                                 table_layout.addView(item);
                                 TableLayout.LayoutParams itemP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -266,14 +294,22 @@ public class Control {
         protected void onButtonClick(String action, RadioButton button){
             BaseActivity activity = (BaseActivity)button.getContext();
             if(action.equals("Add")){
-                new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",getControls("Add"),getEntityName(),0L)).show( activity.getSupportFragmentManager(),null);
+                ArrayList<ControlBase> controls = getControls(action);
+                if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
+                    controls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
+                }
+                new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getEntityName(),0L)).show( activity.getSupportFragmentManager(),null);
             }
             else if(action.equals("Edit")){
+                //ArrayList<ControlBase> controls = getControls(action);
                 new DataService().getById(activity, getEntityName(), getSelectedId(), new DataService.GetByIdResponse() {
                     @Override
                     public void onSuccess(JSONObject data) {
                     try {
-                        ArrayList<ControlBase> controls = getControls("Edit");
+                        ArrayList<ControlBase> controls = getControls(action);
+                        if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
+                            controls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
+                        }
                         Utility.applyValues(data,controls);
                         for (int i = 0; i < controls.size(); i++) {
                             if(DetailedControlBase.class.isAssignableFrom(controls.get(i).getClass())){
@@ -316,23 +352,47 @@ public class Control {
             super(name, caption,entityName,"RefId");
             setValue(new ArrayList<Long>());
         }
-
-
-
         private transient View image_control;
         private transient RadioButton delete_button;
         private transient FlexboxLayout main_layout;
-        //public void ShowImages(){
-        //    image_control.setVisibility(View.VISIBLE);
-        //}
+
+        private transient RelativeLayout header_panel;
         public void onCapturedImage(int action, Bitmap image, Long id){
             addImage(id);
+            delete_button.setEnabled(false);
+            for (int i = 0; i < main_layout.getChildCount(); i++) {
+                ImageView iv = (ImageView)main_layout.getChildAt(i);
+                Long vId = (Long)iv.getTag();
+                if(id.equals(vId)) {
+                    setSelectedId(id);
+                    iv.setBackgroundColor(Color.parseColor("#225C6E"));
+                    delete_button.setEnabled(true);
+                }
+                else{
+                    iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
+                }
+            }
         }
+        @Override
+        public boolean onValidate() {
+            boolean valid = super.onValidate();
+            if(header_panel!=null) {
+                if (valid) {
+                    header_panel.setBackgroundColor(Color.parseColor("#008477"));
+                } else {
+                    header_panel.setBackgroundColor(Color.parseColor("#BC3E17"));
+                }
+            }
+            return valid;
+        }
+
 
         @Override
         public void addDetailedView(ViewGroup container) {
             LayoutInflater li = LayoutInflater.from(container.getContext());
+
             image_control = li.inflate(R.layout.control_images, null);
+            header_panel =  image_control.findViewById(R.id.header_panel);
             main_layout = image_control.findViewById(R.id.main_layout);
             delete_button = image_control.findViewById(R.id.delete_button);
             delete_button.setOnClickListener(new View.OnClickListener() {
@@ -378,8 +438,9 @@ public class Control {
             for (int i = 0; i < getValue().size(); i++) {
                 addImage(getValue().get(i));
             }
-
             container.addView(image_control);
+
+
         }
         private ImageView GetImageView(long id){
             ImageView imageView = new ImageView(main_layout.getContext());
@@ -405,7 +466,6 @@ public class Control {
                             setSelectedId(id);
                             iv.setBackgroundColor(Color.parseColor("#225C6E"));
                             delete_button.setEnabled(true);
-
                         }
                         else{
                             iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
@@ -418,7 +478,7 @@ public class Control {
             main_layout.addView(imageView);
             return imageView;
         }
-        public void addImage(long id) {
+        private void addImage(long id) {
             if(!getValue().contains(id)){
                 getValue().add(id);
             }
@@ -437,9 +497,6 @@ public class Control {
                 }
             });
         }
-
-
-
     }
 
     public static abstract class DetailedControlBase<T extends ControlBase<T,ArrayList<Long>>> extends ControlBase<T, ArrayList<Long>> {
@@ -449,7 +506,14 @@ public class Control {
             setForeignFieldName(foreignFieldName);
         }
 
-
+        @Override
+        public boolean onValidate() {
+            boolean valid = false;
+            if(getParentId() == null || getParentId() == 0)valid = true;
+            else if(!getIsRequired())valid= true;
+            else if(getValue() != null && getValue().size() >0)valid = true;
+            return valid;
+        }
         private transient  LinearLayout detailedLayout;
 
         @Override
@@ -459,7 +523,7 @@ public class Control {
             detailedLayout = new LinearLayout(container.getContext());
             LinearLayout.LayoutParams llParam= new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             detailedLayout.setOrientation(LinearLayout.VERTICAL);
-            llParam.setMargins(2, 2, 2, 2);
+            //llParam.setMargins(2, 2, 2, 2);
             detailedLayout.setLayoutParams(llParam);
 
             container.addView(detailedLayout);
@@ -484,14 +548,7 @@ public class Control {
         }
 
         public abstract void addDetailedView(ViewGroup container);
-
-
-
-
-
-
         private Long SelectedId = 0L;
-
         protected void setSelectedId(Long selectedImage) {
             SelectedId = selectedImage;
         }
@@ -499,10 +556,7 @@ public class Control {
         public Long getSelectedId() {
             return SelectedId;
         }
-
-
         private Long ParentId;
-
         public void changeVisibility(boolean visible){
             if(visible)detailedLayout.setVisibility(View.VISIBLE);
             else detailedLayout.setVisibility(View.GONE);
@@ -550,7 +604,6 @@ public class Control {
 
         @Override
         protected ArrayList<Long> convertValue(Object value) {
-
             if(value == null) return new ArrayList<Long>();
             else {
                 if (JSONArray.class.isAssignableFrom(value.getClass())) {

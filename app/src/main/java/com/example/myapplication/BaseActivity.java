@@ -274,8 +274,6 @@ public abstract class BaseActivity extends AppCompatActivity {
         String name = this.getClass().getName();
         int dot = name.lastIndexOf('.');
         if(dot >0)name= name.substring(dot + 1);
-
-
         if(name.endsWith("Activity"))name = name.substring(0,name.length() - 8);
         return name;
     }
@@ -306,28 +304,6 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
     }
 
-    public void  captureImage(int action,Long id){
-        image_action = action;
-        if(image_action <0){
-            image_entity_id = id;
-            int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-            if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
-                ImagePick();
-            } else {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, GALLERY_PERMISSION_REQUEST_CODE);
-            }
-        }
-        else{
-            image_entity_id = id;
-
-            int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
-            if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
-                ImageCapture();
-            } else {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
-            }
-        }
-    }
     public ArrayList<PopupBase> Popups = new ArrayList<PopupBase>();
     public void onCapturedImage(int action,Bitmap image,String entityName,Long entityId,Long id){
         for (int i = 0; i < Popups.size(); i++) {
@@ -359,11 +335,9 @@ public abstract class BaseActivity extends AppCompatActivity {
             }
         }
     }
-    public abstract void onButtonClick(String action, RadioButton button) ;
-    public boolean viewNewButton(){
-        return true;
-    }
-    public abstract String getHeaderText();
+
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();

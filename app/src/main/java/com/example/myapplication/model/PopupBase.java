@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -16,6 +17,7 @@ import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
@@ -62,9 +64,18 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
             Log.d("MyDialog", "Popup allowed only under BaseActivity");
         }
     }
-
-
-
+    @Override
+    public void onDestroy() {
+        if(RootActivity.Popups.contains(this))
+            RootActivity.Popups.remove(this);
+        super.onDestroy();
+    }
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        if(RootActivity.Popups.contains(this))
+            RootActivity.Popups.remove(this);
+        super.onDismiss(dialog);
+    }
 
     private AlertDialog Popup;
 

@@ -3,10 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="1dp"
+    android:layout_margin="0dp"
     android:foreground="@color/design_default_color_error"
     android:orientation="vertical"
-    android:padding="1dp">
+    android:padding="0dp">
 
     <TimePicker
         android:id="@+id/timePicker"

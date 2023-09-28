@@ -21,30 +21,10 @@ import java.util.Date;
 
 
 public class MainActivity extends BaseActivity {
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-
         EditText edittext = findViewById(R.id.myNumber);
-        //edittext.setKeyListener(DigitsKeyListener.getInstance("0123456789."));
-        //edittext.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        //edittext.setInputType(InputType.TYPE_CLASS_NUMBER);
-
-
     }
-
-    @Override
-    public void onButtonClick(String action, RadioButton button) {
-
-    }
-
-    @Override
-    public String getHeaderText() {
-        return null;
-    }
-
-
 }

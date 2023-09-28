@@ -41,8 +41,8 @@ public class DataService {
 
 
 
-    //private static String serverIp = "10.207.176.91"; //office
-    private static String serverIp = "192.168.0.126"; //home
+    private static String serverIp = "10.207.176.91"; //office
+    //private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homeWifi
 
     private static String  serverPort = "80";
@@ -122,8 +122,11 @@ public class DataService {
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String result = new String(responseBody);
-                Toast.makeText(context, "getById Error:" + result, Toast.LENGTH_SHORT).show();
+                String errorMessage = "getById Error:";
+                if(responseBody != null)errorMessage =  errorMessage  +  new String(responseBody);
+                errorMessage = errorMessage +  error.getMessage() + error.getStackTrace().toString();
+                System.out.println(errorMessage);
+                Toast.makeText(context,  errorMessage, Toast.LENGTH_SHORT).show();
             }
         });
     }
