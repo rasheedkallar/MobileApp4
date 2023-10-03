@@ -1,6 +1,7 @@
 package com.example.myapplication.model;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -10,6 +11,7 @@ import com.loopj.android.http.ResponseHandlerInterface;
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.FileEntity;
 import kotlin.text.Charsets;
+
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -36,15 +38,19 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 public class DataService {
 
 
 
-    private static String serverIp = "10.207.176.91"; //office
-    //private static String serverIp = "192.168.0.126"; //home
-    //private static String serverIp = "192.168.0.139"; //homeWifi
+    //private static String serverIp = "10.205.50.116"; //office
 
+    //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
+    // private static String serverIp = "10.207.176.91"; //office
+    private static String serverIp = "192.168.0.126"; //home
+    //private static String serverIp = "192.168.0.139"; //homeWifi
+//192.168.0.126
     private static String  serverPort = "80";
     public static String getRootUrl(){
         if(serverPort == "80")return  "http://" + serverIp + "/api/";
@@ -56,6 +62,113 @@ public class DataService {
         String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().get(finalUrl, response);
     }
+    public  void getString(String url, Function<String,Void> success, Function<String,Void> failure){
+        get(url, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                if(responseBody == null)success.apply(null);
+                String result = new String(responseBody);
+                success.apply(result);
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                if(responseBody != null){
+                    String result = new String(responseBody);
+                    failure.apply(result);
+                }
+                else if(error != null) {
+                    failure.apply(error.getMessage() + error.getStackTrace().toString());
+                }
+                else{
+                    failure.apply("Error in loading data");
+                }
+            }
+        });
+    }
+    public  void getArray(String url, Function<JSONArray,Void> success, Function<String,Void> failure){
+        getString(url, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                try{
+                    JSONArray array= new JSONArray(s);
+                    success.apply(array);
+
+                }
+                catch (JSONException e){
+                    failure.apply(s);
+                }
+                return null;
+            }
+        }, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                failure.apply(s);
+                return null;
+            }
+        });
+
+    }
+    public  void getArray(String url, Function<JSONArray,Void> success, Context context){
+        getArray(url,success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                System.out.println(s);
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+
+                return null;
+            }
+        });
+    }
+
+    public  void getObject(String url, Function<JSONObject,Void> success, Context context){
+        getObject(url,success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                System.out.println(s);
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                return null;
+            }
+        });
+    }
+
+
+    public  void getObject(String url, Function<JSONObject,Void> success, Function<String,Void> failure){
+        getString(url, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                try{
+                    JSONObject obj=  new JSONObject(s);
+                    success.apply(obj);
+
+                }
+                catch (JSONException e){
+                    failure.apply(s);
+                }
+                return null;
+            }
+        }, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                failure.apply(s);
+                return null;
+            }
+        });
+
+    }
+    public  void getString(String url, Function<String,Void> success, Context context){
+        getString(url,success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                System.out.println(s);
+                return null;
+            }
+        });
+    }
+
+
+
+
 
     public  void put(String url, RequestParams params, AsyncHttpResponseHandler response){
         System.out.println(params);

@@ -126,7 +126,7 @@ public class Utility {
                 if(obj.has(control.getName())) {
                     Object value = obj.get(control.getName());
                     if (value != null) {
-                        hc.setText(control.getFormatValue(value));
+                        hc.setText(control.getFormatValue(control.convertValue(value)));
                     }
                 }
                 item.addView(hc);

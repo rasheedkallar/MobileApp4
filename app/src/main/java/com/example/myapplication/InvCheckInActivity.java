@@ -109,7 +109,8 @@ public  class InvCheckInActivity extends BaseActivity {
 
 
         @Override
-        protected void refreshGrid() {
+        protected void refreshGrid(TableLayout table) {
+            table_layout = table;
             if(suppliers == null){
                 new DataService().getLookups(getRootActivity(),  new String[] {"Supplier", "Employee"}, new DataService.LookupsResponse() {
                     @Override
@@ -118,12 +119,12 @@ public  class InvCheckInActivity extends BaseActivity {
                         employees = lookups[1];
                         add_button.setEnabled( true);
                         refresh_button.setEnabled( true);
-                        InvCheckInDetailedControl.super.refreshGrid();
+                        InvCheckInDetailedControl.super.refreshGrid(table_layout);
                     }
                 });
             }
             else{
-                super.refreshGrid();
+                super.refreshGrid(table_layout);
                 add_button.setEnabled( true);
                 refresh_button.setEnabled( true);
             }

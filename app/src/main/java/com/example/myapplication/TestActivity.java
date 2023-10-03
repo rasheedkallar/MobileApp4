@@ -17,6 +17,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.TableLayout;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -43,8 +44,34 @@ import cz.msebera.android.httpclient.Header;
 
 public class TestActivity extends BaseActivity {
     public TestActivity(){
-
+        Controls.add(new InvCheckInActivity.InvCheckInDetailedControl());
     }
+    public static class InvCheckInDetailedControl extends Control.DetailedControl {
+        public InvCheckInDetailedControl() {
+            super("InvCheckIns", "Stock Receive","InvCheckIn",null);
+        }
 
+        @Override
+        protected ArrayList<Control.ControlBase> getControls(String action) {
+            ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
+            if(action == null)return controls;
+            if(action.equals("Filter")){
+
+                controls.add(Control.getDateControl("from","From").setValue(Utility.AddDay(new Date(),-10)).setControlSize(310));
+                controls.add(Control.getDateControl("to","To").setValue(Utility.AddDay(new Date(),1)).setControlSize(310));
+                return controls;
+            }
+            else if(action.equals("Refresh")){
+                ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
+                controls.add(Control.getDateTimeControl("CheckInTime","Date"));
+                //controls.add(Control.getEditTextControl("RefNum","Ref#"));
+                //controls.add(Control.getEditTextControl("EmpName","Emp"));
+                //controls.add(Control.getLookupControl("SupId","Supplier",null));
+                //controls.add(Control.getEditTextControl( "Status", "Status"));
+
+            }
+            return controls;
+        }
+    }
 
 }

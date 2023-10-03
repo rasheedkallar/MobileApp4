@@ -87,6 +87,8 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
             }
         });
         container.addView(txt);
+
+
         sv.addView(fbl);
         container.addView(sv);
         _container = fbl;

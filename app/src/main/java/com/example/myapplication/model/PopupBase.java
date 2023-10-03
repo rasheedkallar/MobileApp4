@@ -70,6 +70,7 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
             RootActivity.Popups.remove(this);
         super.onDestroy();
     }
+
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         if(RootActivity.Popups.contains(this))

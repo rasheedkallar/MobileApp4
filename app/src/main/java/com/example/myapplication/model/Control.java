@@ -92,7 +92,7 @@ public class Control {
 
         public boolean doAfterSaved(Long id,boolean defaultClose){
             setSelectedId(id);
-            refreshGrid();
+            refreshGrid(table_layout);
             return defaultClose;
         }
 
@@ -148,7 +148,7 @@ public class Control {
             container.addView(control_detailed);
 
             if(getForeignFieldName() == null || getForeignFieldName().length() == 0 || (getParentId() != null && getParentId() >0))
-                refreshGrid();
+                refreshGrid(table_layout);
         }
         protected String getRefreshUrl(){
             List<String> values = new ArrayList<>();
@@ -179,8 +179,11 @@ public class Control {
                 }
             }
         }
-        protected void refreshGrid(){
 
+        private transient TableRow header_row;
+
+        protected void refreshGrid(TableLayout table){
+            table_layout = table;
 
             ArrayList<ControlBase> controls = getControls("List");
             String id_field_name = getIdFieldName();
@@ -195,12 +198,12 @@ public class Control {
                             getValue().clear();
                             JSONArray data = new JSONArray(result);
                             table_layout.removeAllViews();
-                            final TableRow header = new TableRow(table_layout.getContext());
-                            table_layout.addView(header);
+                            header_row = new TableRow(table_layout.getContext());
+                            table_layout.addView(header_row);
                             TableLayout.LayoutParams headerP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                            header.setLayoutParams(headerP);
-                            header.setBackgroundColor(Color.parseColor("#054678"));
-                            header.setPadding(5, 5, 5, 5);
+                            header_row.setLayoutParams(headerP);
+                            header_row.setBackgroundColor(Color.parseColor("#054678"));
+                            header_row.setPadding(5, 5, 5, 5);
                             final TableLayout parentTable = table_layout;
                             boolean selectionFound = false;
                             for (com.example.myapplication.model.Control.ControlBase control : controls) {
@@ -214,7 +217,7 @@ public class Control {
                                 hc.setTextColor(ContextCompat.getColor(table_layout.getContext(), R.color.white));
                                 hc.setText(control.getCaption());
                                 hc.setBackgroundColor(Color.parseColor("#008477"));
-                                header.addView(hc);
+                                header_row.addView(hc);
                             }
 
                             for (int i = 0; i < data.length(); i++) {
@@ -232,7 +235,7 @@ public class Control {
 
                                         try {
                                             setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
-                                            selectRow(item, header, parentTable);
+                                            selectRow(item, header_row, parentTable);
                                         }
                                         catch (Exception e){
                                             setSelectedId(null);
@@ -257,7 +260,7 @@ public class Control {
 
                                     try {
                                         setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
-                                        selectRow(item, header, parentTable);
+                                        selectRow(item, header_row, parentTable);
                                         selectionFound =true;
 
                                     }
@@ -331,7 +334,7 @@ public class Control {
                         @Override
                         public void onSuccess(Boolean deleted) {
                             setSelectedId(null);
-                            refreshGrid();
+                            refreshGrid(table_layout);
                         }
                     });
                     return true;
@@ -339,9 +342,22 @@ public class Control {
 
             }
             else if(action.equals("Refresh")){
-                refreshGrid();
+                refreshGrid(table_layout);
             }
         }
+        protected  void onRowSelected(TableRow row){
+            JSONObject obj = (JSONObject)row.getTag();
+            try
+            {
+                setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
+
+            }
+            catch (JSONException e){
+                setSelectedId(null);
+            }
+            selectRow(row,header_row,table_layout);
+        }
+
         protected abstract ArrayList<ControlBase> getControls(String action);
     }
 
