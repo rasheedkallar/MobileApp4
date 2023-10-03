@@ -51,26 +51,15 @@ public class TestActivity extends BaseActivity {
             super("InvCheckIns", "Stock Receive","InvCheckIn",null);
         }
 
+
+        @Override
+        public void doAction(Control.ActionButton button) {
+
+        }
+
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
-            ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-            if(action == null)return controls;
-            if(action.equals("Filter")){
-
-                controls.add(Control.getDateControl("from","From").setValue(Utility.AddDay(new Date(),-10)).setControlSize(310));
-                controls.add(Control.getDateControl("to","To").setValue(Utility.AddDay(new Date(),1)).setControlSize(310));
-                return controls;
-            }
-            else if(action.equals("Refresh")){
-                ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
-                controls.add(Control.getDateTimeControl("CheckInTime","Date"));
-                //controls.add(Control.getEditTextControl("RefNum","Ref#"));
-                //controls.add(Control.getEditTextControl("EmpName","Emp"));
-                //controls.add(Control.getLookupControl("SupId","Supplier",null));
-                //controls.add(Control.getEditTextControl( "Status", "Status"));
-
-            }
-            return controls;
+            return null;
         }
     }
 

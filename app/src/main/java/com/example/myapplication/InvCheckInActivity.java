@@ -53,12 +53,12 @@ public  class InvCheckInActivity extends BaseActivity {
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-            if(action == "Add" || action == "Edit" || action == "List"){
+            if(action == Control.ACTION_ADD || action == Control.ACTION_EDIT || action == Control.ACTION_REFRESH){
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                 controls.add(Control.getEditTextControl("Barcode","Barcode"));
                 controls.add(Control.getEditDecimalControl("Qty","Qty"));
                 controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE));
-                if(action != "List")
+                if(action != Control.ACTION_REFRESH)
                     controls.add(Control.getImageControl( "Images", "Item Images","InvCheckInLine"));
 
                 return controls;
@@ -68,30 +68,27 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         }
     }
-
-
-
     public static class InvCheckInDetailedControl extends Control.DetailedControl {
         public InvCheckInDetailedControl() {
             super("InvCheckIns", "Stock Receive","InvCheckIn",null);
         }
         @Override
-        public void addDetailedView(ViewGroup container) {
-            super.addDetailedView(container);
+        public void addValueView(ViewGroup container) {
+            super.addValueView(container);
             if(suppliers == null){
-                add_button.setEnabled( false);
-                refresh_button.setEnabled( false);
+                getActionButton(Control.ACTION_ADD).setEnabled( false);
+                getActionButton(Control.ACTION_REFRESH).setEnabled( false);
             }
         }
         @Override
-        protected void onButtonClick(String action, RadioButton button) {
-            BaseActivity activity = (BaseActivity)button.getContext();
-            if(action == "Add"){
+        public void doAction(Control.ActionButton action) {
+            BaseActivity activity = (BaseActivity)action.getButton().getContext();
+            if(action.getName() == Control.ACTION_ADD){
                 PopupLookup.create("SupplierPicker",suppliers,0L,(supplier)->{
                     supplierId = supplier.getId();
                     PopupLookup.create("EmployeePicker",employees,0L,(employee)->{
                         employeeId = employee.getId();
-                        super.onButtonClick(action, button);
+                        super.doAction(action);
                         return true;
                     }).show(activity.getSupportFragmentManager(),null);
                     return true;
@@ -100,7 +97,7 @@ public  class InvCheckInActivity extends BaseActivity {
 
             }
             else {
-                super.onButtonClick(action, button);
+                super.doAction(action);
             }
         }
 
@@ -109,24 +106,23 @@ public  class InvCheckInActivity extends BaseActivity {
 
 
         @Override
-        protected void refreshGrid(TableLayout table) {
-            table_layout = table;
+        public void refreshGrid(TableLayout table) {
             if(suppliers == null){
-                new DataService().getLookups(getRootActivity(),  new String[] {"Supplier", "Employee"}, new DataService.LookupsResponse() {
+                new DataService().getLookups(table.getContext(),  new String[] {"Supplier", "Employee"}, new DataService.LookupsResponse() {
                     @Override
                     public void onSuccess(List<DataService.Lookup>[] lookups) {
                         suppliers = lookups[0];
                         employees = lookups[1];
-                        add_button.setEnabled( true);
-                        refresh_button.setEnabled( true);
-                        InvCheckInDetailedControl.super.refreshGrid(table_layout);
+                        getActionButton(Control.ACTION_ADD).setEnabled( true);
+                        getActionButton(Control.ACTION_REFRESH).setEnabled( true);
+                        InvCheckInDetailedControl.super.refreshGrid(table);
                     }
                 });
             }
             else{
-                super.refreshGrid(table_layout);
-                add_button.setEnabled( true);
-                refresh_button.setEnabled( true);
+                super.refreshGrid(table);
+                getActionButton(Control.ACTION_ADD).setEnabled( true);
+                getActionButton(Control.ACTION_REFRESH).setEnabled( true);
             }
         }
 
@@ -136,14 +132,14 @@ public  class InvCheckInActivity extends BaseActivity {
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-
-            if(action == "Filter"){
+            if(action == null)return controls;
+            if(action.equals(Control.ACTION_FILTER)){
 
                 controls.add(Control.getDateControl("from","From").setValue(Utility.AddDay(new Date(),-10)).setControlSize(310));
                 controls.add(Control.getDateControl("to","To").setValue(Utility.AddDay(new Date(),1)).setControlSize(310));
                 return controls;
             }
-            else if(action == "List"){
+            else if(action.equals(Control.ACTION_REFRESH)){
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                 controls.add(Control.getDateTimeControl("CheckInTime","Date"));
                 controls.add(Control.getEditTextControl("RefNum","Ref#"));
@@ -152,10 +148,10 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getEditTextControl( "Status", "Status"));
                 return controls;
             }
-            else if(action == "Add" || action == "Edit"){
+            else if(action.equals(Control.ACTION_ADD ) || action.equals(Control.ACTION_EDIT)){
                 controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
                 controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
-                if(action == "Add"){
+                if(action.equals(Control.ACTION_ADD)){
                     controls.add(Control.getLookupControl( "SupId", "Supplier", suppliers).setValue(supplierId));
                     controls.add(Control.getLookupControl( "EmpId", "Employee", employees).setValue(employeeId));
                 }
@@ -172,9 +168,4 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         }
     }
-
-
-
-
-
 }

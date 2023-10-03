@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/detailed_panel"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingBottom="5dp"
@@ -22,82 +23,32 @@
             android:text="Header"
             android:textColor="#8CD0E4"
             android:textSize="30sp" />
-        <RadioGroup
+        <LinearLayout
             android:layout_width="wrap_content"
+            android:id="@+id/action_panel"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:layout_gravity="end">
-
-            <RadioButton
-                android:id="@+id/add_button"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:button="@null"
-                android:background="@drawable/radio_button_add"
-                android:text="" />
-
-            <RadioButton
-                android:id="@+id/edit_button"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:button="@null"
-                android:background="@drawable/radio_button_edit"
-                android:enabled="false"
-                android:text="" />
-
-            <RadioButton
-                android:id="@+id/delete_button"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:button="@null"
-                android:background="@drawable/radio_button_delete"
-                android:enabled="false"
-                android:text="" />
-
-            <RadioButton
-                android:id="@+id/refresh_button"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:button="@null"
-                android:background="@drawable/radio_button_refresh"
-                android:text="" />
-        </RadioGroup>
+        </LinearLayout>
     </RelativeLayout>
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+
         android:fillViewport="true">
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/detailed_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-            <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/filter_layout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:flexWrap="wrap">
-            </com.google.android.flexbox.FlexboxLayout>
-            <TableLayout
-                android:id="@+id/table_layout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-            </TableLayout>
+
 
 
         </LinearLayout>
     </ScrollView>
-
-
-
-
-
-
-
-
-
 
 </LinearLayout>
