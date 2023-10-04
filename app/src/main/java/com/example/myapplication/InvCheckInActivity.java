@@ -1,45 +1,13 @@
 package com.example.myapplication;
-
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.ScrollView;
 import android.widget.TableLayout;
-import android.widget.TableRow;
-import android.widget.Toast;
-
-import androidx.annotation.Nullable;
-
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
-import com.example.myapplication.model.PopupConfirmation;
-import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
-import com.google.android.flexbox.FlexWrap;
-import com.google.android.flexbox.FlexboxLayout;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.function.Function;
 
 public  class InvCheckInActivity extends BaseActivity {
 
@@ -58,9 +26,14 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getEditTextControl("Barcode","Barcode"));
                 controls.add(Control.getEditDecimalControl("Qty","Qty"));
                 controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE));
-                if(action != Control.ACTION_REFRESH)
-                    controls.add(Control.getImageControl( "Images", "Item Images","InvCheckInLine"));
-
+                if(action != Control.ACTION_REFRESH) {
+                    ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
+                    searchControls.add(Control.getEditTextControl("Description","Description"));
+                    searchControls.add(Control.getEditTextControl("Unit","Unit"));
+                    searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3));
+                    controls.add(Control.getSearchControl("UnitId","Item",searchControls,"InvItem","Description").setIsRequired(false));
+                    controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine"));
+                }
                 return controls;
             }
             else{
@@ -100,11 +73,8 @@ public  class InvCheckInActivity extends BaseActivity {
                 super.doAction(action);
             }
         }
-
         private Long supplierId;
         private Long employeeId;
-
-
         @Override
         public void refreshGrid(TableLayout table) {
             if(suppliers == null){
@@ -125,7 +95,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 getActionButton(Control.ACTION_REFRESH).setEnabled( true);
             }
         }
-
         private List<DataService.Lookup> suppliers = null;
         private List<DataService.Lookup> employees = null;
 

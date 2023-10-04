@@ -187,10 +187,11 @@ public class Control {
                             table.addView(header_row);
                             TableLayout.LayoutParams headerP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                             header_row.setLayoutParams(headerP);
-                            header_row.setBackgroundColor(Color.parseColor("#054678"));
+                            header_row.setBackgroundColor(Color.parseColor("#008477"));
                             header_row.setPadding(5, 5, 5, 5);
                             final TableLayout parentTable = table;
                             boolean selectionFound = false;
+                            
                             for (com.example.myapplication.model.Control.ControlBase control : controls) {
 
                                 control.addListHeader(header_row);
@@ -269,23 +270,22 @@ public class Control {
                 new DataService().getById(activity, getEntityName(), getSelectedId(), new DataService.GetByIdResponse() {
                     @Override
                     public void onSuccess(JSONObject data) {
-                        try {
-                            ArrayList<ControlBase> controls = getControls(action.getName());
-                            if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
-                                controls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
-                            }
-                            Utility.applyValues(data,controls);
-                            for (int i = 0; i < controls.size(); i++) {
-                                if(DetailedControlBase.class.isAssignableFrom(controls.get(i).getClass())){
-                                    DetailedControlBase ctrl = (DetailedControlBase)controls.get(i);
-                                    ctrl.setParentId(getSelectedId());
-                                }
-                            }
-                            new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",controls,getEntityName(),getSelectedId())).show( activity.getSupportFragmentManager(),null);
+
+                        ArrayList<ControlBase> controls = getControls(action.getName());
+                        if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
+                            controls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
                         }
-                        catch ( JSONException ex){
-                            Toast.makeText(activity, "Error in loading data " +  ex.getMessage(), Toast.LENGTH_SHORT).show();
+                        for (int i = 0; i < controls.size(); i++) {
+                            controls.get(i).readValue(data);
                         }
+                        //Utility.applyValues(data,controls);
+                        for (int i = 0; i < controls.size(); i++) {
+                            if(DetailedControlBase.class.isAssignableFrom(controls.get(i).getClass())){
+                                DetailedControlBase ctrl = (DetailedControlBase)controls.get(i);
+                                ctrl.setParentId(getSelectedId());
+                            }
+                        }
+                        new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",controls,getEntityName(),getSelectedId())).show( activity.getSupportFragmentManager(),null);
                     }
                 });
             }
@@ -463,7 +463,7 @@ public class Control {
             else if(getValue() != null && getValue().size() >0)valid = true;
             if(header_panel!=null) {
                 if (valid) {
-                    header_panel.setBackgroundColor(Color.parseColor("#008477"));
+                    header_panel.setBackgroundColor(Color.parseColor("#225C6E"));
                 } else {
                     header_panel.setBackgroundColor(Color.parseColor("#BC3E17"));
                 }
@@ -633,37 +633,126 @@ public class Control {
         return new EditDecimalControl(name,caption);
     }
 
-    public static SearchControl getSearchControl( String name, String caption){
-        return new SearchControl(name,caption);
+    public static SearchControl getSearchControl( String name, String caption,List<Control.ControlBase> controls,String entityName,String displayFieldName){
+        return new SearchControl(name,caption,controls,entityName,displayFieldName);
     }
-    public static class SearchControl extends BrowseControlBase<SearchControl,HashMap<Long,String>>{
-        public SearchControl(String name, String caption) {
+    public static class SearchControl extends BrowseControlBase<SearchControl, DataService.Lookup>{
+        public SearchControl(String name, String caption,List<Control.ControlBase> controls,String entityName,String displayFieldName) {
             super(name, caption);
+            setControls(controls);
+            setEntityName(entityName);
+            setDisplayField(displayFieldName);
+            setControlSize(Control.CONTROL_SIZE_DOUBLE);
+            setIdField("Id");
+            setKeywordsField("keyWords");
         }
         private transient TextView LookupTextView;
-        public SearchControl setLookups(List<DataService.Lookup> lookups) {
+        private List<Control.ControlBase> Controls;
+        public List<Control.ControlBase> getControls() {
+            return Controls;
+        }
+
+        private String KeywordsField;
+        public String getKeywordsField() {
+            return KeywordsField;
+        }
+        public SearchControl setKeywordsField(String keywordsField) {
+            KeywordsField = keywordsField;
+            return this;
+        }
+        private String EntityName;
+        public String getEntityName() {
+            return EntityName;
+        }
+        public SearchControl setEntityName(String entityName) {
+            EntityName = entityName;
+            return this;
+        }
+        private String IdField;
+        public String getIdField() {
+            return IdField;
+        }
+        public SearchControl setIdField(String idField) {
+            IdField = idField;
             return this;
         }
 
-        private String FormatValue;
-
-
+        private String DisplayField;
+        public String getDisplayField() {
+            return DisplayField;
+        }
+        public SearchControl setDisplayField(String displayField) {
+            DisplayField = displayField;
+            return this;
+        }
+        public SearchControl setControls(List<Control.ControlBase> controls) {
+            Controls = controls;
+            return this;
+        }
 
         @Override
-        public void valueChange(HashMap<Long,String> oldValue, HashMap<Long,String> newValue) {
-            if(LookupTextView != null) LookupTextView.setText(null);
+        public void updateSaveParameters(RequestParams params) {
+            if(getValue() != null)params.put(getName(),getValue().getId());
         }
         @Override
-        protected HashMap<Long,String> convertValue(Object value) {
+        public void valueChange(DataService.Lookup oldValue, DataService.Lookup newValue) {
+            if(LookupTextView != null) {
+                if(newValue == null){
+                    LookupTextView.setText(null);
+                }else{
+                    LookupTextView.setText(newValue.getName());
+                }
+            }
+        }
 
-
-
-
+        @Override
+        public SearchControl readValue(JSONObject data) {
+            return super.readValue(convertValue(data));
+        }
+        @Override
+        protected DataService.Lookup convertValue(Object value) {
+            if(value == null)return  null;
+            else if(DataService.Lookup.class.isAssignableFrom(value.getClass()))return (DataService.Lookup) value;
+            else if(JSONObject.class.isAssignableFrom(value.getClass())){
+                JSONObject data = (JSONObject)value;
+                DataService.Lookup l = new DataService.Lookup();
+                if (!data.has(getName())) return null;
+                l.setName("[Unknown]");
+                try {
+                    Object datavalue = data.get(getName());
+                    if(datavalue == null || datavalue.toString().length() == 0 || datavalue.toString().equals("null")){
+                         return null;
+                    }
+                    else{
+                        l.setId( Long.parseLong(datavalue.toString()));
+                        if (data.has(getDisplayField())) {
+                            l.setName(data.get(getDisplayField()).toString());
+                        }
+                        return l;
+                    }
+                } catch (JSONException e) {
+                    return null;
+                }
+            }
             return null;
         }
+
+        @Override
+        public String getFormatValue(DataService.Lookup value) {
+            if(value == null)return  null;
+            else return value.getName();
+        }
+
         @Override
         protected void onBrowse(Button button) {
-
+            PopupSearch ps = PopupSearch.create(getCaption(),getControls() ,getEntityName(),getDisplayField(),(lookup)->{
+                setValue(lookup);
+                return true;
+            });
+            ps.getArgs().setAllowNull(!getIsRequired());
+            ps.getArgs().setIdField(getIdField());
+            ps.getArgs().setKeywordsField(getKeywordsField());
+            ps.show(((BaseActivity)button.getContext()).getSupportFragmentManager(),null);
         }
         @Override
         protected void addBrowseView(ViewGroup container) {
@@ -672,6 +761,9 @@ public class Control {
             LookupTextView.setText(getFormatValue(getValue()));
             LinearLayout.LayoutParams tvlP= new LinearLayout.LayoutParams(getWidth()- getButtonSize()+10, ViewGroup.LayoutParams.WRAP_CONTENT);
             LookupTextView.setLayoutParams(tvlP);
+
+
+
             container.addView(LookupTextView);
         }
     }
@@ -1499,8 +1591,10 @@ public class Control {
 
         public  T readValue(JSONObject data){
             try{
-                Object value = data.get(getName());
-                readValue(value);
+                if(data.has(getName())){
+                    Object value = data.get(getName());
+                    readValue(value);
+                }
             }
             catch (JSONException e){
 
@@ -1591,18 +1685,10 @@ public class Control {
 
 
         private void setFormat(Button button, boolean enabled){
-
-            String backColour = "#144859";
             String foreColour = "#8CD0E4";
-
-            if(!enabled){
-                foreColour = "#6D6F70";
-                backColour = "#515353";
-            }
-
-
+            if(!enabled)foreColour = "#6D6F70";
             ArrayList<VectorDrawableCreator.PathData> paths = new ArrayList<VectorDrawableCreator.PathData>();
-            paths.add(new VectorDrawableCreator.PathData("M0,0h24v24h-24z", Color.parseColor(backColour)));
+            paths.add(new VectorDrawableCreator.PathData("M 18 0 L 2 0 c -1.1 0 -2 0.9 -2 2 v 20 c 0 1.1 0.9 2 2 2 h 20 c 1.1 0 2 -0.9 2 -1 L 24 2 c 0 -1.1 -0.9 -2 -3 -2 z M 23 23 L 1 23 L 1 1 h 22 v 22 z", Color.parseColor(foreColour)));
 
             if(Name != null) {
 
@@ -1624,8 +1710,10 @@ public class Control {
             }
 
 
-            Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,26,26,paths);
+            Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,24,24,paths);
             button.setBackground(d);
+
+            button.setEnabled(enabled);
         }
 
 
@@ -1641,8 +1729,8 @@ public class Control {
                     //onBrowse((Button)v);
                 }
             });
-            ViewGroup.LayoutParams btLp= new ViewGroup.LayoutParams(Width,Height);
-
+            LinearLayout.LayoutParams btLp= new LinearLayout.LayoutParams(Width,Height);
+            btLp.setMargins(10,0,10,0);
             button.setLayoutParams(btLp);
 
             setFormat(button,Enabled);

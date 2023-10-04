@@ -64,6 +64,12 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
     private  TableLayout table_layout;
     private Control.DetailedControl detailed_control;
     private EditText edit_text;
+
+    @Override
+    public void doOk() {
+        if(OnItemSelected.apply(null))PopupSearch.super.doOk();
+    }
+
     @Override
     public void AddControls(LinearLayout container) {
 
@@ -98,7 +104,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
                 DataService.Lookup l = new DataService.Lookup();
                 l.setId(getSelectedId());
                 l.setName(display);
-                if(OnItemSelected.apply(l))doOk();
+                if(OnItemSelected.apply(l))PopupSearch.super.doOk();
             }
         };
         edit_text = new EditText(getContext());
@@ -149,6 +155,16 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
             if(controls == null)setControls(new ArrayList<Control.ControlBase>());
             else setControls(controls);
         }
+
+        private boolean AllowNull= false;
+
+        public PopupSearchArgs setAllowNull(boolean allowNull) {
+            AllowNull = allowNull;
+            if(allowNull)setOkButton("Clear");
+            else setOkButton(null);
+            return this;
+        }
+
         private List<Control.ControlBase> Controls;
         public List<Control.ControlBase> getControls() {
             return Controls;
