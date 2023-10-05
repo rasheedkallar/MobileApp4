@@ -1277,7 +1277,7 @@ public class Control {
         public EditTextControlBase(String name, String caption){
             super( name, caption);
         }
-        private transient EditText EditTextControl;
+        protected transient EditText EditTextControl;
         public EditText getEditTextControl() {
             return EditTextControl;
         }

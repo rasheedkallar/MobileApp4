@@ -1,6 +1,10 @@
 package com.example.myapplication;
+import android.view.KeyEvent;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TableLayout;
+import android.widget.Toast;
+
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupLookup;
@@ -14,6 +18,30 @@ public  class InvCheckInActivity extends BaseActivity {
     public InvCheckInActivity(){
         Controls.add(new InvCheckInDetailedControl());
     }
+
+
+    public static class BarcodeTextControl extends Control.EditTextControl{
+
+        public BarcodeTextControl() {
+            super("Barcode", "Barcode");
+        }
+
+        @Override
+        public void addValueView(ViewGroup container) {
+            super.addValueView(container);
+            EditTextControl.setOnKeyListener(new View.OnKeyListener() {
+                @Override
+                public boolean onKey(View view, int i, KeyEvent keyEvent) {
+                    if(i == KeyEvent.KEYCODE_ENTER){
+                        Toast.makeText(view.getContext(),   "Enter", Toast.LENGTH_SHORT).show();
+                    }
+                    return false;
+                }
+            });
+
+        }
+    }
+
     public static class InvCheckInLineDetailedControl extends Control.DetailedControl {
         public InvCheckInLineDetailedControl() {
             super("InvCheckInLines", "Items","InvCheckInLine","CheckInId");
@@ -23,7 +51,7 @@ public  class InvCheckInActivity extends BaseActivity {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action == Control.ACTION_ADD || action == Control.ACTION_EDIT || action == Control.ACTION_REFRESH){
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
-                controls.add(Control.getEditTextControl("Barcode","Barcode"));
+                controls.add(new BarcodeTextControl());
                 controls.add(Control.getEditDecimalControl("Qty","Qty"));
                 controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE));
                 if(action != Control.ACTION_REFRESH) {
