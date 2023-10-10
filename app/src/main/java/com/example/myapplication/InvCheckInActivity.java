@@ -9,11 +9,18 @@ import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
+
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 
 public  class InvCheckInActivity extends BaseActivity {
+
+
+
 
     public InvCheckInActivity(){
         Controls.add(new InvCheckInDetailedControl());
@@ -21,19 +28,38 @@ public  class InvCheckInActivity extends BaseActivity {
 
 
     public static class BarcodeTextControl extends Control.EditTextControl{
-
         public BarcodeTextControl() {
             super("Barcode", "Barcode");
         }
-
         @Override
         public void addValueView(ViewGroup container) {
             super.addValueView(container);
-            EditTextControl.setOnKeyListener(new View.OnKeyListener() {
+            getEditTextInput().setOnKeyListener(new View.OnKeyListener() {
                 @Override
                 public boolean onKey(View view, int i, KeyEvent keyEvent) {
                     if(i == KeyEvent.KEYCODE_ENTER){
-                        Toast.makeText(view.getContext(),   "Enter", Toast.LENGTH_SHORT).show();
+                        if(getEditTextInput().getText() != null && getEditTextInput().toString().length() !=0){
+                            String barcode = getEditTextInput().toString();
+                            new DataService().getObject("InvItem?barcode=" + barcode, new Function<JSONObject, Void>() {
+                                @Override
+                                public Void apply(JSONObject jsonObject) {
+
+                                    return null;
+                                }
+                            }, new Function<String, Void>() {
+                                @Override
+                                public Void apply(String s) {
+                                    if(s.equals("null")){
+
+
+                                    }
+                                    else{
+                                        Toast.makeText(container.getContext(),s,Toast.LENGTH_SHORT);
+                                    }
+                                    return null;
+                                }
+                            });
+                        }
                     }
                     return false;
                 }
@@ -41,6 +67,16 @@ public  class InvCheckInActivity extends BaseActivity {
 
         }
     }
+
+    public static  class SearchControl extends Control.SearchControl {
+
+        public SearchControl(List<Control.ControlBase> controls) {
+            super("UnitId","Item",controls,"InvItem","Description");
+            setIsRequired(false);
+        }
+    }
+
+    private static SearchControl UnitIdSearchControl;
 
     public static class InvCheckInLineDetailedControl extends Control.DetailedControl {
         public InvCheckInLineDetailedControl() {
@@ -52,14 +88,15 @@ public  class InvCheckInActivity extends BaseActivity {
             if(action == Control.ACTION_ADD || action == Control.ACTION_EDIT || action == Control.ACTION_REFRESH){
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                 controls.add(new BarcodeTextControl());
-                controls.add(Control.getEditDecimalControl("Qty","Qty"));
+                controls.add(Control.getEditDecimalControl("Qty","Qty").setDecimalPlaces(3));
                 controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE));
                 if(action != Control.ACTION_REFRESH) {
                     ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
                     searchControls.add(Control.getEditTextControl("Description","Description"));
                     searchControls.add(Control.getEditTextControl("Unit","Unit"));
                     searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3));
-                    controls.add(Control.getSearchControl("UnitId","Item",searchControls,"InvItem","Description").setIsRequired(false));
+                    UnitIdSearchControl = new SearchControl(searchControls);
+                    controls.add(UnitIdSearchControl);
                     controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine"));
                 }
                 return controls;
@@ -82,14 +119,14 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         }
         @Override
-        public void doAction(Control.ActionButton action) {
+        public void onButtonClick(Control.ActionButton action) {
             BaseActivity activity = (BaseActivity)action.getButton().getContext();
             if(action.getName() == Control.ACTION_ADD){
                 PopupLookup.create("SupplierPicker",suppliers,0L,(supplier)->{
                     supplierId = supplier.getId();
                     PopupLookup.create("EmployeePicker",employees,0L,(employee)->{
                         employeeId = employee.getId();
-                        super.doAction(action);
+                        super.onButtonClick(action);
                         return true;
                     }).show(activity.getSupportFragmentManager(),null);
                     return true;
@@ -98,7 +135,7 @@ public  class InvCheckInActivity extends BaseActivity {
 
             }
             else {
-                super.doAction(action);
+                super.onButtonClick(action);
             }
         }
         private Long supplierId;
@@ -141,7 +178,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getDateTimeControl("CheckInTime","Date"));
                 controls.add(Control.getEditTextControl("RefNum","Ref#"));
                 controls.add(Control.getEditTextControl("EmpName","Emp"));
-                controls.add(Control.getLookupControl("SupId","Supplier",suppliers));
+                controls.add(Control.getLookupListControl("SupId","Supplier","Supplier",suppliers));
                 controls.add(Control.getEditTextControl( "Status", "Status"));
                 return controls;
             }
@@ -149,12 +186,12 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
                 controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
                 if(action.equals(Control.ACTION_ADD)){
-                    controls.add(Control.getLookupControl( "SupId", "Supplier", suppliers).setValue(supplierId));
-                    controls.add(Control.getLookupControl( "EmpId", "Employee", employees).setValue(employeeId));
+                    controls.add(Control.getLookupListControl( "SupId", "Supplier", "Supplier",suppliers).readValue(supplierId));
+                    controls.add(Control.getLookupListControl( "EmpId", "Employee", "Employee",employees).readValue(employeeId));
                 }
                 else{
-                    controls.add(Control.getLookupControl( "SupId", "Supplier", suppliers));
-                    controls.add(Control.getLookupControl( "EmpId", "Employee", employees));
+                    controls.add(Control.getLookupListControl( "SupId", "Supplier","Supplier", suppliers));
+                    controls.add(Control.getLookupListControl( "EmpId", "Employee","Employee", employees));
                 }
                 controls.add(new InvCheckInLineDetailedControl());
                 controls.add(Control.getImageControl( "Images", "Invoice Images","InvCheckIn"));

@@ -99,7 +99,7 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
 
         LinearLayout linearLayout = new LinearLayout(getActivity());
         LinearLayout.LayoutParams lllP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        linearLayout.setPadding(2, 2, 2, 2);
+        //linearLayout.setPadding(2, 2, 2, 2);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.setLayoutParams(lllP);
         container = linearLayout;

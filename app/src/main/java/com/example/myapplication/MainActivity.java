@@ -44,43 +44,28 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
+
         setContentView(R.layout.activity_main);
 
 
         LinearLayout ll =  findViewById(R.id.container);
-        Button button = findViewById(R.id.myButton);
+
+        Control.EditTextControl etc = Control.getEditTextControl("test","test");
 
 
 
 
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
 
-                ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-                //controls.add(Control.getEditTextControl("ItemNumber","Item#"));
-                controls.add(Control.getEditTextControl("Description","Description"));
-                controls.add(Control.getEditTextControl("Unit","Unit"));
-                //controls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3));
-                PopupSearch.create("Test",controls,"InvItem","Description",(lookup)->{
-                    //PopupHtml.create("Result",selected.toString()).show(getSupportFragmentManager(),null);
 
-                    return true;
 
-                }).show(getSupportFragmentManager(),null);
-            }
-        });
-/*
 
-        Control.ActionButton ab = new Control.ActionButton("Add");
-        ab.addView(ll, new Function<Button, Void>() {
-            @Override
-            public Void apply(Button button) {
-                return null;
-            }
-        });
 
- */
+
+
+
+
 
 
 

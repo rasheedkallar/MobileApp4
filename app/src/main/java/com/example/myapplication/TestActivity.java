@@ -52,10 +52,7 @@ public class TestActivity extends BaseActivity {
         }
 
 
-        @Override
-        public void doAction(Control.ActionButton button) {
 
-        }
 
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {

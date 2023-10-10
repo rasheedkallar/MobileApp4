@@ -1,19 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-android:id="@+id/container"
-android:layout_width="match_parent"
-android:layout_height="wrap_content"
-android:background="#225C6E"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#04263C"
+    android:orientation="vertical">
 
-android:orientation="horizontal">
-    <Button
-        android:id="@+id/myButton"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-
-        android:textColor="#8CD0E4"
-        android:layout_margin="10dp"
-
-        />
 </LinearLayout>
