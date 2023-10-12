@@ -1,34 +1,25 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container"
+    android:id="@+id/ib"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentTop="true"
+    android:layout_alignParentRight="true"
+    android:background="#7EECE2"
+    android:gravity="center">
 
-    <TextView
-        android:id="@+id/top_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#012723"
-
-        tools:text="I AM TOP" />
-
-    <TextView
-        android:id="@+id/left_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_toLeftOf="@+id/right_text"
-        android:layout_below="@+id/top_text"
-
-        tools:text="LEFT" />
-    <TextView
-        android:id="@+id/right_text"
+    <ImageButton
+        android:id="@+id/button_icon"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/tv"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/top_text"
-
-
-        tools:text="RIGHT" />
-
+        android:layout_alignParentTop="true"
+        android:layout_toLeftOf="@+id/ib"
+        android:gravity="center"
+        android:text="Large Text"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
 </RelativeLayout>

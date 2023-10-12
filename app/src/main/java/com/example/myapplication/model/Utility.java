@@ -56,15 +56,7 @@ public class Utility {
         }
     }
 
-    public static  boolean validate(List<Control.ControlBase> controls){
 
-        boolean valid = true;
-
-        for (Control.ControlBase control: controls) {
-            if(!control.validate())valid = false;
-        }
-        return valid;
-    }
     /*
     public static void applyValues(JSONObject value, ArrayList<Control.ControlBase> controls) throws JSONException {
         for (Iterator<String> it = value.keys(); it.hasNext(); ) {

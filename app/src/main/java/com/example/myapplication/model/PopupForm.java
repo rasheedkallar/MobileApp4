@@ -67,6 +67,16 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
     public FlexboxLayout getFieldsContainer() {
         return FieldsContainer;
     }
+
+    public   boolean validate(){
+        boolean valid = true;
+        for (Control.ControlBase control: getArgs().getControls()) {
+            if(!control.validate())valid = false;
+        }
+        return valid;
+    }
+
+
     @Override
     public void doOk() {
 
@@ -78,7 +88,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         }
 
 
-        if(!Utility.validate(args.getControls())){
+        if(!validate()){
             getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
         }
         else {
@@ -191,9 +201,9 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
                 }
             }
         }
-
-
         container.addView(sv);
+        if(getArgs().getControls() != null && getArgs().getControls().size() > 0)getArgs().getControls().get(0).requestFocus();
+
     }
     public void onCapturedImage(int action,Bitmap image,String entityName,Long entityId,Long id){
         for (int i = 0; i < getArgs().getControls().size(); i++) {

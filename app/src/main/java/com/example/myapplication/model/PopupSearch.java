@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -12,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.Toast;
 
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
@@ -110,14 +112,21 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
         edit_text = new EditText(getContext());
         TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         edit_text.setLayoutParams(txtP);
+
+
+
+
         edit_text.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
             }
             @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                detailed_control.refreshGrid(table_layout);
+            public void onTextChanged(CharSequence s, int start, int count, int after) {
+                if(s.length() > start) {
+                    int ascii = (int) s.charAt(start);
+                    onKeyPress(edit_text, ascii);
+                }
             }
             @Override
             public void afterTextChanged(Editable editable) {
@@ -125,23 +134,27 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
 
             }
         });
-        container.addView(edit_text);
 
+
+
+
+        container.addView(edit_text);
         ScrollView sv = new ScrollView(getContext());
         ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
         scP.setLayoutDirection(LinearLayout.HORIZONTAL);
         sv.setLayoutParams(scP);
-
         table_layout = new TableLayout(getContext());
         ScrollView.LayoutParams tlP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
         table_layout.setLayoutParams(tlP);
         sv.addView(table_layout);
-
         container.addView(sv);
     }
-
-
-
+    protected void onKeyPress(View view, int keycode){
+        System.out.println(keycode);
+        if(keycode == getArgs().getSearchKey()){
+            detailed_control.refreshGrid(table_layout);
+        }
+    }
 
     public static class  PopupSearchArgs extends PopupArgs<PopupSearchArgs> {
         public PopupSearchArgs(String header, List<Control.ControlBase> controls, String entityName,String displayField){
@@ -152,12 +165,11 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
             setIdField("Id");
             setKeywordsField("keyWords");
             setDisplayField(displayField);
+            setSearchKey(32);
             if(controls == null)setControls(new ArrayList<Control.ControlBase>());
             else setControls(controls);
         }
-
         private boolean AllowNull= false;
-
         public PopupSearchArgs setAllowNull(boolean allowNull) {
             AllowNull = allowNull;
             if(allowNull)setOkButton("Clear");
@@ -198,6 +210,17 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
             IdField = idField;
             return this;
         }
+
+
+        private int SearchKey;
+        public int getSearchKey() {
+            return SearchKey;
+        }
+        public PopupSearchArgs setSearchKey(int searchKey) {
+            SearchKey = searchKey;
+            return this;
+        }
+
 
         private String DisplayField;
         public String getDisplayField() {
