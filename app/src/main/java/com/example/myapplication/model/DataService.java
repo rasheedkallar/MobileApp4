@@ -10,6 +10,7 @@ import com.loopj.android.http.ResponseHandlerInterface;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.FileEntity;
+import cz.msebera.android.httpclient.util.ExceptionUtils;
 import kotlin.text.Charsets;
 
 
@@ -72,16 +73,15 @@ public class DataService {
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                if(responseBody != null){
-                    String result = new String(responseBody);
-                    failure.apply(result);
+                String result ="Error on : " + url;
+                if(responseBody != null)result = result + "\r\n" + new String(responseBody);
+                if(error != null) {
+                    result = result + "\r\n" + error.getMessage();
+                    StackTraceElement trace[] = error.getStackTrace();
+                    for (StackTraceElement element : trace)
+                        result = result +  "\r\n" + element.toString() ;
                 }
-                else if(error != null) {
-                    failure.apply(error.getMessage() + error.getStackTrace().toString());
-                }
-                else{
-                    failure.apply("Error in loading data");
-                }
+                failure.apply(result);
             }
         });
     }
@@ -89,13 +89,15 @@ public class DataService {
         getString(url, new Function<String, Void>() {
             @Override
             public Void apply(String s) {
-                try{
-                    JSONArray array= new JSONArray(s);
-                    success.apply(array);
+                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
+                else {
+                    try {
+                        JSONArray array = new JSONArray(s);
+                        success.apply(array);
 
-                }
-                catch (JSONException e){
-                    failure.apply(s);
+                    } catch (JSONException e) {
+                        failure.apply(s);
+                    }
                 }
                 return null;
             }
@@ -136,13 +138,15 @@ public class DataService {
         getString(url, new Function<String, Void>() {
             @Override
             public Void apply(String s) {
-                try{
-                    JSONObject obj=  new JSONObject(s);
-                    success.apply(obj);
+                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
+                else {
+                    try {
+                        JSONObject obj = new JSONObject(s);
+                        success.apply(obj);
 
-                }
-                catch (JSONException e){
-                    failure.apply(s);
+                    } catch (JSONException e) {
+                        failure.apply(s);
+                    }
                 }
                 return null;
             }

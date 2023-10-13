@@ -5,7 +5,8 @@
     android:layout_alignParentLeft="true"
     android:layout_alignParentTop="true"
     android:layout_alignParentRight="true"
-    android:background="#7EECE2"
+    android:animationCache="true"
+    android:background="#E3E0E0"
     android:gravity="center">
 
     <ImageButton

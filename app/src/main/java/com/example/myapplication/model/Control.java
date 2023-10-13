@@ -29,6 +29,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -307,7 +308,7 @@ public class Control {
                             controls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
                         }
                         for (int i = 0; i < controls.size(); i++) {
-                            controls.get(i).readValue(data);
+                            controls.get(i).readValueJSONObject(data);
                         }
                         //Utility.applyValues(data,controls);
                         for (int i = 0; i < controls.size(); i++) {
@@ -478,15 +479,12 @@ public class Control {
         public static final int VALUE_CONTAINER_ID = 1002;
         public static final int ACTION_CONTAINER_ID = 1003;
 
-        @Override
-        public int getWidth() {
-            return ViewGroup.LayoutParams.MATCH_PARENT;
-        }
+
 
         protected GradientDrawable getHeaderBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[] {Color.parseColor("#04263C"),Color.parseColor("#0D78BF")});
+                    new int[] {Color.parseColor("#04263C"),Color.parseColor("#0D78BF"),Color.parseColor("#0D78BF"),Color.parseColor("#04263C")});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
@@ -508,6 +506,7 @@ public class Control {
             super(name,caption);
             setEntityName(entityName);
             setForeignFieldName(foreignFieldName);
+            setControlSize(RelativeLayout.LayoutParams.MATCH_PARENT);
         }
         public ActionButton getActionButton(String action){
             Optional<ActionButton> button = this.getButtons().stream().filter(i-> i.Name.equals(action)).findFirst();
@@ -517,7 +516,7 @@ public class Control {
 
 
         @Override
-        public boolean onValidate() {
+        public boolean validate() {
             boolean valid = false;
             if(getParentId() == null || getParentId() == 0)valid = true;
             else if(!getIsRequired())valid= true;
@@ -536,12 +535,21 @@ public class Control {
         protected transient  LinearLayout ActionLayout;
 
         private transient RelativeLayout rl = null;
+
+
+
+
+
+
+
+
+
         @Override
         protected void addContentView(ViewGroup container) {
 
             if(getButtons() != null && getButtons().size() >0){
                 rl = new RelativeLayout(container.getContext());
-                LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+                LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(), RelativeLayout.LayoutParams.WRAP_CONTENT);
                 rl.setBackground(getHeaderBackground());
                 rl.setLayoutParams(rlP);
                 container.addView(rl);
@@ -588,9 +596,6 @@ public class Control {
                 CaptionTextView.setBackground(getHeaderBackground());
                 container.addView(CaptionTextView);
             }
-
-
-
             LinearLayout llValue = new LinearLayout(container.getContext());
             RelativeLayout.LayoutParams llValueP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             llValueP.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
@@ -599,7 +604,20 @@ public class Control {
             llValue.setLayoutParams(llValueP);
             llValue.setId(VALUE_CONTAINER_ID);
             llValue.setOrientation(LinearLayout.VERTICAL);
-            container.addView(llValue);
+            if(EnableScroll){
+                ScrollView sv = new ScrollView(container.getContext());
+                RelativeLayout.LayoutParams svP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+                svP.setLayoutDirection(LinearLayout.HORIZONTAL);
+                sv.setLayoutParams(svP);
+                sv.addView(llValue);
+                container.addView(sv);
+
+            }else{
+                container.addView(llValue);
+            }
+
+
+
             addValueView(llValue);
 
             if(initialFocus && getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
@@ -608,6 +626,18 @@ public class Control {
         @Override
         public void updateSaveParameters(RequestParams params) {
             params.put(getForeignFieldName(),getParentId());
+        }
+
+
+        private boolean  EnableScroll = false;
+
+        public boolean getEnableScroll() {
+            return EnableScroll;
+        }
+
+        public T setEnableScroll(boolean enableScroll) {
+            EnableScroll = enableScroll;
+            return (T)this;
         }
 
 
@@ -915,9 +945,8 @@ public class Control {
     public static class LookupListControl extends LookupControlBase<LookupListControl> {
         public LookupListControl(String name, String caption, String displayField, List<DataService.Lookup> lookups) {
             super(name, caption, displayField);
-            setControlSize(CONTROL_SIZE_DOUBLE);
             setLookups(lookups);
-            getButtons().add(new ActionButton("Search"));
+            getButtons().add(new ActionButton(Control.ACTION_SEARCH));
         }
         private List<DataService.Lookup> Lookups;
         public List<DataService.Lookup> getLookups() {
@@ -927,24 +956,9 @@ public class Control {
             Lookups = lookups;
             return this;
         }
-
-        /*
-        @Override
-        public LookupListControl readValue(Object value) {
-            if(value != null && Long.class.isAssignableFrom(value.getClass())){
-                Long id = (Long)value;
-                Optional<DataService.Lookup> l = Lookups.stream().filter(itm->itm.getId().equals(id)).findAny();
-                if(l.isPresent()){
-                    return super.readValue(l.get());
-                }
-            }
-            return super.readValue(value);
-        }
-
-         */
         @Override
         protected void onButtonClick(ActionButton button) {
-            if(button.getName() == "Search"){
+            if(button.getName() == Control.ACTION_SEARCH){
                 BaseActivity activity = (BaseActivity)button.button.getContext();
                 PopupLookup.create(getCaption(),getLookups(),getValue() == null? null : getValue().getId(),(lookup)->{
                     setValue(lookup);
@@ -971,16 +985,16 @@ public class Control {
         public LookupControlBase(String name, String caption,String displayField) {
             super(name, caption);
             setDisplayField(displayField);
+            setControlSize(CONTROL_SIZE_DOUBLE);
         }
         @Override
         protected Drawable getEditorBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.LEFT_RIGHT,
-                    new int[] {Color.parseColor("#BCF4EF"),Color.parseColor("#7EECE2")});
+                    new int[] {Color.parseColor("#E3E0E0"),Color.parseColor("#E3E0E0")});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
-
         private boolean initialFocus = false;
         @Override
         protected void requestFocus() {
@@ -1050,7 +1064,7 @@ public class Control {
 
 
         @Override
-        public T readValue(JSONObject data) {
+        public T readValueJSONObject(JSONObject data) {
             try{
                 if(getName() != null && getName().length() != 0 && getDisplayField() != null && getDisplayField().length() != 0 && data.has(getName()) && data.has(getDisplayField())){
                     DataService.Lookup l = new DataService.Lookup();
@@ -1065,17 +1079,17 @@ public class Control {
                     }
                     catch (JSONException e){
                     }
-                    return readValue(l);
+                    return readValueObject(l);
                 }
                 else if(getName() != null && getName().length() != 0 && data.has(getName()) ){
                     String id = data.get(getName()).toString();
                     if(id == "null")return null;
-                    return readValue(Long.parseLong(id));
+                    return readValueObject(Long.parseLong(id));
                 }
             }
             catch (JSONException e){
             }
-            return super.readValue(data);
+            return super.readValueJSONObject(data);
         }
     }
 
@@ -1091,7 +1105,7 @@ public class Control {
 
         @Override
         public String convertValue(Object value) {
-            if(value == null)return null;
+            if(value == null || value.equals("null"))return null;
             else return value.toString();
         }
 
@@ -1255,8 +1269,8 @@ public class Control {
 
         private boolean InputValid = true;
         @Override
-        public boolean onValidate() {
-            boolean valid = super.onValidate();
+        public boolean validate() {
+            boolean valid = super.validate();
             if(!InputValid)valid = false;
             return valid;
         }
@@ -1327,20 +1341,7 @@ public class Control {
         public FieldControlBase(String name, String caption) {
             super(name, caption);
         }
-        private int ControlSize = -1;
-        public int getControlSize(){
-            return ControlSize;
-        }
-        public T setControlSize(int size){
-            ControlSize = size;
-            return  (T)this;
-        }
-        @Override
-        public int getWidth(){
-            int singleSize = 463;
-            if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
-            else return ControlSize;
-        }
+
         protected transient  TextView CaptionTextView;
 
         @Override
@@ -1357,12 +1358,13 @@ public class Control {
             if(getCaption() != null) {
                 CaptionTextView = new TextView(container.getContext());
                 RelativeLayout.LayoutParams CaptionTextViewP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-                CaptionTextView.setPadding(10, 0, 5, 10);
+                CaptionTextView.setPadding(10, 10, 10, 10);
                 CaptionTextView.setLayoutParams(CaptionTextViewP);
                 CaptionTextView.setText(getCaption());
                 CaptionTextView.setTextColor(ContextCompat.getColor(container.getContext(), R.color.white));
                 CaptionTextView.setBackground(getHeaderBackground());
                 CaptionTextView.setId(HEADER_CONTAINER_ID);
+                CaptionTextView.setTextAlignment(getTextAlignment());
                 container.addView(CaptionTextView);
             }
             RelativeLayout rl = null;
@@ -1420,10 +1422,26 @@ public class Control {
         protected abstract void onButtonClick(ActionButton button);
 
 
+
+
+        private int ControlSize = Control.CONTROL_SIZE_SINGLE;
+        public int getControlSize(){
+            return ControlSize;
+        }
+        public T setControlSize(int size){
+            ControlSize = size;
+            return  (T)this;
+        }
+
+        public int getWidth(){
+            int singleSize = 463;
+            if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
+            else return ControlSize;
+        }
         protected Drawable getHeaderBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[] {Color.parseColor("#012723"),Color.parseColor("#008477")});
+                    new int[] {Color.parseColor("#012723"),Color.parseColor("#008477"),Color.parseColor("#008477"),Color.parseColor("#012723")});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
@@ -1431,29 +1449,22 @@ public class Control {
         protected Drawable getEditorBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.LEFT_RIGHT,
-                    new int[] {Color.WHITE,Color.parseColor("#BCF4EF")});
+                    new int[] {Color.TRANSPARENT,Color.TRANSPARENT,Color.TRANSPARENT,Color.GRAY});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
-
+//#E3E0E0
         protected Drawable getSelectionBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
-                    GradientDrawable.Orientation.LEFT_RIGHT,
-                    new int[] {Color.parseColor("#7EECE2"),Color.parseColor("#7EECE2")});
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[] {Color.GRAY,Color.TRANSPARENT,Color.TRANSPARENT,Color.GRAY});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
-
-
-        //#BCF4EF
-
-
-
-
         protected Drawable getHeaderErrorBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[] {Color.parseColor("#500505"),Color.parseColor("#D51212")});
+                    new int[] {Color.parseColor("#500505"),Color.parseColor("#D51212"),Color.parseColor("#D51212"),Color.parseColor("#500505")});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
@@ -1466,7 +1477,7 @@ public class Control {
 
 
         }
-        public abstract int getWidth();
+
 
         protected transient LinearLayout RootLayout;
         public void addView(ViewGroup container){
@@ -1553,6 +1564,7 @@ public class Control {
 
         public void addListHeader(TableRow row){
             TextView hc = new TextView(row.getContext());
+
             hc.setPadding(10, 10, 10, 10);
             TableRow.LayoutParams hcP = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,1);
             hc.setLayoutParams(hcP);
@@ -1577,7 +1589,7 @@ public class Control {
             hc.setPadding(10,0,10,0);
             hc.setTextAlignment(TextAlignment);
             setValue(null);
-            readValue(data);
+            readValueJSONObject(data);
             hc.setText(getFormatValue(getValue()));
             row.addView(hc);
         }
@@ -1597,16 +1609,17 @@ public class Control {
                 return  Name + "=" + value.toString();
             }
         }
-        public T readValue(Object value){
+        public T readValueObject(Object value){
             setValue(convertValue(value));
             return (T)this;
         }
         protected abstract U convertValue(Object value);
-        public  T readValue(JSONObject data){
+        public  T readValueJSONObject(JSONObject data){
             try{
                 if(data.has(getName())){
                     Object value = data.get(getName());
-                    readValue(value);
+                    if(value == null || value.equals(JSONObject.NULL)) readValueObject(null);
+                    else readValueObject(value);
                 }
             }
             catch (JSONException e){
@@ -1615,13 +1628,10 @@ public class Control {
             return  (T)this;
         }
         public boolean validate(){
-            boolean valid = onValidate();
-            return valid;
-        }
-        public boolean onValidate(){
             if(getValue()==null && getIsRequired()) return  false;
             else return true;
         }
+
         public void updateSaveParameters(RequestParams params){
             params.put(getName(), getValue());
         }

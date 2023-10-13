@@ -3,100 +3,189 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.Toast;
 
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupLookup;
+import com.example.myapplication.model.PopupSearch;
 import com.example.myapplication.model.Utility;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
 
+import kotlin.jvm.functions.Function2;
+import kotlin.jvm.functions.Function3;
+
 public  class InvCheckInActivity extends BaseActivity {
-
-
-
-
     public InvCheckInActivity(){
         Controls.add(new InvCheckInDetailedControl());
     }
+    public static  class ItemSearchPopup extends PopupSearch
+    {
+        public ItemSearchPopup(Function3<DataService.Lookup,String,String,Boolean> onItemSelected){
+            OnItemSelected = onItemSelected;
 
-
-    public static class BarcodeTextControl extends Control.EditTextControl{
-        public BarcodeTextControl() {
-            super("Barcode", "Barcode");
-        }
-        @Override
-        public void addValueView(ViewGroup container) {
-            super.addValueView(container);
-            getEditTextInput().setOnKeyListener(new View.OnKeyListener() {
+            ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
+            searchControls.add(Control.getEditTextControl("Description","Description"));
+            searchControls.add(Control.getEditTextControl("Unit","Unit"));
+            searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3));
+            setArgs(new PopupSearch.PopupSearchArgs("Item Picker",searchControls,"InvItem","FullDescription"));
+            setOnItemSelected(new Function<DataService.Lookup, Boolean>() {
                 @Override
-                public boolean onKey(View view, int i, KeyEvent keyEvent) {
-                    if(i == KeyEvent.KEYCODE_ENTER){
-                        if(getEditTextInput().getText() != null && getEditTextInput().toString().length() !=0){
-                            String barcode = getEditTextInput().toString();
-                            new DataService().getObject("InvItem?barcode=" + barcode, new Function<JSONObject, Void>() {
-                                @Override
-                                public Void apply(JSONObject jsonObject) {
-
-                                    return null;
-                                }
-                            }, new Function<String, Void>() {
-                                @Override
-                                public Void apply(String s) {
-                                    if(s.equals("null")){
+                public Boolean apply(DataService.Lookup lookup) {
+                    String description = null;
+                    if(lookup !=null && lookup.getName() != null && lookup.getName().indexOf('\n') > 0)
+                        description =  lookup.getName().substring(lookup.getName().indexOf('\n') +1);
+                    return onItemSelected.invoke(lookup,description,null);
 
 
-                                    }
-                                    else{
-                                        Toast.makeText(container.getContext(),s,Toast.LENGTH_SHORT);
-                                    }
-                                    return null;
-                                }
-                            });
-                        }
-                    }
-                    return false;
                 }
             });
+        }
 
+        private Function3<DataService.Lookup,String,String,Boolean> OnItemSelected;
+
+        @Override
+        protected void onKeyPress(View view, int keycode) {
+            if(keycode == 10){
+                if( SearchEditText.getText() !=null){
+                    String barcode = SearchEditText.getText().toString().trim();
+                    if(barcode != null && barcode.length() !=0 && barcode.indexOf(' ') <0){
+                        new DataService().getObject("InvItem?barcode=" + barcode, new Function<JSONObject, Void>() {
+                            @Override
+                            public Void apply(JSONObject jsonObject) {
+                                if(jsonObject == null){
+
+                                    SearchEditText.setText(barcode);
+                                    SearchEditText.selectAll();
+                                    SearchEditText.requestFocus();
+
+                                }
+                                else{
+                                    try {
+                                        Long id = Long.parseLong(jsonObject.get(getArgs().getIdField()).toString());
+                                        String display = "[Unknown]";
+                                        try {
+                                            display = jsonObject.get(getArgs().getDisplayField()).toString();
+                                        }
+                                        catch (JSONException e){
+
+                                        }
+                                        DataService.Lookup lookup = new DataService.Lookup();
+                                        lookup.setId(id);
+                                        lookup.setName(display);
+                                        String description = null;
+                                        if(display.indexOf('\n') > 0)
+                                            description =  display.substring(display.indexOf('\n') +1);
+                                        if(OnItemSelected.invoke(lookup,description,barcode))doCancel();
+                                    }
+                                    catch (JSONException e)
+                                    {
+                                        Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+
+                                }
+                                return null;
+                            }
+                        },view.getContext());
+
+
+                    }
+                }
+            }
+            else{
+                super.onKeyPress(view, keycode);
+            }
+        }
+    }
+    public static  class ItemSearchControl extends Control.LookupControlBase {
+        private transient  Function3<DataService.Lookup,String,String,Boolean> OnItemSelected;
+        public ItemSearchControl(Function3<DataService.Lookup,String,String,Boolean> onItemSelected) {
+            super("UnitId", "Item", "FullDescription");
+            //setValue(ItemSearchPopup.AddLookup);
+            getButtons().add(new Control.ActionButton(Control.ACTION_SEARCH));
+            OnItemSelected  = onItemSelected;
+        }
+        @Override
+        protected void onButtonClick(Control.ActionButton button) {
+            if(button.getName() == Control.ACTION_SEARCH){
+                PopupSearch ps = new ItemSearchPopup(new Function3<DataService.Lookup, String, String, Boolean>() {
+                    @Override
+                    public Boolean invoke(DataService.Lookup lookup, String s, String s2) {
+                        setValue(lookup);
+                        OnItemSelected.invoke(lookup,s,s2);
+                        return true;
+                    }
+                });
+                ps.show(((BaseActivity)button.getButton().getContext()).getSupportFragmentManager(),null);
+            }
         }
     }
 
-    public static  class SearchControl extends Control.SearchControl {
 
-        public SearchControl(List<Control.ControlBase> controls) {
-            super("UnitId","Item",controls,"InvItem","Description");
-            setIsRequired(false);
-        }
-    }
-
-    private static SearchControl UnitIdSearchControl;
 
     public static class InvCheckInLineDetailedControl extends Control.DetailedControl {
         public InvCheckInLineDetailedControl() {
             super("InvCheckInLines", "Items","InvCheckInLine","CheckInId");
         }
+
+
+        public DataService.Lookup AddLookup;
+        public String AddDescription;
+        public String AddBarcode;
+
+        @Override
+        public void onButtonClick(Control.ActionButton action) {
+            BaseActivity activity = (BaseActivity)action.getButton().getContext();
+            if(action.getName() == Control.ACTION_ADD){
+                AddLookup = null;
+                AddDescription = null;
+                PopupSearch ps = new ItemSearchPopup(new Function3<DataService.Lookup, String, String, Boolean>() {
+                    @Override
+                    public Boolean invoke(DataService.Lookup lookup, String s, String s2) {
+                        AddLookup = lookup;
+                        AddDescription  = s;
+                        AddBarcode  = s2;
+                        InvCheckInLineDetailedControl.super.onButtonClick(action);
+                        return true;
+                    }
+                });
+                ps.show(((BaseActivity)action.getButton().getContext()).getSupportFragmentManager(),null);
+            }
+            else {
+                super.onButtonClick(action);
+            }
+        }
+
+
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action == Control.ACTION_ADD || action == Control.ACTION_EDIT || action == Control.ACTION_REFRESH){
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
-                controls.add(new BarcodeTextControl());
-                controls.add(Control.getEditDecimalControl("Qty","Qty").setDecimalPlaces(3));
-                controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE));
                 if(action != Control.ACTION_REFRESH) {
-                    ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
-                    searchControls.add(Control.getEditTextControl("Description","Description"));
-                    searchControls.add(Control.getEditTextControl("Unit","Unit"));
-                    searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3));
-                    UnitIdSearchControl = new SearchControl(searchControls);
-                    controls.add(UnitIdSearchControl);
+                    controls.add(new ItemSearchControl(new Function3<DataService.Lookup, String, String, Boolean>() {
+                        @Override
+                        public Boolean invoke(DataService.Lookup lookup, String s, String s2) {
+                            controls.get(2).setValue(s);
+                            if(s2 != null && s2.length() != 0)controls.get(0).setValue(s2);
+                            return null;
+                        }
+                    }).setValue(AddLookup));
+                }
+                controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setValue(AddDescription));
+                controls.add(Control.getEditDecimalControl("Qty","Qty").setDecimalPlaces(3));
+                controls.add(Control.getEditTextControl("Barcode","Barcode").setValue(AddBarcode).setIsRequired(false));
+                if(action != Control.ACTION_REFRESH) {
                     controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine"));
                 }
                 return controls;
@@ -109,6 +198,7 @@ public  class InvCheckInActivity extends BaseActivity {
     public static class InvCheckInDetailedControl extends Control.DetailedControl {
         public InvCheckInDetailedControl() {
             super("InvCheckIns", "Stock Receive","InvCheckIn",null);
+            setEnableScroll(true);
         }
         @Override
         public void addValueView(ViewGroup container) {
@@ -186,8 +276,8 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
                 controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
                 if(action.equals(Control.ACTION_ADD)){
-                    controls.add(Control.getLookupListControl( "SupId", "Supplier", "Supplier",suppliers).readValue(supplierId));
-                    controls.add(Control.getLookupListControl( "EmpId", "Employee", "Employee",employees).readValue(employeeId));
+                    controls.add(Control.getLookupListControl( "SupId", "Supplier", "Supplier",suppliers).readValueObject(supplierId));
+                    controls.add(Control.getLookupListControl( "EmpId", "Employee", "Employee",employees).readValueObject(employeeId));
                 }
                 else{
                     controls.add(Control.getLookupListControl( "SupId", "Supplier","Supplier", suppliers));

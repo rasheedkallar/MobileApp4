@@ -65,7 +65,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
     }
     private  TableLayout table_layout;
     private Control.DetailedControl detailed_control;
-    private EditText edit_text;
+    protected EditText SearchEditText;
 
     @Override
     public void doOk() {
@@ -83,7 +83,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
 
             @Override
             protected String getRefreshUrl() {
-                String text = edit_text.getText().toString();
+                String text = SearchEditText.getText().toString();
                 try {
                     return getArgs().getEntityName() + "?" + getArgs().getKeywordsField() + "=" + URLEncoder.encode(text, Charsets.UTF_8.name());
                 }
@@ -95,7 +95,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
             @Override
             protected void onRowSelected(TableRow row) {
                 super.onRowSelected(row);
-                String display = null;
+                String display = "[Unknown]";
                 try {
                     JSONObject obj = (JSONObject)row.getTag();
                     display = obj.get(getArgs().getDisplayField()).toString();
@@ -109,23 +109,25 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
                 if(OnItemSelected.apply(l))PopupSearch.super.doOk();
             }
         };
-        edit_text = new EditText(getContext());
+        SearchEditText = new EditText(getContext());
         TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        edit_text.setLayoutParams(txtP);
+        SearchEditText.setLayoutParams(txtP);
 
 
 
 
-        edit_text.addTextChangedListener(new TextWatcher() {
+        SearchEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
             }
             @Override
             public void onTextChanged(CharSequence s, int start, int count, int after) {
-                if(s.length() > start) {
-                    int ascii = (int) s.charAt(start);
-                    onKeyPress(edit_text, ascii);
+
+
+                if(s.length() >= start + after) {
+                    int ascii = (int) s.charAt(start + after -1);
+                    onKeyPress(SearchEditText, ascii);
                 }
             }
             @Override
@@ -138,7 +140,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
 
 
 
-        container.addView(edit_text);
+        container.addView(SearchEditText);
         ScrollView sv = new ScrollView(getContext());
         ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
         scP.setLayoutDirection(LinearLayout.HORIZONTAL);
@@ -150,7 +152,6 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
         container.addView(sv);
     }
     protected void onKeyPress(View view, int keycode){
-        System.out.println(keycode);
         if(keycode == getArgs().getSearchKey()){
             detailed_control.refreshGrid(table_layout);
         }
