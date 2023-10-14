@@ -175,9 +175,9 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(action != Control.ACTION_REFRESH) {
                     controls.add(new ItemSearchControl(new Function3<DataService.Lookup, String, String, Boolean>() {
                         @Override
-                        public Boolean invoke(DataService.Lookup lookup, String s, String s2) {
-                            controls.get(2).setValue(s);
-                            if(s2 != null && s2.length() != 0)controls.get(0).setValue(s2);
+                        public Boolean invoke(DataService.Lookup lookup, String description, String barcode) {
+                            controls.get(1).setValue(description);
+                            if(barcode != null && barcode.length() != 0)controls.get(3).setValue(barcode);
                             return null;
                         }
                     }).setValue(AddLookup));

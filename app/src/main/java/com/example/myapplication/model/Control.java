@@ -242,12 +242,12 @@ public class Control {
                                     @Override
                                     public void onClick(View v) {
 
-                                        try {
+                                        //try {
                                             onRowSelected(item);
-                                        }
-                                        catch (Exception e){
-                                            setSelectedId(null);
-                                        }
+                                        //}
+                                        //catch (Exception e){
+                                        //    setSelectedId(null);
+                                        //}
                                     }
                                 });
                                 for (com.example.myapplication.model.Control.ControlBase control : controls) {
@@ -1006,6 +1006,7 @@ public class Control {
         @Override
         protected void addValueView(ViewGroup container) {
             txtValue = new TextView(container.getContext());
+            txtValue.setPadding(10,0,10,0);
             RelativeLayout.LayoutParams llValueP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             txtValue.setLayoutParams(llValueP);
             if(getValue() != null)txtValue.setText(getFormatValue(getValue()));
@@ -1277,7 +1278,7 @@ public class Control {
         @Override
         public void addValueView(ViewGroup container) {
             EditTextInput = new EditText(container.getContext());
-            EditTextInput.setPadding(0,0,0,0);
+            EditTextInput.setPadding(10,0,10,0);
             RelativeLayout.LayoutParams llValueP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             EditTextInput.setLayoutParams(llValueP);
             EditTextInput.setBackground(null);
