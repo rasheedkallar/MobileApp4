@@ -72,6 +72,7 @@ public class Control {
     public static String ACTION_SEARCH = "Search";
     public static String ACTION_ADD = "Add";
     public static String ACTION_ADD_SUB = "AddSub";
+    public static String ACTION_INBOX = "Inbox";
     public static String ACTION_EDIT = "Edit";
     public static String ACTION_DELETE = "Delete";
     public static String ACTION_REFRESH = "Refresh";
@@ -105,6 +106,12 @@ public class Control {
     public static EditDecimalControl getEditDecimalControl( String name, String caption){
         return new EditDecimalControl(name,caption);
     }
+
+    public static EditTextPickerControl getEditTextPickerControl( String name, String caption,ArrayList<String> options){
+        return new EditTextPickerControl(name,caption,options);
+    }
+
+
 
     public static SearchControl getSearchControl( String name, String caption,List<Control.ControlBase> controls,String entityName,String displayFieldName){
         return new SearchControl(name,caption,controls,entityName,displayFieldName);
@@ -508,11 +515,7 @@ public class Control {
             setForeignFieldName(foreignFieldName);
             setControlSize(RelativeLayout.LayoutParams.MATCH_PARENT);
         }
-        public ActionButton getActionButton(String action){
-            Optional<ActionButton> button = this.getButtons().stream().filter(i-> i.Name.equals(action)).findFirst();
-            if(button.isPresent())return  button.get();
-            else return  null;
-        }
+
 
 
         @Override
@@ -571,6 +574,8 @@ public class Control {
                             return null;
                         }
                     });
+                    if(button.button != null)button.button.setEnabled(getEnabled());
+
                 }
                 rl.addView(ActionLayout);
             }
@@ -702,7 +707,7 @@ public class Control {
         }
         @Override
         protected ArrayList<Long> convertValue(Object value) {
-            if(value == null) return new ArrayList<Long>();
+            if(value == null || value== JSONObject.NULL ) return new ArrayList<Long>();
             else {
                 if (JSONArray.class.isAssignableFrom(value.getClass())) {
                     JSONArray jArray = (JSONArray) value;
@@ -864,6 +869,17 @@ public class Control {
 
         }
 
+        @Override
+        public Date getValue() {
+            return super.getValue();
+        }
+
+        @Override
+        public EditTextControlBase<T, Date> setValue(Date value) {
+            return super.setValue(value);
+        }
+
+
 
         protected abstract void onBrowse(ActionButton button);
 
@@ -877,7 +893,7 @@ public class Control {
 
         @Override
         protected Date convertValue(Object value) {
-            if(value==null){
+            if(value==null || value ==JSONObject.NULL){
                 return null;
             }
             else if(value.getClass().equals(Date.class)){
@@ -947,6 +963,7 @@ public class Control {
             super(name, caption, displayField);
             setLookups(lookups);
             getButtons().add(new ActionButton(Control.ACTION_SEARCH));
+
         }
         private List<DataService.Lookup> Lookups;
         public List<DataService.Lookup> getLookups() {
@@ -986,7 +1003,21 @@ public class Control {
             super(name, caption);
             setDisplayField(displayField);
             setControlSize(CONTROL_SIZE_DOUBLE);
+
+
         }
+
+        @Override
+        public DataService.Lookup getValue() {
+            return super.getValue();
+        }
+
+        @Override
+        public T setValue(DataService.Lookup value) {
+            return super.setValue(value);
+        }
+
+
         @Override
         protected Drawable getEditorBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
@@ -1023,7 +1054,7 @@ public class Control {
         }
         @Override
         protected DataService.Lookup convertValue(Object value) {
-            if(value == null)return null;
+            if(value == null || value == JSONObject.NULL)return null;
             else if(DataService.Lookup.class.isAssignableFrom(value.getClass()))return (DataService.Lookup)value;
             else if(Long.class.isAssignableFrom(value.getClass())){
                 DataService.Lookup l = new DataService.Lookup();
@@ -1106,7 +1137,7 @@ public class Control {
 
         @Override
         public String convertValue(Object value) {
-            if(value == null || value.equals("null"))return null;
+            if(value == null || value == JSONObject.NULL)return null;
             else return value.toString();
         }
 
@@ -1120,6 +1151,64 @@ public class Control {
             return value;
         }
     }
+
+
+
+    public static class EditTextPickerControl extends EditTextControlBase<EditTextPickerControl,String> {
+
+        public EditTextPickerControl(String name, String caption,ArrayList<String> options) {
+            super(name, caption);
+            Options = options;
+            getButtons().add(new ActionButton(Control.ACTION_SEARCH));
+        }
+
+        ArrayList<String> Options;
+
+        public ArrayList<String> getOptions() {
+            return Options;
+        }
+
+        public EditTextPickerControl setOptions(ArrayList<String> options) {
+            Options = options;
+            return this;
+        }
+
+        @Override
+        protected void onButtonClick(ActionButton button) {
+            if(button.getName() == Control.ACTION_SEARCH){
+                Long value = null;
+
+
+                ArrayList<DataService.Lookup> lookups = new ArrayList<>();
+                for (int i = 0; i < getOptions().stream().count(); i++) {
+                    lookups.add(new DataService.Lookup(Long.valueOf(i),getOptions().get(i)));
+                    if(getValue() != null && getValue().equals(lookups.get(i).getName()))value = Long.valueOf(i);
+
+                }
+                PopupLookup.create(getCaption(), lookups, value, new Function<DataService.Lookup, Boolean>() {
+                    @Override
+                    public Boolean apply(DataService.Lookup lookup) {
+                        if(lookup == null)setValue(null);
+                        else setValue(lookup.getName());
+                        return true;
+                    }
+                }).show(((BaseActivity)button.button.getContext()).getSupportFragmentManager(),null);
+
+            }
+        }
+
+        @Override
+        protected String convertValue(Object value) {
+            if(value == null || value.equals(JSONObject.NULL))return null;
+            else return value.toString();
+        }
+
+        @Override
+        protected boolean IsInputValid(String value) {
+            return true;
+        }
+    }
+
     public static class EditDecimalControl extends EditTextControlBase<EditDecimalControl,Double> {
         private Integer DecimalPlaces = 2;
         public EditDecimalControl(String name, String caption) {
@@ -1141,7 +1230,7 @@ public class Control {
         }
         @Override
         public Double convertValue(Object value) {
-            if(value == null || value.toString().length() == 0)return  null;
+            if(value == null || value == JSONObject.NULL || value.toString().length() == 0)return  null;
             else return Double.parseDouble(value.toString());
         }
         @Override
@@ -1198,7 +1287,7 @@ public class Control {
 
         @Override
         protected Serializable convertValue(Object value) {
-            return (Serializable)value;
+            if(value == null || value == JSONObject.NULL) return  null; else return  (Serializable)value;
         }
     }
     public static abstract class EditTextControlBase<T extends EditTextControlBase<T,U>,U extends Serializable> extends FieldControlBase<EditTextControlBase<T,U>,U>{
@@ -1264,6 +1353,10 @@ public class Control {
             else initialFocus = true;
         }
 
+
+
+
+
         //editText.setSelectAllOnFocus(true);
 
 
@@ -1275,6 +1368,15 @@ public class Control {
             if(!InputValid)valid = false;
             return valid;
         }
+
+        @Override
+        public T setEnabled(boolean enabled) {
+            super.setEnabled(enabled);
+            if(EditTextInput != null)EditTextInput.setEnabled(enabled);
+            return (T)this;
+        }
+
+
         @Override
         public void addValueView(ViewGroup container) {
             EditTextInput = new EditText(container.getContext());
@@ -1285,7 +1387,7 @@ public class Control {
             EditTextInput.setInputType(getInputType());
             EditTextInput.setTextAlignment(getTextAlignment());
             EditTextInput.setSelectAllOnFocus(getSelectAllOnFocus());
-
+            EditTextInput.setEnabled(getEnabled());
             if(initialFocus)EditTextInput.requestFocus();
 
             if(getDigits() != null && getDigits().length() != 0){
@@ -1335,6 +1437,10 @@ public class Control {
             }
         }
     }
+
+
+
+
     public static abstract   class FieldControlBase<T extends FieldControlBase<T,U>,U extends Serializable> extends ControlBase<T,U> {
         public static final int HEADER_CONTAINER_ID = 1001;
         public static final int VALUE_CONTAINER_ID = 1002;
@@ -1397,6 +1503,7 @@ public class Control {
                             return null;
                         }
                     });
+                    if(button.button != null)button.button.setEnabled(getEnabled());
                 }
                 rl.addView(llAction);
             }
@@ -1418,13 +1525,9 @@ public class Control {
         }
     }
 
-    public static abstract   class ControlBase<T extends ControlBase<T,U>,U extends Serializable> implements Serializable {
+    public static abstract   class ControlBase<T extends ControlBase<T,U>,U extends Serializable>  implements Serializable {
 
         protected abstract void onButtonClick(ActionButton button);
-
-
-
-
         private int ControlSize = Control.CONTROL_SIZE_SINGLE;
         public int getControlSize(){
             return ControlSize;
@@ -1433,11 +1536,28 @@ public class Control {
             ControlSize = size;
             return  (T)this;
         }
+        public int getAction() {
+            return Action;
+        }
+        private int Action;
+
+        public T setAction(int action) {
+            Action = action;
+            return (T)this;
+        }
+
+
+
 
         public int getWidth(){
             int singleSize = 463;
             if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
             else return ControlSize;
+        }
+        public ActionButton getActionButton(String action){
+            Optional<ActionButton> button = this.getButtons().stream().filter(i-> i.Name.equals(action)).findFirst();
+            if(button.isPresent())return  button.get();
+            else return  null;
         }
         protected Drawable getHeaderBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
@@ -1489,11 +1609,25 @@ public class Control {
             RelativeLayout.LayoutParams RootLayoutP = new RelativeLayout.LayoutParams(getWidth(), RelativeLayout.LayoutParams.WRAP_CONTENT);
             RootLayout.setLayoutParams(RootLayoutP);
             RootLayout.setOrientation(LinearLayout.VERTICAL);
+
+            RootLayout.setEnabled(getEnabled());
             container.addView(RootLayout);
             addContentView(RootLayout);
         }
-        protected abstract void addContentView(ViewGroup container);
 
+        private boolean Enabled = true;
+        public boolean getEnabled(){
+            return Enabled;
+        }
+        public T setEnabled(boolean enabled) {
+            Enabled = enabled;
+            if(RootLayout != null)RootLayout.setEnabled(enabled);
+            for (int i = 0; i < getButtons().size(); i++) {
+                if(getButtons().get(i).button != null)getButtons().get(i).button.setEnabled(enabled);
+            }
+            return (T)this;
+        }
+        protected abstract void addContentView(ViewGroup container);
         private ArrayList<ActionButton> Buttons = new ArrayList<ActionButton>();
         public ArrayList<ActionButton> getButtons() {
             return Buttons;
@@ -1643,6 +1777,7 @@ public class Control {
             setName(name);
 
         }
+
         private String Name;
         public String getName() {
             return Name;
@@ -1708,8 +1843,15 @@ public class Control {
 
             if(Name != null) {
 
+
+
+
+
                 if (Name.equals(Control.ACTION_ADD))
                     paths.add(new VectorDrawableCreator.PathData("M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z", colour));
+                else if (Name.equals( Control.ACTION_INBOX)) {
+                    paths.add(new VectorDrawableCreator.PathData("M19,3L5,3c-1.1,0 -2,0.9 -2,2v7c0,1.1 0.9,2 2,2h14c1.1,0 2,-0.9 2,-2L21,5c0,-1.1 -0.9,-2 -2,-2zM19,9h-4c0,1.62 -1.38,3 -3,3s-3,-1.38 -3,-3L5,9L5,5h14v4zM15,16h6v3c0,1.1 -0.9,2 -2,2L5,21c-1.1,0 -2,-0.9 -2,-2v-3h6c0,1.66 1.34,3 3,3s3,-1.34 3,-3z", colour));
+                }
                 else if (Name.equals( Control.ACTION_ADD_SUB)) {
                     paths.add(new VectorDrawableCreator.PathData("M4,6L2,6v14c0,1.1 0.9,2 2,2h14v-2L4,20L4,6zM20,2L8,2c-1.1,0 -2,0.9 -2,2v12c0,1.1 0.9,2 2,2h12c1.1,0 2,-0.9 2,-2L22,4c0,-1.1 -0.9,-2 -2,-2zM19,11h-4v4h-2v-4L9,11L9,9h4L13,5h2v4h4v2z", colour));
                 }
@@ -1751,4 +1893,5 @@ public class Control {
             container.addView(button);
         }
     }
+
 }

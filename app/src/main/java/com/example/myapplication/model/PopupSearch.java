@@ -125,7 +125,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
             public void onTextChanged(CharSequence s, int start, int count, int after) {
 
 
-                if(s.length() >= start + after) {
+                if(s.length() >= start + after && start + after >1) {
                     int ascii = (int) s.charAt(start + after -1);
                     onKeyPress(SearchEditText, ascii);
                 }

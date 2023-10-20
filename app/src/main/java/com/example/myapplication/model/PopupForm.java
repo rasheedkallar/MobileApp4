@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -92,20 +93,13 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
         }
         else {
-            new DataService().post(entityName, getPostRequestParams(), new AsyncHttpResponseHandler() {
+            new DataService().postForLong(entityName, getPostRequestParams(), new Function<Long, Void>() {
                 @Override
-                public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                    String result = new String(responseBody);
-                    Long id = Long.parseLong(result);
-                    doAfterSaved(id);
+                public Void apply(Long aLong) {
+                    doAfterSaved(aLong);
+                    return null;
                 }
-                @Override
-                public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                    String result = new String(responseBody);
-                    System.out.println("Response Error: " + result);
-                    getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                }
-            });
+            },getContext());
         }
     }
     protected void doAfterSaved(Long id){
@@ -125,27 +119,34 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
 
         boolean returnVal = defaultClose;
         for (int i = 0; i < getRootActivity().Controls.size(); i++) {
-            if(Control.DetailedControl.class.isAssignableFrom(getRootActivity().Controls.get(i).getClass())){
-                Control.DetailedControl dc = (Control.DetailedControl)getRootActivity().Controls.get(i);
+            Control.ControlBase control = getRootActivity().Controls.get(i);
+            if(Control.DetailedControl.class.isAssignableFrom(control.getClass())){
+                Control.DetailedControl dc = (Control.DetailedControl)control;
                 if(dc.getEntityName() != null && dc.getEntityName().equals(getArgs().getEntityName())){
                     boolean rv = dc.doAfterSaved(id,defaultClose);
                     if(rv != defaultClose)returnVal = rv;
                 }
+            }
+            if(getArgs().getAction() != 0 && control.getAction() == getArgs().getAction()){
+                control.readValueObject(id);
             }
         }
         for (int i = 0; i < getRootActivity().Popups.size(); i++) {
             if(PopupForm.class.isAssignableFrom(getRootActivity().Popups.get(i).getClass())){
                 PopupForm p = (PopupForm)getRootActivity().Popups.get(i);
                 for (int j = 0; j < p.getArgs().getControls().size(); j++) {
-                    if(Control.DetailedControl.class.isAssignableFrom(p.getArgs().getControls().get(j).getClass())){
-                        Control.DetailedControl dc = (Control.DetailedControl)p.getArgs().getControls().get(j);
+                    Control.ControlBase control = p.getArgs().getControls().get(j);
+                    if(Control.DetailedControl.class.isAssignableFrom(control.getClass())){
+                        Control.DetailedControl dc = (Control.DetailedControl)control;
                         if(dc.getEntityName() != null && dc.getEntityName().equals(getArgs().getEntityName())){
                             boolean rv = dc.doAfterSaved(id,defaultClose);
                             if(rv != defaultClose)returnVal = rv;
                         }
                     }
+                    if(getArgs().getAction() != 0 && control.getAction() == getArgs().getAction()){
+                        control.readValueObject(id);
+                    }
                 }
-
             }
         }
         getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
@@ -223,6 +224,11 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         }
     }
 
+    public <A extends Control.ControlBase> A getControl(String name){
+        return getArgs().getControl(name);
+    }
+
+
     public static class  PopupFormArgs extends PopupArgs<PopupFormArgs> {
         public PopupFormArgs( String header,List<Control.ControlBase> controls,String entityName,Long value){
             super(header);
@@ -236,6 +242,24 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             if(controls == null)setControls(new ArrayList<Control.ControlBase>());
             else setControls(controls);
         }
+        public <A extends Control.ControlBase> A getControl(String name){
+            if(Controls == null)return null;
+            Optional<Control.ControlBase> control = Controls.stream().filter(i-> i.getName().equals(name)).findFirst();
+            if(control.isPresent())return (A)control.get();
+            else return null;
+        }
+
+        private int Action=0;
+
+        public int getAction() {
+            return Action;
+        }
+
+        public PopupFormArgs setAction(int action) {
+            Action = action;
+            return  this;
+        }
+
         private List<Control.ControlBase> Controls;
         public List<Control.ControlBase> getControls() {
             return Controls;

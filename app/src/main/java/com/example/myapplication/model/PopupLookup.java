@@ -92,7 +92,9 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
         sv.addView(fbl);
         container.addView(sv);
         _container = fbl;
-
+        if(getArgs().getNullCaption() != null && getArgs().getNullCaption().length() !=0){
+            onAddLookup(_container,null);
+        }
         for (DataService.Lookup lookup : args.getLookups()) {
             onAddLookup(_container,lookup);
         }
@@ -105,8 +107,17 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
         button.setLayoutParams(btlp);
         button.setBackgroundColor(Color.parseColor("#008477"));
         button.setTextColor(ContextCompat.getColor(getContext(), R.color.white));
-        button.setText(lookup.getName());
-        button.setTag(lookup);
+        if(lookup == null){
+            button.setText(getArgs().getNullCaption());
+            button.setTag(null);
+        }
+        else{
+            button.setText(lookup.getName());
+            button.setTag(lookup);
+        }
+
+
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -150,6 +161,17 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
         private List<DataService.Lookup> Lookups;
         public List<DataService.Lookup> getLookups() {
             return Lookups;
+        }
+
+        private String NullCaption = null;
+
+        public String getNullCaption() {
+            return NullCaption;
+        }
+
+        public PopupLookupArgs setNullCaption(String nullCaption) {
+            NullCaption = nullCaption;
+            return this;
         }
 
         private Long Value;

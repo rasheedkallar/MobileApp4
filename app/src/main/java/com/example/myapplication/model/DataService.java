@@ -133,6 +133,32 @@ public class DataService {
         });
     }
 
+    public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure){
+        getString(url, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                if(s == null || s.length() == 0 || s == "null")success.apply(new ArrayList<>());
+                else{
+                    Gson gson = new GsonBuilder().create();
+                    Type listType = new TypeToken<ArrayList<Lookup>>() {}.getType();
+                    ArrayList<Lookup> lookups = gson.fromJson(s, listType);
+                    success.apply(lookups);
+                }
+                return null;
+            }
+        },failure);
+    }
+    public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Context context){
+        getLookupList(url, success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                System.out.println(s);
+                return null;
+            }
+        });
+    }
+
 
     public  void getObject(String url, Function<JSONObject,Void> success, Function<String,Void> failure){
         getString(url, new Function<String, Void>() {
@@ -218,11 +244,60 @@ public class DataService {
         String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().delete(finalUrl, response);
     }
+    public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
+        System.out.println(params);
+        String finalUrl= getRootUrl() + url;  //office
+        new AsyncHttpClient().post(finalUrl, params, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String result = new String(responseBody);
+                success.apply(result);
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String result ="Error on : " + url;
+                if(responseBody != null)result = result + "\r\n" + new String(responseBody);
+                if(error != null) {
+                    result = result + "\r\n" + error.getMessage();
+                    StackTraceElement trace[] = error.getStackTrace();
+                    for (StackTraceElement element : trace)
+                        result = result +  "\r\n" + element.toString() ;
+                }
+                failure.apply(result);
+            }
+        });
+    }
+    public  void postForString(String url, RequestParams params, Function<String,Void> success, Context context){
+        postForString(url, params, success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                System.out.println(s);
+                return null;
+            }
+        });
+    }
+    public  void postForLong(String url, RequestParams params, Function<Long,Void> success, Context context){
+        postForString(url, params, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                if(s == null || s.equals("null"))success.apply(null);
+                else {
+                    success.apply(Long.parseLong(s));
+                }
+                return null;
+            }
+        },context);
+    }
+
+
     public  void post(String url, RequestParams params, AsyncHttpResponseHandler response){
         System.out.println(params);
         String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().post(finalUrl,params, response);
     }
+
 
     public  void getById(Context context, String url, Long id, DataService.GetByIdResponse response){
         get(url +  "?id=" + id.toString(),new AsyncHttpResponseHandler() {
@@ -273,6 +348,10 @@ public class DataService {
 
 
 
+
+
+
+
     public  void getLookup(Context context, String lookup, DataService.LookupResponse response){
         get("Lookup?type=" + lookup,new AsyncHttpResponseHandler() {
             @Override
@@ -280,7 +359,7 @@ public class DataService {
                 String result = new String(responseBody);
                 Gson gson = new GsonBuilder().create();
                 Type listType = new TypeToken<ArrayList<Lookup>>(){}.getType();
-                ArrayList<Lookup> list = gson.fromJson(result, listType);
+                //ArrayList<Lookup> list = gson.fromJson(result, listType);
                 List<DataService.Lookup> lookup = gson.fromJson(result, listType);
                 response.onSuccess(lookup);
             }
