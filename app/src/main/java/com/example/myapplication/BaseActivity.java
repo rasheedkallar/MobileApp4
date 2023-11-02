@@ -2,7 +2,9 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.media.Image;
@@ -37,6 +39,9 @@ import com.example.myapplication.model.PopupHtml;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -53,7 +58,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-public abstract class BaseActivity extends AppCompatActivity {
+public abstract class BaseActivity extends AppCompatActivity  {
     public static  final int TAKE_IMAGE_FROM_CAMERA = 1;
     public static  final int TAKE_IMAGE_FROM_GALLERY = -1;
     private static final int GALLERY_PERMISSION_REQUEST_CODE = 1;
@@ -63,8 +68,55 @@ public abstract class BaseActivity extends AppCompatActivity {
     public LinearLayout Container;
     public ArrayList<Control.ControlBase> Controls = new ArrayList<>();
 
+    public static String IpAddress;
+    public static Integer Port;
+    public static class SettingsPopupForm extends PopupForm
+    {
+        public SettingsPopupForm(){
+            ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
+            controls.add(Control.getEditTextControl("IpAddress","Ip Address").setValue(IpAddress));
+            controls.add(Control.getEditIntegerControl("Port","Port").setValue(Port));
+
+
+            setArgs(new PopupFormArgs("Settings",controls,"Settings",null));
+
+        }
+
+
+
+        @Override
+        public void doOk() {
+
+
+
+
+
+            SharedPreferences sharedPref = getRootActivity().getSharedPreferences("Settings",Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPref.edit();
+            Control.EditTextControl ipAddress = getControl("IpAddress");
+            Control.EditIntegerControl port = getControl("Port");
+
+
+            editor.putString(ipAddress.getName(),ipAddress.getValue());
+            editor.putInt(port.getName(),port.getValue());
+
+            editor.apply();
+
+            IpAddress = ipAddress.getValue();
+            Port = port.getValue();
+            dismiss();
+        }
+    }
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+
+
+
+
         if(savedInstanceState != null) {
             Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
         }
@@ -80,7 +132,27 @@ public abstract class BaseActivity extends AppCompatActivity {
             if (result.getResultCode() == Activity.RESULT_OK) {
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
-                new DataService().upload(activity,image_file,newFileName,image_entityName,image_entity_id, new AsyncHttpResponseHandler() {
+
+
+
+                new DataService().upload(image_file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
+                    @Override
+                    public Void apply(Long aLong) {
+                        Bitmap imageBitmap = null;
+                        try {
+                            imageBitmap = MediaStore.Images.Media.getBitmap(getBaseContext().getContentResolver(), image_uri);
+                        }
+                        catch (IOException e){
+
+                        }
+                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_id,aLong);
+                        return null;
+                    }
+                }, this);
+
+
+                /*
+                new DataService().upload(activity,image_file,newFileName,image_entityName,image_fileGroup,image_entity_id,new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                         String result = new String(responseBody);
@@ -92,7 +164,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                         catch (IOException e){
                             imageBitmap = null;
                         }
-                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_entity_id,Long.parseLong(result));
+                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_id,Long.parseLong(result));
                     }
                     @Override
                     public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
@@ -107,6 +179,8 @@ public abstract class BaseActivity extends AppCompatActivity {
                         Toast.makeText(BaseActivity.this, "Fail to pick image " + result, Toast.LENGTH_SHORT).show();
                     }
                 });
+
+                 */
             }
         });
         pickImageLauncher = registerForActivityResult(
@@ -135,15 +209,22 @@ public abstract class BaseActivity extends AppCompatActivity {
                     }
                     DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                     String newFileName = dateFormat.format(new Date());
-                    new DataService().upload(activity,file,newFileName,image_entityName,image_entity_id, new AsyncHttpResponseHandler() {
+                    new DataService().upload(file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
+                        @Override
+                        public Void apply(Long aLong) {
+                            onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_id,aLong);
+                            return null;
+                        }
+                    }, this);
+
+                       /*
+
                         @Override
                         public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                             String result = new String(responseBody);
                             System.out.println(result);
                             //if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
-
-                            onCapturedImage( image_action ,imageBitmap,image_entityName,image_entity_id,Long.parseLong(result));
-                        }
+              }
 
                         @Override
                         public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
@@ -152,6 +233,9 @@ public abstract class BaseActivity extends AppCompatActivity {
                             Toast.makeText(BaseActivity.this, "Fail to capture image " + result, Toast.LENGTH_SHORT).show();
                         }
                     });
+
+
+                        */
                 }catch (IOException e){
 
                 }
@@ -163,6 +247,14 @@ public abstract class BaseActivity extends AppCompatActivity {
                 Controls.get(i).addView(Container);
             }
         }
+        SharedPreferences sharedPref = getSharedPreferences("Settings",Context.MODE_PRIVATE);
+        IpAddress = sharedPref.getString("IpAddress",null);
+        Port = sharedPref.getInt("Port",80);
+        //if(IpAddress == null || IpAddress.length() == 0){
+        //    SettingsPopupForm ps = new SettingsPopupForm();
+        //    ps.show(getSupportFragmentManager(),null);
+        //}
+
     }
 
     @Override
@@ -181,6 +273,9 @@ public abstract class BaseActivity extends AppCompatActivity {
         savedInstanceState.putLong("image_entity_id",image_entity_id);
         savedInstanceState.putInt("image_action",image_action);
         savedInstanceState.putString("image_entityName",image_entityName);
+        savedInstanceState.putString("image_fileGroup",image_fileGroup);
+
+        //image_fileGroup
 
         savedInstanceState.putSerializable("Controls",Controls);
 
@@ -207,6 +302,9 @@ public abstract class BaseActivity extends AppCompatActivity {
         image_entity_id = savedInstanceState.getLong("image_entity_id");
         image_action = savedInstanceState.getInt("image_action");
         image_entityName = savedInstanceState.getString("image_entityName");
+        image_fileGroup = savedInstanceState.getString("image_fileGroup");
+
+
 
         Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
 
@@ -214,8 +312,9 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
 
-    private long image_entity_id;
+    private long image_entity_id ;
     private String image_entityName;
+    private String image_fileGroup;
     private int image_action = 0;
     private  File image_file;
     private Uri image_uri;
@@ -280,9 +379,10 @@ public abstract class BaseActivity extends AppCompatActivity {
 
 
 
-    public void  captureImage(int action,String entityName,Long entityId){
+    public void  captureImage(int action,String entityName,String fileGroup,long entityId){
         image_action = action;
         image_entityName  = entityName;
+        image_fileGroup = fileGroup;
         if(image_action <0){
             image_entity_id = entityId;
             int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
@@ -305,11 +405,11 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     public ArrayList<PopupBase> Popups = new ArrayList<PopupBase>();
-    public void onCapturedImage(int action,Bitmap image,String entityName,Long entityId,Long id){
+    public void onCapturedImage(int action,Bitmap image,String entityName,String fileGroup,Long entityId,Long id){
         for (int i = 0; i < Popups.size(); i++) {
             if(PopupForm.class.isAssignableFrom(Popups.get(i).getClass())){
                 PopupForm form = (PopupForm)Popups.get(i);
-                form.onCapturedImage(action,image,entityName,entityId,id);
+                form.onCapturedImage(action,image,entityName,fileGroup,entityId,id);
             }
 
 
@@ -358,6 +458,11 @@ public abstract class BaseActivity extends AppCompatActivity {
             case "Test":
                 intent = new Intent(this,TestActivity.class);
                 break;
+
+            case "Settings":
+                SettingsPopupForm ps = new SettingsPopupForm();
+                ps.show(getSupportFragmentManager(),null);
+                return true;
             default:
                 super.onOptionsItemSelected(item);
                 return  false;

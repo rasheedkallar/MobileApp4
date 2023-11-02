@@ -1,26 +1,161 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/ib"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_alignParentLeft="true"
-    android:layout_alignParentTop="true"
-    android:layout_alignParentRight="true"
-    android:animationCache="true"
-    android:background="#E3E0E0"
-    android:gravity="center">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity" >
 
-    <ImageButton
-        android:id="@+id/button_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
 
-    <TextView
-        android:id="@+id/tv"
-        android:layout_width="fill_parent"
+    <TableLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_toLeftOf="@+id/ib"
-        android:gravity="center"
-        android:text="Large Text"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
-</RelativeLayout>
+
+
+        android:stretchColumns="*"
+        android:shrinkColumns="*">
+
+
+        <TableRow
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+
+
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="12/12/1013 10:30"/>
+
+            <TextView
+
+
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="3489778878778"/>
+            <TextView
+
+
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="01"/>
+            <TextView
+
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="ABDUL RASHEED ABOOBACVKER ABOODHABI UAE INDIA"/>
+
+            <TextView
+
+
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Draft"/>
+
+        </TableRow>
+
+
+
+
+
+
+    </TableLayout>
+
+
+
+
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+
+        android:stretchColumns="*"
+        android:shrinkColumns="*">
+
+        <TableRow
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+
+                android:layout_weight="0"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Date"/>
+
+            <TextView
+
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="RefNo"/>
+            <TextView
+
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="E"/>
+            <TextView
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Supplier"/>
+
+            <TextView
+
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Status"/>
+
+        </TableRow>
+
+        <TableRow
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="12/12/1013 10:30"/>
+
+            <TextView
+
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="3489778878778"/>
+            <TextView
+
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="01"/>
+            <TextView
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="ABDUL RASHEED ABOOBACVKER ABOODHABI UAE INDIA"/>
+
+            <TextView
+
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Draft"/>
+
+        </TableRow>
+
+
+
+
+
+
+    </TableLayout>
+
+</LinearLayout>

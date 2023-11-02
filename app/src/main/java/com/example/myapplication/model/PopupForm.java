@@ -34,6 +34,10 @@ import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 import com.loopj.android.http.ResponseHandlerInterface;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -54,11 +58,10 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
     public PopupForm setArgs(PopupFormArgs args) {
         super.setArgs(args);
         for (int i = 0; i < args.getControls().size(); i++) {
-            if(args.getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
-                Control.ImageControl ic = (Control.ImageControl)args.getControls().get(i);
+            if(Control.DetailedControl.class.isAssignableFrom( args.getControls().get(i).getClass())){
+                Control.DetailedControl ic = (Control.DetailedControl)args.getControls().get(i);
                 if(ic.getParentId() == null ||  ic.getParentId() == 0L) {
                     ic.setParentId(args.getValue());
-                    ic.setEntityName(args.getEntityName());
                 }
             }
         }
@@ -93,14 +96,35 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
         }
         else {
-            new DataService().postForLong(entityName, getPostRequestParams(), new Function<Long, Void>() {
-                @Override
-                public Void apply(Long aLong) {
-                    doAfterSaved(aLong);
-                    return null;
+            List<Control.ControlBase> controls = getArgs().getControls();
+            if(controls != null && controls.size() != 0){
+                JSONObject obj = new JSONObject();
+                try{
+                    if(getArgs().getValue() !=null)obj.put("Id",getArgs().getValue());
+                }catch (JSONException e){
                 }
-            },getContext());
+
+
+                for (Control.ControlBase control : getArgs().getControls()) {
+                    control.updateValueToJSONObject(obj);
+                }
+                RequestParams rp = new RequestParams();
+
+
+                rp.put("Json",obj);
+                new DataService().postForLong(getUrl(), rp, new Function<Long, Void>() {
+                    @Override
+                    public Void apply(Long aLong) {
+                        doAfterSaved(aLong);
+                        return null;
+                    }
+                }, getContext());
+            }
         }
+    }
+
+    protected String getUrl(){
+        return "EntityApi/SaveEntity?entity=" + getArgs().getEntityName() ;
     }
     protected void doAfterSaved(Long id){
         Long detailedCount = getArgs().getControls().stream().filter(i-> Control.DetailedControlBase.class.isAssignableFrom(i.getClass())).count();
@@ -153,6 +177,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         if(returnVal)super.doOk();
     }
 
+    /*
 
     public RequestParams getPostRequestParams(){
         RequestParams params = new RequestParams();
@@ -166,7 +191,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         return params;
     }
 
-
+    */
     @Override
     public void AddControls(LinearLayout container) {
 
@@ -206,7 +231,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         if(getArgs().getControls() != null && getArgs().getControls().size() > 0)getArgs().getControls().get(0).requestFocus();
 
     }
-    public void onCapturedImage(int action,Bitmap image,String entityName,Long entityId,Long id){
+    public void onCapturedImage(int action,Bitmap image,String entityName,String fileGroup,Long entityId,Long id){
         for (int i = 0; i < getArgs().getControls().size(); i++) {
             if(getArgs().getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
                 Control.ImageControl ic = (Control.ImageControl)getArgs().getControls().get(i);

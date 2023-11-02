@@ -20,6 +20,7 @@ import com.google.android.flexbox.FlexboxLayout;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -35,29 +36,39 @@ import kotlin.text.Charsets;
 
 
 public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchArgs> {
+    public static interface PopupSearchListener{
 
+        boolean onItemSelected(TableRow row, JSONObject data, DataService.Lookup lookup);
+        void onTextChange(EditText editor,int keyCode);
+        boolean onPressOk();
 
-    public static PopupSearch create(String header, List<Control.ControlBase> controls, String entityName,String displayField,Function<DataService.Lookup,Boolean> onItemSelected){
+    }
+
+    public static PopupSearch create(String header, List<Control.ControlBase> controls, String displayField){
         PopupSearch search = new PopupSearch();
-        search.setArgs(new PopupSearch.PopupSearchArgs(header,controls,entityName,displayField));
-        search.setOnItemSelected(onItemSelected);
+        search.setArgs(new PopupSearch.PopupSearchArgs(header,controls,displayField));
+
+
         return search;
     }
-    public static PopupSearch create(PopupSearch.PopupSearchArgs args, Function<DataService.Lookup,Boolean> onItemSelected){
+    public static PopupSearch create(PopupSearch.PopupSearchArgs args){
         PopupSearch search = new PopupSearch();
         search.setArgs(args);
-        search.setOnItemSelected(onItemSelected);
+
+
         return search;
     }
 
-    public Function<DataService.Lookup,Boolean> OnItemSelected;
+    public PopupSearchListener Listener;
 
-    public Function<DataService.Lookup,Boolean> getOnItemSelected() {
-        return OnItemSelected;
-    }
-    public PopupSearch setOnItemSelected(Function<DataService.Lookup,Boolean> onItemSelected) {
-        this.OnItemSelected = onItemSelected;
+
+    public PopupSearch setListener(PopupSearchListener listener) {
+        Listener = listener;
         return this;
+    }
+
+    public PopupSearchListener getListener() {
+        return Listener;
     }
     private FlexboxLayout FieldsContainer;
     public FlexboxLayout getFieldsContainer() {
@@ -69,35 +80,32 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
 
     @Override
     public void doOk() {
-        if(OnItemSelected.apply(null))PopupSearch.super.doOk();
+        if(getListener().onPressOk())PopupSearch.super.doOk();
     }
-
+    public void refreshDetailedView(JSONArray data){
+        detailed_control.refreshDetailedView(data);
+    }
     @Override
     public void AddControls(LinearLayout container) {
 
-        detailed_control = new Control.DetailedControl("",getArgs().getHeader(),getArgs().getEntityName(),null) {
+        detailed_control = new Control.DetailedControl("",getArgs().getHeader(),null,null) {
             @Override
             protected ArrayList<Control.ControlBase> getControls(String action) {
-                return (ArrayList<Control.ControlBase>)getArgs().getControls();
-            }
 
-            @Override
-            protected String getRefreshUrl() {
-                String text = SearchEditText.getText().toString();
-                try {
-                    return getArgs().getEntityName() + "?" + getArgs().getKeywordsField() + "=" + URLEncoder.encode(text, Charsets.UTF_8.name());
+                if(action == Control.ACTION_REFRESH){
+                    return (ArrayList<Control.ControlBase>)getArgs().getControls();
                 }
-                catch (Exception e){
-                    return getArgs().getEntityName() + "?" + getArgs().getKeywordsField() + "=" + text;
+                else{
+                    return null;
                 }
             }
-
             @Override
             protected void onRowSelected(TableRow row) {
                 super.onRowSelected(row);
                 String display = "[Unknown]";
+                JSONObject obj = null;
                 try {
-                    JSONObject obj = (JSONObject)row.getTag();
+                    obj = (JSONObject)row.getTag();
                     display = obj.get(getArgs().getDisplayField()).toString();
                 }
                 catch (JSONException e){
@@ -106,34 +114,28 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
                 DataService.Lookup l = new DataService.Lookup();
                 l.setId(getSelectedId());
                 l.setName(display);
-                if(OnItemSelected.apply(l))PopupSearch.super.doOk();
+                if(getListener().onItemSelected(row,obj,l))PopupSearch.super.doOk();
+                //if(OnItemSelected.apply(l))PopupSearch.super.doOk();
             }
         };
         SearchEditText = new EditText(getContext());
         TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         SearchEditText.setLayoutParams(txtP);
 
-
-
-
         SearchEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
             }
             @Override
             public void onTextChanged(CharSequence s, int start, int count, int after) {
-
-
                 if(s.length() >= start + after && start + after >1) {
                     int ascii = (int) s.charAt(start + after -1);
-                    onKeyPress(SearchEditText, ascii);
+                    getListener().onTextChange(SearchEditText,ascii);
+                    //onKeyPress(SearchEditText, ascii);
                 }
             }
             @Override
             public void afterTextChanged(Editable editable) {
-
-
             }
         });
 
@@ -141,32 +143,40 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
 
 
         container.addView(SearchEditText);
-        ScrollView sv = new ScrollView(getContext());
-        ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
-        scP.setLayoutDirection(LinearLayout.HORIZONTAL);
-        sv.setLayoutParams(scP);
+        //ScrollView sv = new ScrollView(getContext());
+        //ScrollView.LayoutParams scP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
+        //scP.setLayoutDirection(LinearLayout.HORIZONTAL);
+        //sv.setLayoutParams(scP);
+
+        /*
         table_layout = new TableLayout(getContext());
         ScrollView.LayoutParams tlP= new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
         table_layout.setLayoutParams(tlP);
-        sv.addView(table_layout);
-        container.addView(sv);
+
+         */
+        //sv.addView(table_layout);
+        //container.addView(sv);
+
+        detailed_control.getButtons().clear();
+
+        detailed_control.addView(container);
+
     }
-    protected void onKeyPress(View view, int keycode){
-        if(keycode == getArgs().getSearchKey()){
-            detailed_control.refreshGrid(table_layout);
-        }
-    }
+    //protected void onKeyPress(View view, int keycode){
+    //    if(keycode == getArgs().getSearchKey()){
+    //         OnTextChange.apply(SearchEditText.getText().toString());
+    //    }
+    // }
 
     public static class  PopupSearchArgs extends PopupArgs<PopupSearchArgs> {
-        public PopupSearchArgs(String header, List<Control.ControlBase> controls, String entityName,String displayField){
+        public PopupSearchArgs(String header, List<Control.ControlBase> controls, String displayField){
             super(header);
             setControls(controls);
             setCancelButton("Cancel");
-            setEntityName(entityName);
+
             setIdField("Id");
             setKeywordsField("keyWords");
             setDisplayField(displayField);
-            setSearchKey(32);
             if(controls == null)setControls(new ArrayList<Control.ControlBase>());
             else setControls(controls);
         }
@@ -191,18 +201,6 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
             KeywordsField = keywordsField;
             return this;
         }
-
-
-
-
-        private String EntityName;
-        public String getEntityName() {
-            return EntityName;
-        }
-        public PopupSearchArgs setEntityName(String entityName) {
-            EntityName = entityName;
-            return this;
-        }
         private String IdField;
         public String getIdField() {
             return IdField;
@@ -213,14 +211,6 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
         }
 
 
-        private int SearchKey;
-        public int getSearchKey() {
-            return SearchKey;
-        }
-        public PopupSearchArgs setSearchKey(int searchKey) {
-            SearchKey = searchKey;
-            return this;
-        }
 
 
         private String DisplayField;

@@ -1,6 +1,7 @@
 package com.example.myapplication.model;
 
 import android.app.Activity;
+import android.app.Notification;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
@@ -10,12 +11,17 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.graphics.drawable.shapes.Shape;
+import android.graphics.text.LineBreakConfig;
+import android.graphics.text.LineBreaker;
+import android.icu.util.Output;
 import android.renderscript.Sampler;
+import android.telephony.CellSignalStrength;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.format.DateUtils;
 import android.text.method.DigitsKeyListener;
+import android.text.method.ReplacementTransformationMethod;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -51,6 +57,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -58,6 +65,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -67,6 +75,11 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import cz.msebera.android.httpclient.Header;
 
 public class Control {
     public static String ACTION_SEARCH = "Search";
@@ -79,6 +92,12 @@ public class Control {
     public static String ACTION_CAMERA = "Camera";
     public static String ACTION_GALLERY = "Gallery";
     public static String ACTION_FILTER = "Filter";
+
+
+    public static String ACTION_STATUS= "Status";
+
+    public static String ACTION_VIEW= "View";
+    public static String ACTION_BARCODE= "Barcode";
     public static int CONTROL_SIZE_DOUBLE = -20;
     public static int CONTROL_SIZE_SINGLE = -10;
 
@@ -92,6 +111,11 @@ public class Control {
     public static LookupListControl getLookupListControl( String name, String caption, String displayField,List<DataService.Lookup> lookups){
         return new LookupListControl(name,caption,displayField,lookups);
     }
+
+    public static LookupForeignControl getLookupForeignControl( String name, String caption,String entityName ,String displayField){
+        return new LookupForeignControl(name,caption,entityName,displayField);
+    }
+
 
     public static EditTextControl getEditTextControl( String name, String caption){
         return new EditTextControl(name,caption);
@@ -107,15 +131,24 @@ public class Control {
         return new EditDecimalControl(name,caption);
     }
 
-    public static EditTextPickerControl getEditTextPickerControl( String name, String caption,ArrayList<String> options){
-        return new EditTextPickerControl(name,caption,options);
+    public static EditIntegerControl getEditIntegerControl( String name, String caption){
+        return new EditIntegerControl(name,caption);
+    }
+
+    public static EditTextPickerControl getEditTextPickerControl( String name, String caption,ArrayList<String> options,String defaultValue){
+        return new EditTextPickerControl(name,caption,options,defaultValue);
     }
 
 
 
-    public static SearchControl getSearchControl( String name, String caption,List<Control.ControlBase> controls,String entityName,String displayFieldName){
-        return new SearchControl(name,caption,controls,entityName,displayFieldName);
-    }
+
+
+
+
+
+    //public static SearchControl getSearchControl( String name, String caption,List<Control.ControlBase> controls,String entityName,String displayFieldName){
+    //    return new SearchControl(name,caption,controls,entityName,displayFieldName);
+    //}
 
     public static abstract class DetailedControl extends DetailedControlBase<DetailedControl> {
         public DetailedControl(String name,String caption,String entityName,String foreignFieldName) {
@@ -126,6 +159,14 @@ public class Control {
             buttons.add(new ActionButton(Control.ACTION_DELETE).setEnabled(false));
             buttons.add(new ActionButton(Control.ACTION_REFRESH));
             setButtons(buttons);
+        }
+
+        private ArrayList<ControlBase> EditControls= null;
+        public <A extends Control.ControlBase> A getControl(String name){
+            if(EditControls == null)return null;
+            Optional<Control.ControlBase> control = EditControls.stream().filter(i-> i.getName().equals(name)).findFirst();
+            if(control.isPresent())return (A)control.get();
+            else return null;
         }
 
         protected transient TableLayout table_layout;
@@ -140,6 +181,10 @@ public class Control {
             refreshGrid(table_layout);
             return defaultClose;
         }
+
+
+
+
         @Override
         public void addValueView(ViewGroup container) {
 
@@ -149,6 +194,8 @@ public class Control {
             filter_layout.setFlexWrap(FlexWrap.WRAP);
             container.addView(filter_layout);
             table_layout = new TableLayout(container.getContext());
+            table_layout.setShrinkAllColumns(true);
+            table_layout.setStretchAllColumns(true);
             addHeaderRow(table_layout,getControls(ACTION_REFRESH));
 
             TableLayout.LayoutParams tlLp = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -162,10 +209,101 @@ public class Control {
                 }
             }
 
-            if(getForeignFieldName() == null || getForeignFieldName().length() == 0 || (getParentId() != null && getParentId() >0))
+            if(getUrl(Control.ACTION_REFRESH) != null && GridData == null)
                 refreshGrid(table_layout);
+            else if(GridData != null)refreshDetailedView(GridData);
         }
-        protected String getRefreshUrl(){
+
+        protected  void onRowSelected(TableRow row){
+            JSONObject obj = (JSONObject)row.getTag();
+            try
+            {
+                setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
+
+            }
+            catch (JSONException e){
+                setSelectedId(null);
+            }
+            selectRow(row,header_row,table_layout);
+        }
+        private transient TableRow SelectedRow;
+
+        public TableRow getSelectedRow() {
+            return SelectedRow;
+        }
+
+        protected void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
+            SelectedRow = row;
+            if(getActionButton(Control.ACTION_EDIT) != null) getActionButton(Control.ACTION_EDIT).setEnabled(true);
+            if(getActionButton(Control.ACTION_DELETE) != null)getActionButton(Control.ACTION_DELETE).setEnabled(true);
+            for (int i = 0; i < tableLayout.getChildCount(); i++) {
+                TableRow otherRow = (TableRow)tableLayout.getChildAt(i);
+                if(row == otherRow){
+                    GradientDrawable orderStyle;
+
+                    if(i % 2 != 0) {
+                        orderStyle = new GradientDrawable(
+                                GradientDrawable.Orientation.TOP_BOTTOM,
+                                new int[]{Color.parseColor("#136861"), Color.parseColor("#9FDBD6"), Color.parseColor("#9FDBD6"), Color.parseColor("#136861")});
+
+
+                    }else{
+
+                        orderStyle = new GradientDrawable(
+                                GradientDrawable.Orientation.TOP_BOTTOM,
+                                new int[]{Color.GRAY, Color.WHITE, Color.WHITE, Color.GRAY});
+
+                    }
+                    orderStyle.setCornerRadius(0f);
+                    otherRow.setBackground(orderStyle);
+
+                }
+                else if(header != otherRow){
+                    if(i % 2 != 0)otherRow.setBackgroundColor(Color.parseColor("#9FDBD6"));
+                    else otherRow.setBackground(null);
+                }
+            }
+        }
+        private transient TableRow header_row;
+        private void addHeaderRow(TableLayout table,ArrayList<ControlBase> controls){
+            header_row = new TableRow(table.getContext());
+
+            header_row.setBackground(getHeaderBackground());
+            header_row.setGravity(Gravity.CENTER_VERTICAL);
+            table.addView(header_row);
+            TableLayout.LayoutParams headerP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            header_row.setLayoutParams(headerP);
+            //header_row.setBackgroundColor(Color.parseColor("#008477"));
+            //header_row.setPadding(5, 5, 5, 5);
+            for (com.example.myapplication.model.Control.ControlBase control : controls) {
+                control.addListHeader(header_row);
+            }
+        }
+
+        protected void rowAdded(ArrayList<ControlBase> controls ){
+
+        }
+        protected String getUrl(String action){
+            if(getEntityName() == null || getEntityName().length() == 0){
+                return null;
+            }
+            else{
+                if(action == ACTION_EDIT && getSelectedId() != null && getSelectedId() != 0L)
+                    return "EntityApi/GetEntity?entity=" + getEntityName() + "&id=" + getSelectedId();
+                else if(action == ACTION_DELETE && getSelectedId() != null && getSelectedId() != 0L)
+                    return "EntityApi/DeleteEntity?entity=" + getEntityName() + "&id=" + getSelectedId();
+                else
+                    return "EntityApi/GetEntityList?entity=" + getEntityName() ;
+            }
+        }
+
+
+        protected String getWhere(String action){
+            return  null;
+
+
+
+            /*
             List<String> values = new ArrayList<>();
             if(getForeignFieldName() != null && getForeignFieldName().length() != 0){
                 if(getParentId() == null || getParentId() == 0L){
@@ -180,166 +318,238 @@ public class Control {
                     values.add(c.getUrlParam());
                 }
             }
-            if(values.size() ==0)return getEntityName();
-            else return getEntityName() + "?" + String.join("&",values);
-        }
-        protected  void onRowSelected(TableRow row){
-            JSONObject obj = (JSONObject)row.getTag();
-            try
-            {
-                setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
+            if(values.size() ==0)return null;
+            else return String.join("&",values);
 
-            }
-            catch (JSONException e){
-                setSelectedId(null);
-            }
-            selectRow(row,header_row,table_layout);
+             */
+
         }
-        private void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
-            row.setBackground(getSelectionBackground());
-            if(getActionButton(Control.ACTION_EDIT) != null) getActionButton(Control.ACTION_EDIT).setEnabled(true);
-            if(getActionButton(Control.ACTION_DELETE) != null)getActionButton(Control.ACTION_DELETE).setEnabled(true);
-            for (int i = 0; i < tableLayout.getChildCount(); i++) {
-                TableRow otherRow = (TableRow)tableLayout.getChildAt(i);
-                if(row != otherRow && header != otherRow){
-                    otherRow.setBackground(null);
+        protected String getOrderBy(String action){
+            return "Id Desc";
+        }
+        protected String getSelect(String action){
+            ArrayList<ControlBase> controls = getControls(action);
+            for (int i = 0; i < controls.size(); i++) {
+                if(DetailedControlBase.class.isAssignableFrom(controls.get(i).getClass())){
+                    DetailedControlBase ctrl = (DetailedControlBase)controls.get(i);
+                    ctrl.setParentId(getSelectedId());
+                }
+            }
+            FieldList fields = new FieldList(0);
+            fields.Fields.put("Id","it0.Id");
+            for (com.example.myapplication.model.Control.ControlBase control : controls) {
+                control.addForSelectQuery(fields);
+            }
+            return "it0 => " + fields.getSelectString();
+        }
+
+
+
+        @Override
+        public void addForSelectQuery(FieldList list) {
+
+            ArrayList<ControlBase> dtControls = getControls(ACTION_REFRESH);
+            FieldList fields = new FieldList(list.Index + 1);
+            fields.Fields.put("Id", "it" + (list.Index + 1) + ".Id");
+            for (com.example.myapplication.model.Control.ControlBase control : dtControls) {
+                control.addForSelectQuery(fields);
+            }
+            list.addForSelectQuery(getName(),getName(), getName() + ".Select(it" + (list.Index + 1) + "=>" + fields.getSelectString() + ")");
+        }
+
+        private transient JSONArray GridData = null;
+
+
+        @Override
+        public void refreshDetailedView(JSONArray data) {
+            if(table_layout == null)GridData = data;
+            else {
+                ArrayList<ControlBase> controls = getControls(ACTION_REFRESH);
+                String id_field_name = getIdFieldName();
+                try {
+
+                    if (getValue() == null) setValue(new ArrayList<Long>());
+                    getValue().clear();
+                    table_layout.removeAllViews();
+
+                    addHeaderRow(table_layout, controls);
+                    boolean selectionFound = false;
+                    final TableLayout parentTable = table_layout;
+                    for (int i = 0; i < data.length(); i++) {
+                        JSONObject obj = (JSONObject) data.get(i);
+                        getValue().add(Long.parseLong(obj.get(getIdFieldName()).toString()));
+                        TableRow item = new TableRow(table_layout.getContext());
+                        item.setGravity(Gravity.CENTER_VERTICAL);
+                        table_layout.addView(item);
+                        TableRow.LayoutParams itemP = new TableRow.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                        itemP.setMargins(0, 0, 0, 5);
+                        //itemP.setMargins(5,5,5,5);
+                        //item.setWeightSum(controls.size());
+                        item.setLayoutParams(itemP);
+                        //item.setPadding(5, 5, 5, 5);
+                        item.setTag(obj);
+                        if (i % 2 == 0) item.setBackgroundColor(Color.parseColor("#9FDBD6"));
+
+                        //04DBC7
+
+
+                        item.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                onRowSelected(item);
+                            }
+                        });
+                        ArrayList<ControlBase> dtControls = getControls(ACTION_REFRESH);
+
+                        for (com.example.myapplication.model.Control.ControlBase control : dtControls) {
+                            control.addListDetails(item, obj);
+                        }
+                        rowAdded(dtControls);
+                        if (getSelectedId() != null && Long.parseLong(obj.get(getIdFieldName()).toString()) == getSelectedId()) {
+
+                            try {
+                                setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
+                                selectRow(item, header_row, parentTable);
+                                selectionFound = true;
+
+                            } catch (Exception e) {
+                                setSelectedId(null);
+                                selectionFound = false;
+                            }
+                        }
+
+                    }
+                    if (selectionFound) {
+                        if (getActionButton(Control.ACTION_EDIT) != null)
+                            getActionButton(Control.ACTION_EDIT).setEnabled(true);
+                        if (getActionButton(Control.ACTION_DELETE) != null)
+                            getActionButton(Control.ACTION_DELETE).setEnabled(true);
+                    } else {
+                        if (getActionButton(Control.ACTION_EDIT) != null)
+                            getActionButton(Control.ACTION_EDIT).setEnabled(false);
+                        if (getActionButton(Control.ACTION_DELETE) != null)
+                            getActionButton(Control.ACTION_DELETE).setEnabled(false);
+                    }
+
+                } catch (JSONException e) {
+                    Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
         }
-        private transient TableRow header_row;
-        private void addHeaderRow(TableLayout table,ArrayList<ControlBase> controls){
-            header_row = new TableRow(table.getContext());
-            table.addView(header_row);
-            TableLayout.LayoutParams headerP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            header_row.setLayoutParams(headerP);
-            //header_row.setBackgroundColor(Color.parseColor("#008477"));
-            //header_row.setPadding(5, 5, 5, 5);
-            for (com.example.myapplication.model.Control.ControlBase control : controls) {
-                control.addListHeader(header_row);
-            }
-        }
+
         public void refreshGrid(TableLayout table){
             table_layout = table;
             ArrayList<ControlBase> controls = getControls(ACTION_REFRESH);
             String id_field_name = getIdFieldName();
             if(controls != null && controls.size() != 0){
-                new DataService().getArray(getRefreshUrl(), new Function<JSONArray, Void>() {
+                RequestParams rp = new RequestParams();
+                String where = getWhere(ACTION_REFRESH);
+                if(where != null && where.length() == 0)where = null;
+                String groupWhere = null;
+                if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() == null)groupWhere = getForeignFieldName() + " == 0";
+                else if(getForeignFieldName() != null && getForeignFieldName().length() != 0 )groupWhere = getForeignFieldName() + " == " + getParentId();
+                if(where != null && groupWhere != null )where = "(" + groupWhere + ") and (" + where + ")";
+                else if(groupWhere != null )where = groupWhere;
+                rp.add("Where",where);
+                rp.add("OrderBy",getOrderBy(ACTION_REFRESH));
+                rp.add("Select",getSelect(ACTION_REFRESH));
+                new DataService().postForJArray(getUrl(ACTION_REFRESH), rp, new Function<JSONArray, Void>() {
                     @Override
                     public Void apply(JSONArray jsonArray) {
-                        try {
-
-                            if(getValue() == null)setValue(new ArrayList<Long>());
-                            getValue().clear();
-                            table.removeAllViews();
-
-                            addHeaderRow(table,controls);
-                            boolean selectionFound = false;
-                            final TableLayout parentTable = table;
-                            for (int i = 0; i < jsonArray.length(); i++) {
-                                JSONObject obj = (JSONObject) jsonArray.get(i);
-                                getValue().add(Long.parseLong(obj.get(getIdFieldName()).toString()));
-                                TableRow item = new TableRow(table.getContext());
-                                table.addView(item);
-                                TableLayout.LayoutParams itemP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                                //item.setWeightSum(controls.size());
-                                item.setLayoutParams(itemP);
-                                //item.setPadding(5, 5, 5, 5);
-                                item.setTag(obj);
-                                item.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-
-                                        //try {
-                                            onRowSelected(item);
-                                        //}
-                                        //catch (Exception e){
-                                        //    setSelectedId(null);
-                                        //}
-                                    }
-                                });
-                                for (com.example.myapplication.model.Control.ControlBase control : controls) {
-                                    control.addListDetails(item,obj);
-                                }
-                                if(getSelectedId() != null && Long.parseLong(obj.get(getIdFieldName()).toString()) == getSelectedId()){
-
-                                    try {
-                                        setSelectedId(Long.parseLong(obj.get(getIdFieldName()).toString()));
-                                        selectRow(item, header_row, parentTable);
-                                        selectionFound =true;
-
-                                    }
-                                    catch (Exception e){
-                                        setSelectedId(null);
-                                        selectionFound =false;
-                                    }
-                                }
-
-                            }
-                            if(selectionFound){
-                                if(getActionButton(Control.ACTION_EDIT) != null) getActionButton(Control.ACTION_EDIT).setEnabled(true);
-                                if(getActionButton(Control.ACTION_DELETE) != null)getActionButton(Control.ACTION_DELETE).setEnabled(true);
-                            }
-                            else{
-                                if(getActionButton(Control.ACTION_EDIT) != null)getActionButton(Control.ACTION_EDIT).setEnabled(false);
-                                if(getActionButton(Control.ACTION_DELETE) != null)getActionButton(Control.ACTION_DELETE).setEnabled(false);
-                            }
-
-                        }
-                        catch (JSONException  e)
-                        {
-                            Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
+                        refreshDetailedView(jsonArray);
                         return null;
                     }
                 },table.getContext());
             }
         }
+
+        private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls){
+            if(popupInputs == null || popupInputs.size() == 0){
+                new PopupForm()
+                    .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getEntityName(),0L))
+                    .show( getRootActivity().getSupportFragmentManager(),null);
+
+            }else{
+                popupInputs.get(0).onPopupList(getRootActivity(),new Function<DataService.Lookup, Void>() {
+                    @Override
+                    public Void apply(DataService.Lookup lookup) {
+                        popupInputs.remove(popupInputs.get(0));
+                        ShowAdd(popupInputs,controls);
+                        return null;
+                    }
+                });
+
+            }
+
+        }
+
+
+
         @Override
         public void onButtonClick(ActionButton action){
-            BaseActivity activity = (BaseActivity)action.button.getContext();
+
             if(action.getName().equals(Control.ACTION_ADD)){
-                ArrayList<ControlBase> controls = getControls(action.getName());
-                if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
-                    controls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
+                EditControls = getControls(action.getName());
+                String path = getPath()  == null || getPath().length() == 0 ? getName() + "[]" : getPath() + "." + getName() + "[]";
+                for (int i = 0; i < EditControls.size(); i++) {
+                    EditControls.get(i).setPath(path);
                 }
-                new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getEntityName(),0L)).show( activity.getSupportFragmentManager(),null);
+                if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
+                    EditControls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
+                }
+                ArrayList<LookupControlBase> popupInputs = (ArrayList<LookupControlBase>)EditControls.stream()
+                    .filter(o -> o instanceof LookupControlBase)
+                    .map(o -> (LookupControlBase)o)
+                    .filter(o -> o.getPopupIndex() >= 0)
+                    .sorted(Comparator.comparing(s -> s.getPopupIndex()))
+                    .collect(Collectors.toList());
+                ShowAdd(popupInputs,EditControls);
             }
             else if(action.getName().equals(Control.ACTION_EDIT)){
-                //ArrayList<ControlBase> controls = getControls(action);
-                new DataService().getById(activity, getEntityName(), getSelectedId(), new DataService.GetByIdResponse() {
+                RequestParams rp = new RequestParams();
+                rp.add("Json",getSelect(ACTION_EDIT));
+                new DataService().postForJObject(getUrl(ACTION_EDIT) , rp, new Function<JSONObject, Void>() {
                     @Override
-                    public void onSuccess(JSONObject data) {
-
-                        ArrayList<ControlBase> controls = getControls(action.getName());
-                        if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
-                            controls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
+                    public Void apply(JSONObject jsonObject) {
+                        System.out.println(jsonObject.toString());
+                        EditControls = getControls(action.getName());
+                        String path = getPath()  == null || getPath().length() == 0 ? getName()  : getPath() + "." + getName();
+                        path = path + "[" + getSelectedId() + "]";
+                        for (int i = 0; i < EditControls.size(); i++) {
+                            EditControls.get(i).setPath(path);
                         }
-                        for (int i = 0; i < controls.size(); i++) {
-                            controls.get(i).readValueJSONObject(data);
-                        }
-                        //Utility.applyValues(data,controls);
-                        for (int i = 0; i < controls.size(); i++) {
-                            if(DetailedControlBase.class.isAssignableFrom(controls.get(i).getClass())){
-                                DetailedControlBase ctrl = (DetailedControlBase)controls.get(i);
+                        for (int i = 0; i < EditControls.size(); i++) {
+                            if(DetailedControlBase.class.isAssignableFrom(EditControls.get(i).getClass())){
+                                DetailedControlBase ctrl = (DetailedControlBase)EditControls.get(i);
                                 ctrl.setParentId(getSelectedId());
                             }
                         }
-                        new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",controls,getEntityName(),getSelectedId())).show( activity.getSupportFragmentManager(),null);
+                        if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
+                            EditControls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
+                        }
+                        for (int i = 0; i < EditControls.size(); i++) {
+                            EditControls.get(i).readValueJSONObject(jsonObject,EditControls.get(i).getName());
+                        }
+                        new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getEntityName(),getSelectedId())).show( getRootActivity().getSupportFragmentManager(),null);
+                        return null;
                     }
-                });
+                }, getRootActivity());
             }
             else if(action.getName().equals(Control.ACTION_DELETE)){
-                PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)-> {
-                    new DataService().deleteById(activity, getEntityName(), getSelectedId(), new DataService.DeleteByIdResponse() {
-                        @Override
-                        public void onSuccess(Boolean deleted) {
-                            setSelectedId(null);
-                            refreshGrid(table_layout);
-                        }
-                    });
-                    return true;
+                PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", new Function<Void, Boolean>() {
+                    @Override
+                    public Boolean apply(Void unused) {
+                        new DataService().delete(getUrl(ACTION_DELETE), new Function<String, Void>() {
+                            @Override
+                            public Void apply(String s) {
+                                setSelectedId(null);
+                                refreshGrid(table_layout);
+                                return null;
+                            }
+                        }, getRootActivity());
+                        return true;
+                    }
                 }).show(((BaseActivity)action.button.getContext()).getSupportFragmentManager(), null);
-
             }
             else if(action.getName().equals(Control.ACTION_REFRESH)){
                 refreshGrid(table_layout);
@@ -350,17 +560,20 @@ public class Control {
     public static class ImageControl extends DetailedControlBase<ImageControl> {
         public ImageControl(String name, String caption,String entityName){
             super(name, caption,entityName,"RefId");
-            setValue(new ArrayList<Long>());
+            setValue(new ArrayList<>());
             ArrayList<ActionButton> buttons = new ArrayList<ActionButton>();
             buttons.add(new ActionButton(Control.ACTION_CAMERA));
             buttons.add(new ActionButton(Control.ACTION_GALLERY));
+            buttons.add(new ActionButton(Control.ACTION_VIEW).setEnabled(false));
             buttons.add(new ActionButton(Control.ACTION_DELETE).setEnabled(false));
+
             setButtons(buttons);
 
         }
-        public void onCapturedImage(int action, Bitmap image, Long id){
+        public void onCapturedImage(int action, Bitmap image,Long id){
             addImage(id);
             getActionButton(Control.ACTION_DELETE).setEnabled(false);
+            getActionButton(Control.ACTION_VIEW).setEnabled(false);
 
             //delete_button.setEnabled(false);
             for (int i = 0; i < main_layout.getChildCount(); i++) {
@@ -370,18 +583,50 @@ public class Control {
                     setSelectedId(id);
                     iv.setBackgroundColor(Color.parseColor("#225C6E"));
                     getActionButton(Control.ACTION_DELETE).setEnabled(true);
+                    getActionButton(Control.ACTION_VIEW).setEnabled(true);
                 }
                 else{
                     iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
                 }
             }
         }
+        @Override
+        public void addForSelectQuery(FieldList list) {
+            String formula = "@0.RefFiles.Where(img=>img.RefId == " + getParentId() + " && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Select(img => new{img.Id,img.FileName})";
+            list.addForSelectQuery(getName(),getName(), formula);
+        }
 
         @Override
         public void onButtonClick(ActionButton button) {
             if(button.Name.equals(Control.ACTION_DELETE)){
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)->{
-                    new DataService().deleteById(button.button.getContext(), "RefFile", getSelectedId(), new DataService.DeleteByIdResponse() {
+                    new DataService().delete("EntityApi/DeleteEntity?entity=RefFile&id=" + getSelectedId(), new Function<String, Void>() {
+                        @Override
+                        public Void apply(String s) {
+                            getValue().remove(getSelectedId());
+                            for (int i = 0; i < main_layout.getChildCount(); i++) {
+                                Object id = main_layout.getChildAt(i).getTag();
+                                if(id != null && id.equals(getSelectedId())){
+                                    main_layout.removeView(main_layout.getChildAt(i));
+                                    break;
+                                }
+                            }
+                            setSelectedId(null);
+                            getActionButton(Control.ACTION_DELETE).setEnabled(false);
+
+
+                            return null;
+                        }
+                    }, getRootActivity());
+
+
+
+
+                    //"EntityApi/DeleteEntity?entity=" + getEntityName() + "&id=" + getSelectedId();
+
+                    /*
+
+                    new DataService().delete(button.button.getContext(), "RefFile/Delete/", getSelectedId(), new DataService.DeleteByIdResponse() {
                         @Override
                         public void onSuccess(Boolean deleted) {
                             if(deleted) {
@@ -397,15 +642,20 @@ public class Control {
                             }
                         }
                     });
+
+                     */
                     return true;
                 }).show(getRootActivity().getSupportFragmentManager(),null);
             }
             else if(button.Name.equals(Control.ACTION_CAMERA)) {
-                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getParentId());
+                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getName(), getParentId());
             }
             else if(button.Name.equals(Control.ACTION_GALLERY)) {
-                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,getEntityName(),getParentId());
+                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,getEntityName(),getName(),getParentId());
             }
+            else if(button.Name.equals(Control.ACTION_VIEW)) {
+                PopupImage.create("Image View", getSelectedId()).show(getRootActivity().getSupportFragmentManager(),null);
+             }
         }
 
 
@@ -422,7 +672,6 @@ public class Control {
             for (int i = 0; i < getValue().size(); i++) {
                 addImage(getValue().get(i));
             }
-
         }
         private ImageView GetImageView(long id){
             ImageView imageView = new ImageView(main_layout.getContext());
@@ -433,6 +682,7 @@ public class Control {
             if(id == getSelectedId()){
                 imageView.setBackgroundColor(Color.parseColor("#225C6E"));
                 getActionButton(Control.ACTION_DELETE).setEnabled(true);
+                getActionButton(Control.ACTION_VIEW).setEnabled(true);
             }
             else{
                 imageView.setBackgroundColor(Color.parseColor("#8CD0E4"));
@@ -442,12 +692,14 @@ public class Control {
                 public void onClick(View view) {
                     setSelectedId(null);
                     getActionButton(Control.ACTION_DELETE).setEnabled(false);
+                    getActionButton(Control.ACTION_VIEW).setEnabled(false);
                     for (int i = 0; i < main_layout.getChildCount(); i++) {
                         ImageView iv = (ImageView)main_layout.getChildAt(i);
                         if(view == iv) {
                             setSelectedId(id);
                             iv.setBackgroundColor(Color.parseColor("#225C6E"));
                             getActionButton(Control.ACTION_DELETE).setEnabled(true);
+                            getActionButton(Control.ACTION_VIEW).setEnabled(true);
                         }
                         else{
                             iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
@@ -465,7 +717,7 @@ public class Control {
                 getValue().add(id);
             }
             ImageView imageView = GetImageView(id);
-            new DataService().get("refFile/" + id, new AsyncHttpResponseHandler() {
+            new DataService().get("refFile/Get/" + id, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
@@ -478,6 +730,11 @@ public class Control {
 
                 }
             });
+        }
+
+        @Override
+        public void refreshDetailedView(JSONArray data) {
+
         }
     }
     public static abstract class DetailedControlBase<T extends ControlBase<T,ArrayList<Long>>> extends ControlBase<T, ArrayList<Long>> {
@@ -494,6 +751,8 @@ public class Control {
                     new int[] {Color.parseColor("#04263C"),Color.parseColor("#0D78BF"),Color.parseColor("#0D78BF"),Color.parseColor("#04263C")});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
+
+
         }
 
         @Override
@@ -520,15 +779,19 @@ public class Control {
 
         @Override
         public boolean validate() {
-            boolean valid = false;
-            if(getParentId() == null || getParentId() == 0)valid = true;
-            else if(!getIsRequired())valid= true;
-            else if(getValue() != null && getValue().size() >0)valid = true;
-            if(CaptionTextView!=null) {
-                if(rl != null && valid)rl.setBackground(getHeaderBackground());
-                else if(rl != null)rl.setBackground(getHeaderErrorBackground());
-                else if(CaptionTextView != null && valid)CaptionTextView.setBackground(getHeaderBackground());
-                else if(CaptionTextView != null )CaptionTextView.setBackground(getHeaderErrorBackground());
+            boolean valid = super.validate();
+            if(valid) {
+                if (getParentId() == null || getParentId() == 0) valid = true;
+                else if (!getIsRequired()) valid = true;
+                else if (getValue() == null || getValue().size() == 0) valid = false;
+                if (CaptionTextView != null) {
+                    if (rl != null && valid) rl.setBackground(getHeaderBackground());
+                    else if (rl != null) rl.setBackground(getHeaderErrorBackground());
+                    else if (CaptionTextView != null && valid)
+                        CaptionTextView.setBackground(getHeaderBackground());
+                    else if (CaptionTextView != null)
+                        CaptionTextView.setBackground(getHeaderErrorBackground());
+                }
             }
             return valid;
         }
@@ -538,15 +801,6 @@ public class Control {
         protected transient  LinearLayout ActionLayout;
 
         private transient RelativeLayout rl = null;
-
-
-
-
-
-
-
-
-
         @Override
         protected void addContentView(ViewGroup container) {
 
@@ -620,19 +874,24 @@ public class Control {
             }else{
                 container.addView(llValue);
             }
-
-
-
             addValueView(llValue);
-
             if(initialFocus && getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
-
         }
+
+        //@Override
+        //public void updateSaveParameters(RequestParams params) {
+        //    params.put(getForeignFieldName(),getParentId());
+        //}
+
+        public abstract void refreshDetailedView(JSONArray data);
+
         @Override
-        public void updateSaveParameters(RequestParams params) {
-            params.put(getForeignFieldName(),getParentId());
+        public T readValueObject(Object value) {
+            super.readValueObject(value);
+            if(value != null && JSONArray.class.isAssignableFrom(value.getClass()))
+                refreshDetailedView((JSONArray)value);
+            return (T)this;
         }
-
 
         private boolean  EnableScroll = false;
 
@@ -644,8 +903,11 @@ public class Control {
             EnableScroll = enableScroll;
             return (T)this;
         }
+        @Override
+        public  T updateValueToJSONObject(JSONObject data) {
 
-
+            return (T)this;
+        }
 
         private String IdFieldName = "Id";
 
@@ -691,6 +953,8 @@ public class Control {
             return ParentId;
         }
 
+
+
         private String EntityName;
 
         public String getEntityName() {
@@ -705,95 +969,40 @@ public class Control {
         public void valueChange(ArrayList<Long> oldValue, ArrayList<Long> newValue) {
 
         }
+
+
+
         @Override
         protected ArrayList<Long> convertValue(Object value) {
             if(value == null || value== JSONObject.NULL ) return new ArrayList<Long>();
-            else {
-                if (JSONArray.class.isAssignableFrom(value.getClass())) {
+            else if(JSONArray.class.isAssignableFrom(value.getClass())) {
+                try {
                     JSONArray jArray = (JSONArray) value;
                     ArrayList a = new ArrayList<Long>();
                     for (int i = 0; i < jArray.length(); i++) {
-                        try {
-                            a.add(Long.parseLong(jArray.get(i).toString()));
-                        } catch (Exception e) {
-
-                            return new ArrayList<Long>();
-                        }
+                        JSONObject obj = (JSONObject)jArray.get(i);
+                        a.add(Long.parseLong(obj.get(getIdFieldName()).toString()));
                     }
                     return a;
                 }
-                else{
-                    try {
-                        return  (ArrayList<Long>)value;
-                    } catch (Exception e) {
-
-                    }
+                catch (Exception e) {
+                    return new ArrayList<Long>();
                 }
             }
-            return new ArrayList<Long>();
-        }
-    }
-
-    public static class SearchControl extends LookupControlBase<SearchControl>{
-        public SearchControl(String name, String caption,List<Control.ControlBase> controls,String entityName,String displayField) {
-            super(name, caption,displayField);
-            getButtons().add(new ActionButton("Search"));
-            setControls(controls);
-            setEntityName(entityName);
-            setControlSize(Control.CONTROL_SIZE_DOUBLE);
-            setIdField("Id");
-            setKeywordsField("keyWords");
-        }
-        private transient TextView LookupTextView;
-        private List<Control.ControlBase> Controls;
-        public List<Control.ControlBase> getControls() {
-            return Controls;
-        }
-
-        private String KeywordsField;
-        public String getKeywordsField() {
-            return KeywordsField;
-        }
-        public SearchControl setKeywordsField(String keywordsField) {
-            KeywordsField = keywordsField;
-            return this;
-        }
-        private String EntityName;
-        public String getEntityName() {
-            return EntityName;
-        }
-        public SearchControl setEntityName(String entityName) {
-            EntityName = entityName;
-            return this;
-        }
-        private String IdField;
-        public String getIdField() {
-            return IdField;
-        }
-        public SearchControl setIdField(String idField) {
-            IdField = idField;
-            return this;
-        }
-
-        public SearchControl setControls(List<Control.ControlBase> controls) {
-            Controls = controls;
-            return this;
-        }
-
-        @Override
-        protected void onButtonClick(ActionButton button) {
-            if(button.getName() == "Search"){
-                PopupSearch ps = PopupSearch.create(getCaption(),getControls() ,getEntityName(),getDisplayField(),(lookup)->{
-                    setValue(lookup);
-                    return true;
-                });
-                ps.getArgs().setAllowNull(!getIsRequired());
-                ps.getArgs().setIdField(getIdField());
-                ps.getArgs().setKeywordsField(getKeywordsField());
-                ps.show(((BaseActivity)button.button.getContext()).getSupportFragmentManager(),null);
+            else{
+                try {
+                    return (ArrayList<Long>)value;
+                }
+                catch (Exception e){
+                    return new ArrayList<Long>();
+                }
             }
         }
     }
+
+
+
+
     public static class DateTimeControl extends DateControlBase<DateTimeControl>{
         @Override
         public String getFormat() {
@@ -860,6 +1069,7 @@ public class Control {
             super( name, caption);
             setControlSize(CONTROL_SIZE_SINGLE);
             getButtons().add(new ActionButton("Search"));
+            //setColumnWidth(195);
         }
         @Override
         protected void onButtonClick(ActionButton button) {
@@ -868,7 +1078,6 @@ public class Control {
             }
 
         }
-
         @Override
         public Date getValue() {
             return super.getValue();
@@ -884,12 +1093,7 @@ public class Control {
         protected abstract void onBrowse(ActionButton button);
 
 
-        @Override
-        public void updateSaveParameters(RequestParams params) {
-            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
-            String formattedDate = dateFormat.format(getValue());
-            params.put(getName(),formattedDate);
-        }
+
 
         @Override
         protected Date convertValue(Object value) {
@@ -954,16 +1158,243 @@ public class Control {
             return format.format(value);
         }
 
+        @Override
+        public T updateValueToJSONObject(JSONObject data) {
 
+            if(getValue() == null)updateValueToJSONObject(data,getName(),null);
+            else {
+                DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                updateValueToJSONObject(data,getName(),format.format(getValue()));
+            }
+            return (T)this;
+        }
+    }
+
+
+
+    public static abstract class SearchControlBase extends LookupForeignControlBase<SearchControlBase>{
+        public SearchControlBase(String name, String caption,List<Control.ControlBase> controls,String entityName,String displayField) {
+            super(name, caption,entityName,displayField);
+            //getButtons().add(new ActionButton("Search"));
+            setControls(controls);
+            setControlSize(Control.CONTROL_SIZE_DOUBLE);
+            setIdField("Id");
+            setKeywordsField("keyWords");
+            setSearchKey(32);
+        }
+
+
+
+        private transient TextView LookupTextView;
+        private List<Control.ControlBase> Controls;
+        public List<Control.ControlBase> getControls() {
+            return Controls;
+        }
+
+        public <A extends Control.ControlBase> A getControl(String name){
+            if(Controls == null)return null;
+            Optional<Control.ControlBase> control = Controls.stream().filter(i-> i.getName().equals(name)).findFirst();
+            if(control.isPresent())return (A)control.get();
+            else return null;
+        }
+
+        private String KeywordsField;
+        public String getKeywordsField() {
+            return KeywordsField;
+        }
+        public SearchControlBase setKeywordsField(String keywordsField) {
+            KeywordsField = keywordsField;
+            return this;
+        }
+        private String IdField;
+        public String getIdField() {
+            return IdField;
+        }
+        public SearchControlBase setIdField(String idField) {
+            IdField = idField;
+            return this;
+        }
+
+        private int SearchKey;
+        public int getSearchKey() {
+            return SearchKey;
+        }
+        public SearchControlBase setSearchKey(int searchKey) {
+            SearchKey = searchKey;
+            return this;
+        }
+
+        public SearchControlBase setControls(List<Control.ControlBase> controls) {
+            Controls = controls;
+            return this;
+        }
+        protected abstract void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack);
+
+
+        protected transient PopupSearch Popup;
+
+        protected boolean itemSelected(TableRow row, JSONObject data, DataService.Lookup lookup)
+        {
+            setValue(lookup);
+            return true;
+        }
+        protected void textChange(EditText editor, int keyCode) {
+            if(keyCode == getSearchKey()){
+                refreshDetailedView(editor.getText().toString(), new Function<JSONArray, Void>() {
+                    @Override
+                    public Void apply(JSONArray array) {
+                        Popup.refreshDetailedView(array);
+                        return null;
+                    }
+                });
+            }
+        }
+
+        protected PopupSearch.PopupSearchListener createListener(){
+            return new PopupSearch.PopupSearchListener() {
+                @Override
+                public boolean onItemSelected(TableRow row, JSONObject data, DataService.Lookup lookup) {
+                    return itemSelected(row,data,lookup);
+                }
+
+                @Override
+                public void onTextChange(EditText editor, int keyCode) {
+                    textChange(editor,keyCode);
+                }
+
+                @Override
+                public boolean onPressOk() {
+                    setValue(null);
+                    return true;
+                }
+            };
+        }
+
+
+        @Override
+        protected void onPopupList() {
+            Popup = PopupSearch.create(getCaption(), getControls(), getDisplayField());
+            Popup.setListener(createListener());
+            Popup.getArgs().setAllowNull(!getIsRequired());
+            Popup.getArgs().setIdField(getIdField());
+            Popup.getArgs().setKeywordsField(getKeywordsField());
+            Popup.show(getRootActivity().getSupportFragmentManager(),null);
+        }
+    }
+
+
+
+    public static class LookupForeignControl extends LookupForeignControlBase<LookupForeignControl> {
+        public LookupForeignControl(String name, String caption,String entityName ,String displayField) {
+            super(name, caption,entityName, displayField);
+            setEntityName(entityName);
+        }
+        public void addNewRecord(ArrayList<ControlBase> controls,int action){
+            addNewRecord(controls,getEntityName(),action);
+        }
+
+
+
+        protected String getUrl(){
+            if(getEntityName() == null || getEntityName().length() == 0){
+                return null;
+            }
+            else{
+                return "EntityApi/GetForeignLookups?entity=" + getEntityName();
+             }
+        }
+
+        private String Where;
+        public String getWhere() {
+            return Where;
+        }
+        public LookupForeignControl setWhere(String where) {
+            Where = where;
+            return this;
+        }
+        public String getOrderBy() {
+            if(getFormula() == null || getFormula().length() == 0) return getDisplayField();
+            else return getFormula();
+        }
+        public String getSelect() {
+            if(getFormula() == null || getFormula().length() == 0) return "new {Id," + getDisplayField() + " as Name}";
+            else return "it0 => new {it0.Id, " + getFormula().replace("{0}","it0") + " as Name}";
+        }
+        protected ArrayList<ControlBase> getAddControls(){
+            return  new ArrayList<>();
+        }
+
+
+
+        @Override
+        protected void onPopupList() {
+            RequestParams rp = new RequestParams();
+            rp.add("Field",getName());
+            rp.add("Where",getWhere());
+            rp.add("OrderBy",getOrderBy());
+            rp.add("Select",getSelect());
+            new DataService().postForLookups(getUrl(), rp, new Function<ArrayList<DataService.Lookup>, Void>() {
+                @Override
+                public Void apply(ArrayList<DataService.Lookup> lookups) {
+                    PopupLookup.create(getCaption(),lookups,getValue() == null? null : getValue().getId(),(lookup)->{
+                        setValue(lookup);
+                        return true;
+                    }).show(getRootActivity().getSupportFragmentManager(),null);
+                    return null;
+                }
+            }, getRootActivity());
+        }
 
     }
+
+
+    public static abstract class LookupForeignControlBase<T extends LookupForeignControlBase<T>> extends LookupControlBase<T> {
+        public LookupForeignControlBase(String name, String caption,String entityName ,String displayField) {
+            super(name, caption, displayField);
+            setEntityName(entityName);
+        }
+
+        private String EntityName;
+        public String getEntityName() {
+            return EntityName;
+        }
+        public T setEntityName(String entityName) {
+            EntityName = entityName;
+            return (T)this;
+        }
+
+        @Override
+        public T readValueObject(Object value) {
+            if(value != null && getEntityName() !=null && Long.class.isAssignableFrom(value.getClass())) {
+                RequestParams rp = new RequestParams();
+                String json ="new {Id," + getDisplayField() + " as Name}";
+                if(getFormula() != null && getFormula().length() != 0)
+                    json = "it0 => new {it0.Id," + getFormula().replace("{0}","it0") + " as Name}";
+                rp.add("Select",json);
+                rp.add("Field",getName());
+
+                new DataService().postForLookup("EntityApi/GetForeignLookup?entity=" + getEntityName() + "&id=" + value, rp, new Function<DataService.Lookup, Void>() {
+                    @Override
+                    public Void apply(DataService.Lookup lookup) {
+                        setValue(lookup);
+                        return null;
+                    }
+                }, getRootActivity());
+            }
+            else {
+                super.readValueObject(value);
+            }
+            return (T)this;
+        }
+    }
+
+
+
 
     public static class LookupListControl extends LookupControlBase<LookupListControl> {
         public LookupListControl(String name, String caption, String displayField, List<DataService.Lookup> lookups) {
             super(name, caption, displayField);
             setLookups(lookups);
-            getButtons().add(new ActionButton(Control.ACTION_SEARCH));
-
         }
         private List<DataService.Lookup> Lookups;
         public List<DataService.Lookup> getLookups() {
@@ -974,16 +1405,13 @@ public class Control {
             return this;
         }
         @Override
-        protected void onButtonClick(ActionButton button) {
-            if(button.getName() == Control.ACTION_SEARCH){
-                BaseActivity activity = (BaseActivity)button.button.getContext();
-                PopupLookup.create(getCaption(),getLookups(),getValue() == null? null : getValue().getId(),(lookup)->{
-                    setValue(lookup);
-                    return true;
-                }).show(activity.getSupportFragmentManager(),null);
-            }
+        protected void onPopupList() {
+            PopupLookup.create(getCaption(),getLookups(),getValue() == null? null : getValue().getId(),(lookup)->{
+                //callBack.apply(lookup);
+                setValue(lookup);
+                return true;
+            }).show(getRootActivity().getSupportFragmentManager(),null);
         }
-
         @Override
         protected DataService.Lookup convertValue(Object value) {
             if(value != null && Long.class.isAssignableFrom(value.getClass()) && getLookups() != null){
@@ -997,14 +1425,68 @@ public class Control {
         }
     }
 
+
+
+
+
     public static abstract class LookupControlBase<T extends LookupControlBase<T>> extends FieldControlBase<T,DataService.Lookup>{
+
+        public static int POPUP_INDEX_HIDE = -1;
+        public static int POPUP_INDEX_AUTO = 0;
+
+
         protected transient TextView txtValue;
         public LookupControlBase(String name, String caption,String displayField) {
             super(name, caption);
             setDisplayField(displayField);
             setControlSize(CONTROL_SIZE_DOUBLE);
+            getButtons().add(new ActionButton(Control.ACTION_SEARCH));
+            setPopupIndex(POPUP_INDEX_AUTO);
+        }
+        protected abstract void onPopupList();
 
 
+        private transient Function<DataService.Lookup,Void> Notify = null;
+        public void onPopupList(BaseActivity activity,Function<DataService.Lookup,Void> notify){
+            setRootActivity(activity);
+            Notify = notify;
+            onPopupList();
+        }
+
+        @Override
+        protected void onButtonClick(ActionButton button) {
+            if(button.Name.equals(Control.ACTION_SEARCH)){
+                onPopupList();
+            }
+        }
+
+
+        public void addNewRecord(ArrayList<ControlBase> controls,String entityName,int action){
+            ArrayList<LookupControlBase> popupInputs = (ArrayList<LookupControlBase>)controls.stream()
+                    .filter(o -> o instanceof LookupControlBase)
+                    .map(o -> (LookupControlBase)o)
+                    .filter(o -> o.getPopupIndex() >= 0)
+                    .sorted(Comparator.comparing(s -> s.getPopupIndex()))
+                    .collect(Collectors.toList());
+            ShowAdd(popupInputs,controls,entityName,action);
+        }
+        private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls,String entityName,int action){
+            setAction(action);
+            if(popupInputs == null || popupInputs.size() == 0){
+                new PopupForm()
+                        .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,entityName,0L).setAction(action))
+                        .show( getRootActivity().getSupportFragmentManager(),null);
+
+            }else{
+                popupInputs.get(0).onPopupList(getRootActivity(),new Function<DataService.Lookup, Void>() {
+                    @Override
+                    public Void apply(DataService.Lookup lookup) {
+                        popupInputs.remove(popupInputs.get(0));
+                        ShowAdd(popupInputs,controls,entityName,action);
+                        return null;
+                    }
+                });
+            }
         }
 
         @Override
@@ -1014,10 +1496,13 @@ public class Control {
 
         @Override
         public T setValue(DataService.Lookup value) {
-            return super.setValue(value);
+            super.setValue(value);
+            if(Notify != null) {
+                Notify.apply(value);
+                Notify = null;
+            }
+            return (T)this;
         }
-
-
         @Override
         protected Drawable getEditorBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
@@ -1032,7 +1517,19 @@ public class Control {
             if(getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
             else initialFocus = true;
         }
-
+        @Override
+        public void addForSelectQuery(FieldList list) {
+            list.addForSelectQuery(getName() + ".Id",getName() + ".Id",null);
+            list.addForSelectQuery(getName() + "." + getDisplayField(),getName() + "." + getDisplayField(),getFormula());
+        }
+        @Override
+        public T  updateValueToJSONObject(JSONObject data) {
+            if(getValue() == null)
+                updateValueToJSONObject(data,getName() + ".Id",null);
+            else
+                updateValueToJSONObject(data,getName() + ".Id",getValue().getId());
+            return (T) this;
+        }
 
         @Override
         protected void addValueView(ViewGroup container) {
@@ -1044,8 +1541,6 @@ public class Control {
             txtValue.setBackground(null);
             container.addView(txtValue);
             if(initialFocus && getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
-
-
         }
 
         @Override
@@ -1056,17 +1551,22 @@ public class Control {
         protected DataService.Lookup convertValue(Object value) {
             if(value == null || value == JSONObject.NULL)return null;
             else if(DataService.Lookup.class.isAssignableFrom(value.getClass()))return (DataService.Lookup)value;
-            else if(Long.class.isAssignableFrom(value.getClass())){
-                DataService.Lookup l = new DataService.Lookup();
-                l.setId((Long) value);
-                l.setName(value.toString());
-                return l;
+            else if(JSONObject.class.isAssignableFrom(value.getClass())) {
+                try{
+                    JSONObject vjo = (JSONObject) value;
+                    if(vjo.has("Id")){
+                        String display = "[UNKNOWN]";
+                        if(vjo.has(getDisplayField())){
+                            display = vjo.get(getDisplayField()).toString();
+                        }
+                        return new DataService.Lookup(Long.parseLong(vjo.get("Id").toString()),display);
+                    }
+                }catch (JSONException e){
+
+                }
             }
             return null;
         }
-
-
-
         @Override
         public String getFormatValue(DataService.Lookup value) {
             if(value == null)return null;
@@ -1079,7 +1579,6 @@ public class Control {
             if(!equal && value1 != null && value2 != null && value1.getId() != null && value2.getId() != null && value1.getId().equals(value2.getId())) return true;
             return equal;
         }
-
         private String DisplayField;
         public String getDisplayField() {
             return DisplayField;
@@ -1089,40 +1588,15 @@ public class Control {
             return (T)this;
         }
 
-        @Override
-        public void updateSaveParameters(RequestParams params) {
-            if(getValue() != null)params.put(getName(),getValue().getId());
+        private int PopupIndex;
+        public int getPopupIndex() {
+            return PopupIndex;
+        }
+        public T setPopupIndex(int popupIndex) {
+            PopupIndex = popupIndex;
+            return (T)this;
         }
 
-
-        @Override
-        public T readValueJSONObject(JSONObject data) {
-            try{
-                if(getName() != null && getName().length() != 0 && getDisplayField() != null && getDisplayField().length() != 0 && data.has(getName()) && data.has(getDisplayField())){
-                    DataService.Lookup l = new DataService.Lookup();
-                    String id = data.get(getName()).toString();
-                    if(id == "null")return null;
-                    l.setId(Long.parseLong(id));
-                    l.setName("[Unknown]");
-                    try{
-                        if(data.has(getDisplayField())){
-                            l.setName(data.get(getDisplayField()).toString());
-                        }
-                    }
-                    catch (JSONException e){
-                    }
-                    return readValueObject(l);
-                }
-                else if(getName() != null && getName().length() != 0 && data.has(getName()) ){
-                    String id = data.get(getName()).toString();
-                    if(id == "null")return null;
-                    return readValueObject(Long.parseLong(id));
-                }
-            }
-            catch (JSONException e){
-            }
-            return super.readValueJSONObject(data);
-        }
     }
 
     public static class EditTextControl extends EditTextControlBase<EditTextControl,String> {
@@ -1156,10 +1630,22 @@ public class Control {
 
     public static class EditTextPickerControl extends EditTextControlBase<EditTextPickerControl,String> {
 
-        public EditTextPickerControl(String name, String caption,ArrayList<String> options) {
+        public EditTextPickerControl(String name, String caption,ArrayList<String> options,String defaultValue) {
             super(name, caption);
             Options = options;
+            DefaultValue = defaultValue;
             getButtons().add(new ActionButton(Control.ACTION_SEARCH));
+        }
+
+        public String DefaultValue;
+
+        public String getDefaultValue() {
+            return DefaultValue;
+        }
+
+        public EditTextPickerControl setDefaultValue(String defaultValue) {
+            DefaultValue = defaultValue;
+            return this;
         }
 
         ArrayList<String> Options;
@@ -1176,16 +1662,7 @@ public class Control {
         @Override
         protected void onButtonClick(ActionButton button) {
             if(button.getName() == Control.ACTION_SEARCH){
-                Long value = null;
-
-
-                ArrayList<DataService.Lookup> lookups = new ArrayList<>();
-                for (int i = 0; i < getOptions().stream().count(); i++) {
-                    lookups.add(new DataService.Lookup(Long.valueOf(i),getOptions().get(i)));
-                    if(getValue() != null && getValue().equals(lookups.get(i).getName()))value = Long.valueOf(i);
-
-                }
-                PopupLookup.create(getCaption(), lookups, value, new Function<DataService.Lookup, Boolean>() {
+                PopupLookup.create(getCaption(), getOptions(), DefaultValue, new Function<DataService.Lookup, Boolean>() {
                     @Override
                     public Boolean apply(DataService.Lookup lookup) {
                         if(lookup == null)setValue(null);
@@ -1261,6 +1738,47 @@ public class Control {
         }
     }
 
+
+    public static class EditIntegerControl extends EditTextControlBase<EditIntegerControl,Integer> {
+
+        public EditIntegerControl(String name, String caption) {
+            super(name, caption);
+            setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
+            setDigits("0123456789");
+            setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+        }
+        @Override
+        protected void onButtonClick(ActionButton button) {
+        }
+
+
+        @Override
+        public Integer convertValue(Object value) {
+            if(value == null || value == JSONObject.NULL || value.toString().length() == 0)return  null;
+            else return Integer.parseInt(value.toString());
+        }
+        @Override
+        protected boolean IsInputValid(String value) {
+            try {
+                Integer.parseInt(value);
+                return true;
+            }catch (Exception e){
+                return false;
+            }
+        }
+        @Override
+        public String getFormatValue(Integer value) {
+            if(value == null)return null;
+
+            else
+            {
+                return value.toString();
+            }
+        }
+    }
+
+
+
     public static class HiddenControl extends FieldControlBase<HiddenControl,Serializable>{
         public HiddenControl(String name, Serializable value) {
             super(name, null);
@@ -1299,6 +1817,8 @@ public class Control {
             if(EditTextInput != null){
                 EditTextInput.setKeyListener(DigitsKeyListener.getInstance(getDigits()));
             }
+
+
             return (T)this;
         }
 
@@ -1546,11 +2066,19 @@ public class Control {
             return (T)this;
         }
 
+        private String Formula;
 
+        public String getFormula() {
+            return Formula;
+        }
 
+        public T setFormula(String formula) {
+            Formula = formula;
+            return (T)this;
+        }
 
         public int getWidth(){
-            int singleSize = 463;
+            int singleSize = 470;
             if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
             else return ControlSize;
         }
@@ -1661,6 +2189,18 @@ public class Control {
             return (T)this;
         }
 
+        private String Path;
+        public String getPath(){
+            return  Path;
+        }
+        public T setPath(String path) {
+            Path = path;
+            return (T)this;
+        }
+
+
+
+
         private String Caption = null;
         public String getCaption(){
             return  Caption;
@@ -1697,16 +2237,39 @@ public class Control {
             return (T)this;
         }
 
+        private float ColumnWeight = 1;
+
+        public T setColumnWeight(float columnWeight) {
+            ColumnWeight = columnWeight;
+            return (T)this;
+        }
+
+        public float getColumnWeight() {
+            return ColumnWeight;
+        }
+
+        private  int ColumnWidth = TableRow.LayoutParams.WRAP_CONTENT;
+
+        public T setColumnWidth(int columnWidth) {
+            ColumnWidth = columnWidth;
+            return (T)this;
+        }
+
+        public int getColumnWidth() {
+            return ColumnWidth;
+        }
+
         public void addListHeader(TableRow row){
             TextView hc = new TextView(row.getContext());
 
             hc.setPadding(10, 10, 10, 10);
-            TableRow.LayoutParams hcP = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,1);
+            TableRow.LayoutParams hcP = new TableRow.LayoutParams(ColumnWidth,TableRow.LayoutParams.WRAP_CONTENT,ColumnWeight);
             hc.setLayoutParams(hcP);
             hc.setTextColor(ContextCompat.getColor(row.getContext(), R.color.white));
             hc.setText(getCaption());
             hc.setTextAlignment(TextAlignment);
-            hc.setBackground(getHeaderBackground());
+            hc.setGravity(Gravity.CENTER_VERTICAL);
+            //hc.setBackground(getHeaderBackground());
             row.addView(hc);
         }
         private int TextAlignment = View.TEXT_ALIGNMENT_INHERIT;
@@ -1717,17 +2280,115 @@ public class Control {
         public int getTextAlignment() {
             return TextAlignment;
         }
-        public void addListDetails(TableRow row, JSONObject data){
-            TextView hc = new TextView(row.getContext());
-            TableRow.LayoutParams hcP = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT,1);
-            hc.setLayoutParams(hcP);
-            hc.setPadding(10,0,10,0);
-            hc.setTextAlignment(TextAlignment);
-            setValue(null);
-            readValueJSONObject(data);
-            hc.setText(getFormatValue(getValue()));
-            row.addView(hc);
+
+        protected transient TextView ListTextView;
+
+        public TextView getListTextView() {
+            return ListTextView;
         }
+
+        //private void readValue(JSONObject obj,String field){
+
+        //}
+
+
+        public void addListDetails(TableRow row, JSONObject data){
+            ListTextView = new TextView(row.getContext());
+            TableRow.LayoutParams hcP = new TableRow.LayoutParams(ColumnWidth, TableRow.LayoutParams.MATCH_PARENT,ColumnWeight);
+            ListTextView.setLayoutParams(hcP);
+            ListTextView.setPadding(10,0,10,0);
+            ListTextView.setGravity(Gravity.CENTER_VERTICAL);
+            //itemP.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            ListTextView.setTextAlignment(TextAlignment);
+            //ListTextView.setTransformationMethod(WordBreakTransformationMethod.getInstance());
+
+            //ListTextView.setBreakStrategy(LineBreaker.BREAK_STRATEGY_SIMPLE);
+            //ListTextView.setLineBreakStyle(LineBreakConfig.LINE_BREAK_STYLE_STRICT);
+            setValue(null);
+
+
+            readValueJSONObject(data,getName());
+            //readValue(data,getName());
+
+
+
+            ListTextView.setText(getFormatValue(getValue()));
+            row.addView(ListTextView);
+        }
+
+        //protected boolean specialCharacterFound(String  word){
+        //    Pattern p = Pattern.compile("[^a-z0-9_]", Pattern.CASE_INSENSITIVE);
+        //    Matcher m = p.matcher(word);
+        ///    return m.find();
+        //}
+
+        protected static class FieldList implements  Serializable{
+            public FieldList(int index){
+                Index  = index;
+            }
+
+            public String Root = null;
+            public int Index;
+
+
+
+            public HashMap<String,String> Fields = new HashMap<>();
+            public HashMap<String,FieldList> ForeignFields = new HashMap<>();
+
+            public String getSelectString(){
+
+
+                List<String> fields = new ArrayList<>();
+                for (String key: Fields.keySet()) {
+                    fields.add(Fields.get(key));
+                }
+                for (String key : ForeignFields.keySet()) {
+                    fields.add(Root + " == null ? null :" + ForeignFields.get(key).getSelectString() + " as " + key);
+                }
+
+                return "new {" + String.join(", ", fields) + "}" ;
+            }
+
+            public Serializable Value = null;
+
+
+
+            public void addForSelectQuery(String name,String fullName,String formula){
+                int dotIndex = name.indexOf('.');
+                if(dotIndex<0 && !Fields.containsKey(name))
+                    if(formula == null || formula.length() == 0){
+                        Fields.put(name,"it" + Index + "." + fullName);
+                    }
+                    else {
+                        String newFormula = formula;
+                        for (int i = 0; i <= Index; i++) {
+                            formula = formula.replace("{" + (Index - i) + "}","it" + i);
+                        }
+                        Fields.put(name, "(" + formula + ") as " + name);
+                    }
+                else if (dotIndex>0) {
+                    String forObj = name.substring(0,dotIndex);
+                    Root = "it" + Index  + "." + name.substring(0,dotIndex);
+                    FieldList fl;
+                    if(!ForeignFields.containsKey(forObj)) {
+                        fl = new FieldList(Index);
+                        fl.Fields.put("Id","it" + Index  + "." + name.substring(0,dotIndex) + ".Id");
+                        ForeignFields.put(forObj, fl);
+                    }
+                    else{
+                        fl = ForeignFields.get(forObj);
+                    }
+                    fl.addForSelectQuery(name.substring(dotIndex + 1),fullName,formula);
+                }
+            }
+
+        }
+
+
+        public void addForSelectQuery(FieldList list) {
+            list.addForSelectQuery(getName(),getName(),getFormula());
+        }
+
         public abstract void valueChange(U oldValue, U newValue);
         private transient boolean viewCreated =false;
         protected abstract void addValueView(ViewGroup container);
@@ -1744,22 +2405,71 @@ public class Control {
                 return  Name + "=" + value.toString();
             }
         }
+        public  String getQueryValue(){
+            Object value = getValue();
+            if (value==null)return  "null" ;
+            else  if(value.getClass().equals(Date.class)){
+                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                return "\"" +  dateFormat.format(value) + "\"";
+            }
+            else  if(value.getClass().equals(String.class)){
+                return "\"" + value.toString() + "\"";
+            }
+            else{
+                return  value.toString();
+            }
+        }
+
+
         public T readValueObject(Object value){
             setValue(convertValue(value));
             return (T)this;
         }
         protected abstract U convertValue(Object value);
-        public  T readValueJSONObject(JSONObject data){
+        public  T updateValueToJSONObject(JSONObject data) {
+            updateValueToJSONObject(data,getName(),getValue());
+            return (T)this;
+        }
+        protected  void updateValueToJSONObject(JSONObject data,String field, Serializable value) {
+            int dotIndex = field.indexOf('.');
             try{
-                if(data.has(getName())){
-                    Object value = data.get(getName());
-                    if(value == null || value.equals(JSONObject.NULL)) readValueObject(null);
-                    else readValueObject(value);
+                if(dotIndex<0) {
+                    data.put(field,value);
+                }
+                else if(dotIndex >0){
+                    String fi = field.substring(0,dotIndex);
+                    JSONObject subobj;
+                    if(data.has(fi))subobj = (JSONObject) data.get(fi);
+                    else{
+                        subobj = new JSONObject();
+                        data.put(fi,subobj);
+                    }
+                    updateValueToJSONObject(subobj,field.substring(dotIndex +1),value);
                 }
             }
             catch (JSONException e){
 
             }
+
+        }
+
+        public  T readValueJSONObject(JSONObject data, String field){
+            int dotIndex = field.indexOf('.');
+            try{
+                if(dotIndex<0 && data.has(field)) {
+                    readValueObject(data.get(field));
+                }
+                else if(dotIndex >0){
+                    String fi = field.substring(0,dotIndex);
+                    if(data.has(fi) && JSONObject.class.isAssignableFrom(data.get(fi).getClass())){
+                        readValueJSONObject((JSONObject) data.get(fi),field.substring(dotIndex +1));
+                    }
+                }
+            }
+            catch (JSONException e){
+
+            }
+
             return  (T)this;
         }
         public boolean validate(){
@@ -1767,9 +2477,7 @@ public class Control {
             else return true;
         }
 
-        public void updateSaveParameters(RequestParams params){
-            params.put(getName(), getValue());
-        }
+
     }
     public static class ActionButton implements Serializable {
         public ActionButton(String name)
@@ -1834,43 +2542,57 @@ public class Control {
         public int getButtonColorDisable() {
             return ButtonColorDisable;
         }
-        private void setFormat(Button button, boolean enabled){
+
+        private ArrayList<VectorDrawableCreator.PathData> getPaths(String path, boolean enabled){
+           return getPaths(new String[]{path},enabled);
+        }
+        private ArrayList<VectorDrawableCreator.PathData> getPaths(String[] paths, boolean enabled){
             int colour = getButtonColor();
             if(!enabled)colour =getButtonColorDisable();
+            ArrayList<VectorDrawableCreator.PathData> pathArray = new ArrayList<VectorDrawableCreator.PathData>();
+            pathArray.add(new VectorDrawableCreator.PathData("M 18 0 L 2 0 c -1.1 0 -2 0.9 -2 2 v 20 c 0 1.1 0.9 2 2 2 h 20 c 1.1 0 2 -0.9 2 -1 L 24 2 c 0 -1.1 -0.9 -2 -3 -2 z M 23 23 L 1 23 L 1 1 h 22 v 22 z", getButtonColor()));
+            for (int i = 0; i < paths.length; i++) {
+                pathArray.add(new VectorDrawableCreator.PathData(paths[i], colour));
+            }
+            return pathArray;
+        }
 
-            ArrayList<VectorDrawableCreator.PathData> paths = new ArrayList<VectorDrawableCreator.PathData>();
-            paths.add(new VectorDrawableCreator.PathData("M 18 0 L 2 0 c -1.1 0 -2 0.9 -2 2 v 20 c 0 1.1 0.9 2 2 2 h 20 c 1.1 0 2 -0.9 2 -1 L 24 2 c 0 -1.1 -0.9 -2 -3 -2 z M 23 23 L 1 23 L 1 1 h 22 v 22 z", getButtonColor()));
-
+        private void setFormat(Button button, boolean enabled){
+            ArrayList<VectorDrawableCreator.PathData> paths = new ArrayList<>();
             if(Name != null) {
-
-
-
-
-
                 if (Name.equals(Control.ACTION_ADD))
-                    paths.add(new VectorDrawableCreator.PathData("M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z", colour));
+                    paths = getPaths("M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",enabled);
                 else if (Name.equals( Control.ACTION_INBOX)) {
-                    paths.add(new VectorDrawableCreator.PathData("M19,3L5,3c-1.1,0 -2,0.9 -2,2v7c0,1.1 0.9,2 2,2h14c1.1,0 2,-0.9 2,-2L21,5c0,-1.1 -0.9,-2 -2,-2zM19,9h-4c0,1.62 -1.38,3 -3,3s-3,-1.38 -3,-3L5,9L5,5h14v4zM15,16h6v3c0,1.1 -0.9,2 -2,2L5,21c-1.1,0 -2,-0.9 -2,-2v-3h6c0,1.66 1.34,3 3,3s3,-1.34 3,-3z", colour));
+                    paths = getPaths("M19,3L5,3c-1.1,0 -2,0.9 -2,2v7c0,1.1 0.9,2 2,2h14c1.1,0 2,-0.9 2,-2L21,5c0,-1.1 -0.9,-2 -2,-2zM19,9h-4c0,1.62 -1.38,3 -3,3s-3,-1.38 -3,-3L5,9L5,5h14v4zM15,16h6v3c0,1.1 -0.9,2 -2,2L5,21c-1.1,0 -2,-0.9 -2,-2v-3h6c0,1.66 1.34,3 3,3s3,-1.34 3,-3z",enabled);
                 }
                 else if (Name.equals( Control.ACTION_ADD_SUB)) {
-                    paths.add(new VectorDrawableCreator.PathData("M4,6L2,6v14c0,1.1 0.9,2 2,2h14v-2L4,20L4,6zM20,2L8,2c-1.1,0 -2,0.9 -2,2v12c0,1.1 0.9,2 2,2h12c1.1,0 2,-0.9 2,-2L22,4c0,-1.1 -0.9,-2 -2,-2zM19,11h-4v4h-2v-4L9,11L9,9h4L13,5h2v4h4v2z", colour));
+                    paths = getPaths("M4,6L2,6v14c0,1.1 0.9,2 2,2h14v-2L4,20L4,6zM20,2L8,2c-1.1,0 -2,0.9 -2,2v12c0,1.1 0.9,2 2,2h12c1.1,0 2,-0.9 2,-2L22,4c0,-1.1 -0.9,-2 -2,-2zM19,11h-4v4h-2v-4L9,11L9,9h4L13,5h2v4h4v2z",enabled);
                 }
                 else if (Name.equals(Control.ACTION_EDIT))
-                    paths.add(new VectorDrawableCreator.PathData("M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z", colour));
+                    paths = getPaths("M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z",enabled);
                 else if (Name.equals(Control.ACTION_DELETE))
-                    paths.add(new VectorDrawableCreator.PathData("M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6v12zM19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z", colour));
+                    paths = getPaths("M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6v12zM19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z",enabled);
                 else if (Name.equals( Control.ACTION_REFRESH))
-                    paths.add(new VectorDrawableCreator.PathData("M17.65,6.35C16.2,4.9 14.21,4 12,4c-4.42,0 -7.99,3.58 -7.99,8s3.57,8 7.99,8c3.73,0 6.84,-2.55 7.73,-6h-2.08c-0.82,2.33 -3.04,4 -5.65,4 -3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6c1.66,0 3.14,0.69 4.22,1.78L13,11h7V4l-2.35,2.35z", colour));
+                    paths = getPaths("M17.65,6.35C16.2,4.9 14.21,4 12,4c-4.42,0 -7.99,3.58 -7.99,8s3.57,8 7.99,8c3.73,0 6.84,-2.55 7.73,-6h-2.08c-0.82,2.33 -3.04,4 -5.65,4 -3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6c1.66,0 3.14,0.69 4.22,1.78L13,11h7V4l-2.35,2.35z",enabled);
                 else if (Name.equals( Control.ACTION_CAMERA)) {
-                    paths.add(new VectorDrawableCreator.PathData("M12,12m-3.2,0a3.2,3.2 0,1 1,6.4 0a3.2,3.2 0,1 1,-6.4 0", colour));
-                    paths.add(new VectorDrawableCreator.PathData("M9,2L7.17,4L4,4c-1.1,0 -2,0.9 -2,2v12c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2L22,6c0,-1.1 -0.9,-2 -2,-2h-3.17L15,2L9,2zM12,17c-2.76,0 -5,-2.24 -5,-5s2.24,-5 5,-5 5,2.24 5,5 -2.24,5 -5,5z", colour));
+                    paths = getPaths(new String[]{ "M12,12m-3.2,0a3.2,3.2 0,1 1,6.4 0a3.2,3.2 0,1 1,-6.4 0",
+                    "M9,2L7.17,4L4,4c-1.1,0 -2,0.9 -2,2v12c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2L22,6c0,-1.1 -0.9,-2 -2,-2h-3.17L15,2L9,2zM12,17c-2.76,0 -5,-2.24 -5,-5s2.24,-5 5,-5 5,2.24 5,5 -2.24,5 -5,5z"},enabled);
                 }
                 else if (Name.equals( Control.ACTION_GALLERY)) {
-                    paths.add(new VectorDrawableCreator.PathData("M9,3c-4.97,0 -9,4.03 -9,9s4.03,9 9,9s9,-4.03 9,-9S13.97,3 9,3zM11.79,16.21L8,12.41V7h2v4.59l3.21,3.21L11.79,16.21z", colour));
-                    paths.add(new VectorDrawableCreator.PathData("M17.99,3.52v2.16C20.36,6.8 22,9.21 22,12c0,2.79 -1.64,5.2 -4.01,6.32v2.16C21.48,19.24 24,15.91 24,12C24,8.09 21.48,4.76 17.99,3.52z",colour));
+                    paths = getPaths(new String[]{"M9,3c-4.97,0 -9,4.03 -9,9s4.03,9 9,9s9,-4.03 9,-9S13.97,3 9,3zM11.79,16.21L8,12.41V7h2v4.59l3.21,3.21L11.79,16.21z",
+                    "M17.99,3.52v2.16C20.36,6.8 22,9.21 22,12c0,2.79 -1.64,5.2 -4.01,6.32v2.16C21.48,19.24 24,15.91 24,12C24,8.09 21.48,4.76 17.99,3.52z"},enabled);
                 }
                 else if (Name.equals( Control.ACTION_SEARCH)) {
-                   paths.add(new VectorDrawableCreator.PathData("M7,9H2V7h5V9zM7,12H2v2h5V12zM20.59,19l-3.83,-3.83C15.96,15.69 15.02,16 14,16c-2.76,0 -5,-2.24 -5,-5s2.24,-5 5,-5s5,2.24 5,5c0,1.02 -0.31,1.96 -0.83,2.75L22,17.59L20.59,19zM17,11c0,-1.65 -1.35,-3 -3,-3s-3,1.35 -3,3s1.35,3 3,3S17,12.65 17,11zM2,19h10v-2H2V19z", colour));
+                    paths = getPaths("M7,9H2V7h5V9zM7,12H2v2h5V12zM20.59,19l-3.83,-3.83C15.96,15.69 15.02,16 14,16c-2.76,0 -5,-2.24 -5,-5s2.24,-5 5,-5s5,2.24 5,5c0,1.02 -0.31,1.96 -0.83,2.75L22,17.59L20.59,19zM17,11c0,-1.65 -1.35,-3 -3,-3s-3,1.35 -3,3s1.35,3 3,3S17,12.65 17,11zM2,19h10v-2H2V19z",enabled);
+                }
+                else if (Name.equals( Control.ACTION_STATUS)) {
+                    paths = getPaths("M14.4,6L14,4H5v17h2v-7h5.6l0.4,2h7V6z",enabled);
+                }
+                else if (Name.equals( Control.ACTION_VIEW)) {
+                    paths = getPaths("M2,7h4v10H2V7zM7,19h10V5H7V19zM18,7h4v10h-4V7z",enabled);
+                }
+                else if (Name.equals( Control.ACTION_BARCODE)) {
+                    paths = getPaths(new String[]{"M2,2h2v20h-2z","M5,2h2v18h-2z","M8,2h2v18h-2z","M11,2h2v18h-2z","M14,2h2v18h-2z","M17,2h2v18h-2z","M20,2h2v20h-2z"} ,enabled);
                 }
             }
             Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,24,24,paths);

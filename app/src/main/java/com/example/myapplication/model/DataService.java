@@ -1,4 +1,5 @@
 package com.example.myapplication.model;
+import com.example.myapplication.BaseActivity;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -44,31 +45,46 @@ import java.util.function.Function;
 public class DataService {
 
 
+    //private static String serverIp = "192.168.0.199"; //production
+
+
 
     //private static String serverIp = "10.207.176.91"; //office
 
     //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
-    // private static String serverIp = "10.207.176.91"; //office
-    private static String serverIp = "192.168.0.126"; //home
+    private static String serverIp = "10.207.176.91"; //office
+
+    //private static String serverIp = "abunaser01/"; //shop
+
+    //private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homeWifi
     //192.168.0.126
     private static String  serverPort = "80";
     public static String getRootUrl(){
-        if(serverPort == "80")return  "http://" + serverIp + "/api/";
-        else return  "http://" + serverIp + ":" + serverPort + "/api/";
+
+        String ip = serverIp;
+        String port = serverPort;
+        if(BaseActivity.IpAddress != null && BaseActivity.IpAddress.length() != 0)ip = BaseActivity.IpAddress;
+        if(BaseActivity.Port != null && BaseActivity.Port != 0)port = BaseActivity.Port.toString();
+        if(port == "80")return  "http://" + ip + "/api/";
+        else return  "http://" + ip + ":" + port + "/api/";
     }
 
     public  void get(String url, AsyncHttpResponseHandler response){
-        System.out.println(url);
+
         String finalUrl= getRootUrl() + url;  //office
-        new AsyncHttpClient().get(finalUrl, response);
+        AsyncHttpClient hc = new AsyncHttpClient();
+
+        hc.get(finalUrl, response);
     }
     public  void getString(String url, Function<String,Void> success, Function<String,Void> failure){
+        System.out.println(url);
         get(url, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 if(responseBody == null)success.apply(null);
                 String result = new String(responseBody);
+                System.out.println(result);
                 success.apply(result);
             }
             @Override
@@ -81,11 +97,15 @@ public class DataService {
                     for (StackTraceElement element : trace)
                         result = result +  "\r\n" + element.toString() ;
                 }
+                for (String item: result.split("\r\n")) {
+                    System.out.println(result);
+                }
                 failure.apply(result);
+
             }
         });
     }
-    public  void getArray(String url, Function<JSONArray,Void> success, Function<String,Void> failure){
+    public  void getJArray(String url, Function<JSONArray,Void> success, Function<String,Void> failure){
         getString(url, new Function<String, Void>() {
             @Override
             public Void apply(String s) {
@@ -110,57 +130,30 @@ public class DataService {
         });
 
     }
-    public  void getArray(String url, Function<JSONArray,Void> success, Context context){
-        getArray(url,success, new Function<String, Void>() {
+    public  void getJArray(String url, Function<JSONArray,Void> success, Context context){
+        getJArray(url,success, new Function<String, Void>() {
             @Override
             public Void apply(String s) {
-                System.out.println(s);
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-
-                return null;
-            }
-        });
-    }
-
-    public  void getObject(String url, Function<JSONObject,Void> success, Context context){
-        getObject(url,success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                System.out.println(s);
                 Toast.makeText(context,s,Toast.LENGTH_SHORT);
                 return null;
             }
         });
     }
 
-    public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure){
-        getString(url, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s == "null")success.apply(new ArrayList<>());
-                else{
-                    Gson gson = new GsonBuilder().create();
-                    Type listType = new TypeToken<ArrayList<Lookup>>() {}.getType();
-                    ArrayList<Lookup> lookups = gson.fromJson(s, listType);
-                    success.apply(lookups);
-                }
-                return null;
-            }
-        },failure);
-    }
-    public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Context context){
-        getLookupList(url, success, new Function<String, Void>() {
+    public  void getJObject(String url, Function<JSONObject,Void> success, Context context){
+        getJObject(url,success, new Function<String, Void>() {
             @Override
             public Void apply(String s) {
                 Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                System.out.println(s);
                 return null;
             }
         });
     }
 
 
-    public  void getObject(String url, Function<JSONObject,Void> success, Function<String,Void> failure){
+
+
+    public  void getJObject(String url, Function<JSONObject,Void> success, Function<String,Void> failure){
         getString(url, new Function<String, Void>() {
             @Override
             public Void apply(String s) {
@@ -190,7 +183,6 @@ public class DataService {
             @Override
             public Void apply(String s) {
                 Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                System.out.println(s);
                 return null;
             }
         });
@@ -201,6 +193,7 @@ public class DataService {
 
 
     public  void put(String url, RequestParams params, AsyncHttpResponseHandler response){
+        System.out.println(url);
         System.out.println(params);
         String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().put(finalUrl,params, response);
@@ -218,39 +211,250 @@ public class DataService {
             return  data;
         }
     }
-    public  void upload(Context context,File file,String fileName, String entity,Long id, AsyncHttpResponseHandler handler) {
-        upload( context, file, fileName,  entity, id,null ,null,  handler);
-    }
-    public  void upload(Context context,File file,String fileName, String entity,Long id,String fileGroup , String path, AsyncHttpResponseHandler handler){
+    //public  void upload(Context context,File file,String fileName, String entity,String fileGroup,Long id, AsyncHttpResponseHandler handler) {
+    //    upload( context, file, fileName,  entity, id,fileGroup ,null,  handler);
+    //}
+    public  void upload(File file,String fileName, String entity,Long id,String fileGroup , String path, Function<Long,Void> success, Context context){
+
+        System.out.println("&fileName," + entity + "," + id );
         RequestParams params = new RequestParams();
         try{
             params.put("file",file,"image/jpeg");
         }
         catch (FileNotFoundException e){
+            System.out.println(e.getMessage());
             Toast.makeText(context, "Invalid image", Toast.LENGTH_SHORT).show();
             return;
         }
-        String finalUrl= getRootUrl() + "refFile?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
         System.out.println(params);
+
+        String finalUrl= getRootUrl() + "refFile/Post?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+
         AsyncHttpClient  cl = new AsyncHttpClient();
-        cl.setTimeout(1000);
-        cl.post(finalUrl, params, handler);
+        //cl.setTimeout(10000);
+        cl.setResponseTimeout(10000);
+        //cl.setConnectTimeout(10000);
+        cl.post(finalUrl, params, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String result = new String(responseBody);
+                System.out.println(result);
+                success.apply(Long.parseLong(result));
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String result ="Error on : Post Image";
+                if(responseBody != null)result = result + "\r\n" + new String(responseBody);
+                if(error != null) {
+                    result = result + "\r\n" + error.getMessage();
+                    StackTraceElement trace[] = error.getStackTrace();
+                    for (StackTraceElement element : trace)
+                        result = result +  "\r\n" + element.toString() ;
+                }
+                for (String item: result.split("\r\n")) {
+                    System.out.println(result);
+                }
+                Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 
 
-    public  void delete(String url, AsyncHttpResponseHandler response){
+    public  void delete(String url, Function<String,Void> success,Context context){
         System.out.println(url);
         String finalUrl= getRootUrl() + url;  //office
-        new AsyncHttpClient().delete(finalUrl, response);
+        new AsyncHttpClient().delete(finalUrl, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String result = new String(responseBody);
+                System.out.println(result);
+                if(result.equals("\"Success\"")){
+                    success.apply("Success");
+                }
+                else{
+                    Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String result ="Error on : Delete file";
+                if(responseBody != null)result = result + "\r\n" + new String(responseBody);
+                if(error != null) {
+                    result = result + "\r\n" + error.getMessage();
+                    StackTraceElement trace[] = error.getStackTrace();
+                    for (StackTraceElement element : trace)
+                        result = result +  "\r\n" + element.toString() ;
+                }
+                for (String item: result.split("\r\n")) {
+                    System.out.println(result);
+                }
+                Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
+
+    public  void postForJArray(String url, RequestParams params,Function<JSONArray,Void> success, Context context){
+        postForJArray(url, params, success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                return null;
+            }
+        });
+    }
+    public  void postForJArray(String url, RequestParams params,Function<JSONArray,Void> success, Function<String,Void> failure){
+        postForString(url, params, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
+                else {
+                    try {
+                        JSONArray array = new JSONArray(s);
+                        success.apply(array);
+
+                    } catch (JSONException e) {
+                        failure.apply(s);
+                    }
+                }
+                return null;
+            }
+        }, failure);
+    }
+    public  void postForLong(String url, RequestParams params, Function<Long,Void> success, Context context){
+        postForLong(url, params, success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                return null;
+            }
+        });
+    }
+    public  void postForLong(String url, RequestParams params,Function<Long,Void> success, Function<String,Void> failure){
+        postForString(url, params, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
+                else {
+                    try {
+                        Long id = Long.parseLong(s);
+                        success.apply(id);
+
+                    } catch (Exception e) {
+                        failure.apply(s);
+                    }
+                }
+                return null;
+            }
+        }, failure);
+    }
+
+    public  void postForLookups(String url, RequestParams params,Function<ArrayList<Lookup>,Void> success, Context context){
+        postForLookups(url, params, success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                return null;
+            }
+        });
+    }
+    public  void postForLookups(String url, RequestParams params,Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure){
+        postForString(url, params, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
+                else {
+                    try {
+                        Gson gson = new GsonBuilder().create();
+                        Type listType = new TypeToken<ArrayList<Lookup>>(){}.getType();
+                        ArrayList<DataService.Lookup> lookups = gson.fromJson(s, listType);
+                        success.apply(lookups);
+
+                    } catch (Exception e) {
+                        failure.apply(s);
+                    }
+                }
+                return null;
+            }
+        }, failure);
+    }
+
+    public  void postForLookup(String url, RequestParams params,Function<Lookup,Void> success, Context context){
+        postForLookup(url, params, success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                return null;
+            }
+        });
+    }
+    public  void postForLookup(String url, RequestParams params,Function<Lookup,Void> success, Function<String,Void> failure){
+        postForString(url, params, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
+                else {
+                    try {
+                        Gson gson = new GsonBuilder().create();
+                        Type listType = new TypeToken<Lookup>(){}.getType();
+                        DataService.Lookup lookup = gson.fromJson(s, listType);
+                        success.apply(lookup);
+
+                    } catch (Exception e) {
+                        failure.apply(s);
+                    }
+                }
+                return null;
+            }
+        }, failure);
+    }
+
+
+
+    public  void postForJObject(String url, RequestParams params,Function<JSONObject,Void> success, Context context){
+        postForJObject(url, params, success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                return null;
+            }
+        });
+    }
+    public  void postForJObject(String url, RequestParams params,Function<JSONObject,Void> success, Function<String,Void> failure){
+        postForString(url, params, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
+                else {
+                    try {
+                        JSONObject object = new JSONObject(s);
+                        success.apply(object);
+
+                    } catch (JSONException e) {
+                        failure.apply(s);
+                    }
+                }
+                return null;
+            }
+        }, failure);
+    }
+
+
     public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
+        System.out.println(url);
         System.out.println(params);
         String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().post(finalUrl, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
+                System.out.println(result);
                 success.apply(result);
             }
 
@@ -264,6 +468,9 @@ public class DataService {
                     for (StackTraceElement element : trace)
                         result = result +  "\r\n" + element.toString() ;
                 }
+                for (String item: result.split("\r\n")) {
+                    System.out.println(result);
+                }
                 failure.apply(result);
             }
         });
@@ -273,27 +480,16 @@ public class DataService {
             @Override
             public Void apply(String s) {
                 Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                System.out.println(s);
+
                 return null;
             }
         });
     }
-    public  void postForLong(String url, RequestParams params, Function<Long,Void> success, Context context){
-        postForString(url, params, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.equals("null"))success.apply(null);
-                else {
-                    success.apply(Long.parseLong(s));
-                }
-                return null;
-            }
-        },context);
-    }
+
 
 
     public  void post(String url, RequestParams params, AsyncHttpResponseHandler response){
-        System.out.println(params);
+
         String finalUrl= getRootUrl() + url;  //office
         new AsyncHttpClient().post(finalUrl,params, response);
     }
@@ -314,44 +510,16 @@ public class DataService {
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String errorMessage = "getById Error:";
-                if(responseBody != null)errorMessage =  errorMessage  +  new String(responseBody);
-                errorMessage = errorMessage +  error.getMessage() + error.getStackTrace().toString();
-                System.out.println(errorMessage);
-                Toast.makeText(context,  errorMessage, Toast.LENGTH_SHORT).show();
+                String result = "getById Error:";
+                if(responseBody != null)result =  result  +  new String(responseBody);
+                result = result +  error.getMessage() + error.getStackTrace().toString();
+                for (String item: result.split("\r\n")) {
+                    System.out.println(result);
+                }
+                Toast.makeText(context,  result, Toast.LENGTH_SHORT).show();
             }
         });
     }
-
-
-    public  void deleteById(Context context, String url, Long id, DataService.DeleteByIdResponse response){
-        delete(url +  "?id=" + id.toString(),new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-
-                String result = new String(responseBody);
-                try {
-                     boolean res   = Boolean.getBoolean(result);
-                     response.onSuccess(true);
-                }
-                catch ( Exception ex) {
-                    Toast.makeText(context, "deleteById Error:" + result, Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String result = new String(responseBody);
-                Toast.makeText(context, "deleteById Error:" + result, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-
-
-
-
-
-
     public  void getLookup(Context context, String lookup, DataService.LookupResponse response){
         get("Lookup?type=" + lookup,new AsyncHttpResponseHandler() {
             @Override
@@ -366,11 +534,53 @@ public class DataService {
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 String result = new String(responseBody);
+                for (String item: result.split("\r\n")) {
+                    System.out.println(result);
+                }
                 Toast.makeText(context, "getLookup Error:" + result, Toast.LENGTH_SHORT).show();
             }
         });
     }
-    public  void getLookups(Context context, String[] lookups, DataService.LookupsResponse response){
+
+    public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure){
+        getString(url, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                if(s == null || s.length() == 0 || s == "null")success.apply(new ArrayList<>());
+                else{
+                    Gson gson = new GsonBuilder().create();
+                    Type listType = new TypeToken<ArrayList<Lookup>>() {}.getType();
+                    ArrayList<Lookup> lookups = gson.fromJson(s, listType);
+                    success.apply(lookups);
+                }
+                return null;
+            }
+        },failure);
+    }
+    public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Context context){
+        getLookupList(url, success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+
+                return null;
+            }
+        });
+    }
+
+    //public  void getObject(String[] lookups, Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure) {
+    //
+    //}
+
+
+    //public  void getLookups(String[] lookups, Function<ArrayList<Lookup>,Void> success, Context context) {
+    //
+    //}
+
+
+
+
+        public  void getLookups(Context context, String[] lookups, DataService.LookupsResponse response){
         get("Lookup?types=" + String.join("&types=", lookups),new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {

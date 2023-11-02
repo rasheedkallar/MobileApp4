@@ -35,12 +35,31 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
         popup.setOnLookupChanged(onLookupChanged);
         return popup;
     }
+    public static PopupLookup create(String header, List<String> options,String value,Function<DataService.Lookup,Boolean> onLookupChanged){
+
+        Long passValue = null;
+
+        ArrayList<DataService.Lookup> lookups = new ArrayList<>();
+        for (int i = 0; i < options.stream().count(); i++) {
+            lookups.add(new DataService.Lookup(Long.valueOf(i),options.get(i)));
+            if(value != null && value.equals(options.get(i)))passValue = Long.valueOf(i);
+
+        }
+
+        PopupLookup popup = new PopupLookup();
+        popup.setArgs(new PopupLookupArgs(header,lookups,passValue));
+        popup.setOnLookupChanged(onLookupChanged);
+        return popup;
+    }
     public static PopupLookup create(PopupLookupArgs args,Function<DataService.Lookup,Boolean> onLookupChanged){
         PopupLookup popup = new PopupLookup();
         popup.setArgs(args);
         popup.setOnLookupChanged(onLookupChanged);
         return popup;
     }
+
+
+
 
     private FlexboxLayout _container;
     @Override
@@ -103,9 +122,10 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
     public void onAddLookup(FlexboxLayout container, DataService.Lookup lookup){
         Button button = new Button(getContext());
         LinearLayout.LayoutParams btlp= new LinearLayout.LayoutParams(GetButtonWidth(), GetButtonHeight());
-        btlp.setMargins(5, 5, 5, 5);
+        btlp.setMargins(0, 0, 0, 0);
         button.setLayoutParams(btlp);
-        button.setBackgroundColor(Color.parseColor("#008477"));
+        //button.setBackgroundColor(Color.parseColor("#008477"));
+        button.setBackground(ContextCompat.getDrawable(container.getContext(), R.drawable.button));
         button.setTextColor(ContextCompat.getColor(getContext(), R.color.white));
         if(lookup == null){
             button.setText(getArgs().getNullCaption());

@@ -1,6 +1,8 @@
 package com.example.myapplication;
 
 import android.app.Notification;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.XmlResourceParser;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -38,12 +40,14 @@ import java.util.function.Function;
 
 
 public class MainActivity extends BaseActivity {
-
+    //public static class ConfigForm
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
 
 
 
