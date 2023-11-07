@@ -69,17 +69,19 @@ public abstract class BaseActivity extends AppCompatActivity  {
     public ArrayList<Control.ControlBase> Controls = new ArrayList<>();
 
     public static String IpAddress;
-    public static Integer Port;
+    public static Integer Port = 80;
+    public static Integer ControlWidth = 470;
+    public static Integer ButtonWidth = 223;
+
     public static class SettingsPopupForm extends PopupForm
     {
         public SettingsPopupForm(){
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             controls.add(Control.getEditTextControl("IpAddress","Ip Address").setValue(IpAddress));
             controls.add(Control.getEditIntegerControl("Port","Port").setValue(Port));
-
-
+            controls.add(Control.getEditIntegerControl("ControlWidth","Control Width").setValue(ControlWidth));
+            controls.add(Control.getEditIntegerControl("ButtonWidth","Button Width").setValue(ButtonWidth));
             setArgs(new PopupFormArgs("Settings",controls,"Settings",null));
-
         }
 
 
@@ -95,15 +97,22 @@ public abstract class BaseActivity extends AppCompatActivity  {
             SharedPreferences.Editor editor = sharedPref.edit();
             Control.EditTextControl ipAddress = getControl("IpAddress");
             Control.EditIntegerControl port = getControl("Port");
+            Control.EditIntegerControl controlWidth  = getControl("ControlWidth");
+            Control.EditIntegerControl buttonWidth = getControl("ButtonWidth");
+
 
 
             editor.putString(ipAddress.getName(),ipAddress.getValue());
             editor.putInt(port.getName(),port.getValue());
+            editor.putInt(controlWidth.getName(),controlWidth.getValue());
+            editor.putInt(buttonWidth.getName(),buttonWidth.getValue());
 
             editor.apply();
 
             IpAddress = ipAddress.getValue();
             Port = port.getValue();
+            ControlWidth = controlWidth.getValue();
+            ButtonWidth = buttonWidth.getValue();
             dismiss();
         }
     }
@@ -250,10 +259,10 @@ public abstract class BaseActivity extends AppCompatActivity  {
         SharedPreferences sharedPref = getSharedPreferences("Settings",Context.MODE_PRIVATE);
         IpAddress = sharedPref.getString("IpAddress",null);
         Port = sharedPref.getInt("Port",80);
-        //if(IpAddress == null || IpAddress.length() == 0){
-        //    SettingsPopupForm ps = new SettingsPopupForm();
-        //    ps.show(getSupportFragmentManager(),null);
-        //}
+        ControlWidth = sharedPref.getInt("ControlWidth",470);
+        ButtonWidth = sharedPref.getInt("ButtonWidth",223);
+
+
 
     }
 

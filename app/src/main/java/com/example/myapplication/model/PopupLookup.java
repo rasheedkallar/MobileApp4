@@ -18,6 +18,7 @@ import android.widget.TableLayout;
 
 import androidx.core.content.ContextCompat;
 
+import com.example.myapplication.BaseActivity;
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
@@ -148,7 +149,7 @@ public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupA
     }
 
     public  int GetButtonWidth(){
-        return  223;
+        return BaseActivity.ButtonWidth;
     }
     public  int GetButtonHeight(){
         return  190;

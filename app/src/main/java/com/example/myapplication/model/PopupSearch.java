@@ -118,6 +118,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
                 //if(OnItemSelected.apply(l))PopupSearch.super.doOk();
             }
         };
+        detailed_control.setEnableScroll(true);
         SearchEditText = new EditText(getContext());
         TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         SearchEditText.setLayoutParams(txtP);

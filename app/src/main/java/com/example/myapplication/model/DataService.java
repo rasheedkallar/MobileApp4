@@ -2,6 +2,7 @@ package com.example.myapplication.model;
 import com.example.myapplication.BaseActivity;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpClient;
@@ -52,11 +53,16 @@ public class DataService {
     //private static String serverIp = "10.207.176.91"; //office
 
     //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
-    private static String serverIp = "10.207.176.91"; //office
+    //private static String serverIp = "10.207.176.91"; //office CORP
+    //private static String serverIp = "10.205.50.22"; //office ADT HUB
+
+
+
+
 
     //private static String serverIp = "abunaser01/"; //shop
 
-    //private static String serverIp = "192.168.0.126"; //home
+    private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homeWifi
     //192.168.0.126
     private static String  serverPort = "80";
@@ -69,6 +75,127 @@ public class DataService {
         if(port == "80")return  "http://" + ip + "/api/";
         else return  "http://" + ip + ":" + port + "/api/";
     }
+
+    public <T extends Serializable> void postForSelect(Class<T> type,String path, String select,Function<T,Void>  success, Context context){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.add("Select",select);
+        postForString("EntityApi/Select",param ,new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                try{
+                    if(JSONObject.class.isAssignableFrom(type)){
+                        success.apply((T)new JSONObject(s));
+                    }else if(JsonArray.class.isAssignableFrom(type)){
+                        success.apply((T)new JSONArray(s));
+                    }else{
+                        Gson gson = new GsonBuilder().create();
+                        T result = (T)gson.fromJson(s, type);
+                        success.apply(result);
+                    }
+                }
+                catch (JSONException e ){
+                }
+                catch (Exception e ){
+                }
+                return null;
+            }
+        }, context);
+    }
+
+
+    public <T extends Serializable> void postForList(Class<T> type,String path, String select,String where,String orderBy,Function<ArrayList<T>,Void>  success, Context context){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.add("Select",select);
+        param.add("Where",where);
+        param.add("OrderBy",orderBy);
+        postForString("EntityApi/List",param ,new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                try{
+                    Gson gson = new GsonBuilder().create();
+                    Type listType = TypeToken.getParameterized(ArrayList.class, type).getType();
+                    ArrayList<T> result = (ArrayList<T>)gson.fromJson(s,listType);
+                    success.apply(result);
+                }
+                catch (Exception e){
+                    Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                }
+                return null;
+            }
+        }, context);
+    }
+
+
+    public  void postForList(String path, String select,String where,String orderBy,Function<JSONArray,Void>  success, Context context){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.add("Select",select);
+        param.add("Where",where);
+        param.add("OrderBy",orderBy);
+        postForString("EntityApi/List",param ,new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+
+                try {
+                    JSONArray array = new JSONArray(s);
+                    success.apply(array);
+                }
+                catch (JSONException e) {
+                    Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                }
+                return null;
+            }
+        }, context);
+    }
+
+    public <T extends Serializable> void postForObject(Class<T> type,String path, String select,String where,String orderBy,Function<T,Void>  success, Context context){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.add("Select",select);
+        param.add("Where",where);
+        param.add("OrderBy",orderBy);
+        postForString("EntityApi/Select",param ,new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                try{
+                    Gson gson = new GsonBuilder().create();
+                    T result = (T)gson.fromJson(s,type);
+                    success.apply(result);
+                }
+                catch (Exception e){
+                    Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                }
+                return null;
+            }
+        }, context);
+    }
+
+
+    public  void postForObject(String path, String select,String where,String orderBy,Function<JSONArray,Void>  success, Context context){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.add("Select",select);
+        param.add("Where",where);
+        param.add("OrderBy",orderBy);
+        postForString("EntityApi/Select",param ,new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+
+                try {
+                    JSONArray array = new JSONArray(s);
+                    success.apply(array);
+                }
+                catch (JSONException e) {
+                    Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                }
+                return null;
+            }
+        }, context);
+    }
+
+
 
     public  void get(String url, AsyncHttpResponseHandler response){
 
@@ -93,9 +220,7 @@ public class DataService {
                 if(responseBody != null)result = result + "\r\n" + new String(responseBody);
                 if(error != null) {
                     result = result + "\r\n" + error.getMessage();
-                    StackTraceElement trace[] = error.getStackTrace();
-                    for (StackTraceElement element : trace)
-                        result = result +  "\r\n" + element.toString() ;
+
                 }
                 for (String item: result.split("\r\n")) {
                     System.out.println(result);
@@ -214,6 +339,9 @@ public class DataService {
     //public  void upload(Context context,File file,String fileName, String entity,String fileGroup,Long id, AsyncHttpResponseHandler handler) {
     //    upload( context, file, fileName,  entity, id,fileGroup ,null,  handler);
     //}
+
+    //Maximum request length exceeded.
+
     public  void upload(File file,String fileName, String entity,Long id,String fileGroup , String path, Function<Long,Void> success, Context context){
 
         System.out.println("&fileName," + entity + "," + id );
@@ -247,9 +375,7 @@ public class DataService {
                 if(responseBody != null)result = result + "\r\n" + new String(responseBody);
                 if(error != null) {
                     result = result + "\r\n" + error.getMessage();
-                    StackTraceElement trace[] = error.getStackTrace();
-                    for (StackTraceElement element : trace)
-                        result = result +  "\r\n" + element.toString() ;
+
                 }
                 for (String item: result.split("\r\n")) {
                     System.out.println(result);
@@ -258,6 +384,8 @@ public class DataService {
             }
         });
     }
+
+
 
 
 
@@ -283,9 +411,7 @@ public class DataService {
                 if(responseBody != null)result = result + "\r\n" + new String(responseBody);
                 if(error != null) {
                     result = result + "\r\n" + error.getMessage();
-                    StackTraceElement trace[] = error.getStackTrace();
-                    for (StackTraceElement element : trace)
-                        result = result +  "\r\n" + element.toString() ;
+
                 }
                 for (String item: result.split("\r\n")) {
                     System.out.println(result);
@@ -464,9 +590,7 @@ public class DataService {
                 if(responseBody != null)result = result + "\r\n" + new String(responseBody);
                 if(error != null) {
                     result = result + "\r\n" + error.getMessage();
-                    StackTraceElement trace[] = error.getStackTrace();
-                    for (StackTraceElement element : trace)
-                        result = result +  "\r\n" + element.toString() ;
+
                 }
                 for (String item: result.split("\r\n")) {
                     System.out.println(result);

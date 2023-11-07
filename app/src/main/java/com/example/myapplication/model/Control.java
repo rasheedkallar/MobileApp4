@@ -80,6 +80,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import cz.msebera.android.httpclient.Header;
+import kotlin.jvm.functions.Function2;
 
 public class Control {
     public static String ACTION_SEARCH = "Search";
@@ -280,7 +281,7 @@ public class Control {
             }
         }
 
-        protected void rowAdded(ArrayList<ControlBase> controls ){
+        protected void rowAdded(ArrayList<ControlBase> controls,JSONObject data){
 
         }
         protected String getUrl(String action){
@@ -404,7 +405,7 @@ public class Control {
                         for (com.example.myapplication.model.Control.ControlBase control : dtControls) {
                             control.addListDetails(item, obj);
                         }
-                        rowAdded(dtControls);
+                        rowAdded(dtControls,obj);
                         if (getSelectedId() != null && Long.parseLong(obj.get(getIdFieldName()).toString()) == getSelectedId()) {
 
                             try {
@@ -490,9 +491,9 @@ public class Control {
 
             if(action.getName().equals(Control.ACTION_ADD)){
                 EditControls = getControls(action.getName());
-                String path = getPath()  == null || getPath().length() == 0 ? getName() + "[]" : getPath() + "." + getName() + "[]";
+                //String path = getPath()  == null || getPath().length() == 0 ? getName() + "[]" : getPath() + "." + getName() + "[]";
                 for (int i = 0; i < EditControls.size(); i++) {
-                    EditControls.get(i).setPath(path);
+                    EditControls.get(i).setPath(getFullPath());
                 }
                 if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
                     EditControls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
@@ -511,12 +512,12 @@ public class Control {
                 new DataService().postForJObject(getUrl(ACTION_EDIT) , rp, new Function<JSONObject, Void>() {
                     @Override
                     public Void apply(JSONObject jsonObject) {
-                        System.out.println(jsonObject.toString());
+                        //System.out.println(jsonObject.toString());
                         EditControls = getControls(action.getName());
-                        String path = getPath()  == null || getPath().length() == 0 ? getName()  : getPath() + "." + getName();
-                        path = path + "[" + getSelectedId() + "]";
+                        //String path = getPath()  == null || getPath().length() == 0 ? getName()  : getPath() + "." + getName();
+                        //path = path + "[" + getSelectedId() + "]";
                         for (int i = 0; i < EditControls.size(); i++) {
-                            EditControls.get(i).setPath(path);
+                            EditControls.get(i).setPath(getFullPath());
                         }
                         for (int i = 0; i < EditControls.size(); i++) {
                             if(DetailedControlBase.class.isAssignableFrom(EditControls.get(i).getClass())){
@@ -581,12 +582,15 @@ public class Control {
                 Long vId = (Long)iv.getTag();
                 if(id.equals(vId)) {
                     setSelectedId(id);
-                    iv.setBackgroundColor(Color.parseColor("#225C6E"));
+                    iv.setBackgroundColor(Color.BLACK);
+                    //iv.setBackgroundColor(Color.parseColor("#225C6E"));
                     getActionButton(Control.ACTION_DELETE).setEnabled(true);
                     getActionButton(Control.ACTION_VIEW).setEnabled(true);
                 }
                 else{
-                    iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
+                    iv.setBackground(ContextCompat.getDrawable(main_layout.getContext(), R.drawable.button));
+
+
                 }
             }
         }
@@ -619,31 +623,6 @@ public class Control {
                         }
                     }, getRootActivity());
 
-
-
-
-                    //"EntityApi/DeleteEntity?entity=" + getEntityName() + "&id=" + getSelectedId();
-
-                    /*
-
-                    new DataService().delete(button.button.getContext(), "RefFile/Delete/", getSelectedId(), new DataService.DeleteByIdResponse() {
-                        @Override
-                        public void onSuccess(Boolean deleted) {
-                            if(deleted) {
-                                getValue().remove(getSelectedId());
-                                for (int i = 0; i < main_layout.getChildCount(); i++) {
-                                    Object id = main_layout.getChildAt(i).getTag();
-                                    if(id != null && id.equals(getSelectedId())){
-                                        main_layout.removeView(main_layout.getChildAt(i));
-                                        break;
-                                    }
-                                }
-                                getActionButton(Control.ACTION_DELETE).setEnabled(false);
-                            }
-                        }
-                    });
-
-                     */
                     return true;
                 }).show(getRootActivity().getSupportFragmentManager(),null);
             }
@@ -675,17 +654,21 @@ public class Control {
         }
         private ImageView GetImageView(long id){
             ImageView imageView = new ImageView(main_layout.getContext());
-            FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(230, 230);
-            lllP.setMargins(2,2,2,2);
+            FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(BaseActivity.ButtonWidth, BaseActivity.ButtonWidth);
+            //lllP.setP(2,2,2,2);
             imageView.setLayoutParams(lllP);
             imageView.setTag(id);
+            imageView.setPadding(2,2,2,2);
             if(id == getSelectedId()){
-                imageView.setBackgroundColor(Color.parseColor("#225C6E"));
+                //imageView.setBackgroundColor(Color.parseColor("#225C6E"));
+                imageView.setBackgroundColor(Color.BLACK);
                 getActionButton(Control.ACTION_DELETE).setEnabled(true);
                 getActionButton(Control.ACTION_VIEW).setEnabled(true);
             }
             else{
-                imageView.setBackgroundColor(Color.parseColor("#8CD0E4"));
+                imageView.setBackground(ContextCompat.getDrawable(main_layout.getContext(), R.drawable.button));
+
+
             }
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -697,12 +680,15 @@ public class Control {
                         ImageView iv = (ImageView)main_layout.getChildAt(i);
                         if(view == iv) {
                             setSelectedId(id);
-                            iv.setBackgroundColor(Color.parseColor("#225C6E"));
+                            //iv.setBackgroundColor(Color.parseColor("#225C6E"));
+                            iv.setBackgroundColor(Color.BLACK);
                             getActionButton(Control.ACTION_DELETE).setEnabled(true);
                             getActionButton(Control.ACTION_VIEW).setEnabled(true);
                         }
                         else{
-                            iv.setBackgroundColor(Color.parseColor("#8CD0E4"));
+                            iv.setBackground(ContextCompat.getDrawable(main_layout.getContext(), R.drawable.button));
+
+
                         }
                     }
                 }
@@ -723,7 +709,7 @@ public class Control {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
                     imageView.setImageBitmap(bmp);
 
-                    System.out.println(main_layout.getChildCount());
+                    //System.out.println(main_layout.getChildCount());
                 }
                 @Override
                 public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
@@ -753,6 +739,19 @@ public class Control {
             return orderStyle;
 
 
+        }
+        @Override
+        public String getFullPath(){
+            String path;
+
+            if(getPath() == null || getPath().length() == 0)path = "";
+            else path =  getPath() + ".";
+            if(getSelectedId() == null || getSelectedId() == 0L){
+                path = path + getName() + "[]";
+            }else{
+                path = path + getName() + "[" + getSelectedId() + "]";
+            }
+            return path;
         }
 
         @Override
@@ -1290,7 +1289,7 @@ public class Control {
             setEntityName(entityName);
         }
         public void addNewRecord(ArrayList<ControlBase> controls,int action){
-            addNewRecord(controls,getEntityName(),action);
+            addNewRecord(getFullPath(),controls,getEntityName(),action);
         }
 
 
@@ -1317,8 +1316,8 @@ public class Control {
             else return getFormula();
         }
         public String getSelect() {
-            if(getFormula() == null || getFormula().length() == 0) return "new {Id," + getDisplayField() + " as Name}";
-            else return "it0 => new {it0.Id, " + getFormula().replace("{0}","it0") + " as Name}";
+            if(getFormula() == null || getFormula().length() == 0) return "new {" + getName() + ".Id," + getName() + "." + getDisplayField() + " as Name}";
+            else return "new {it0." + getName() + ".Id, " + getFormula().replace("{0}","it0") + " as Name}";
         }
         protected ArrayList<ControlBase> getAddControls(){
             return  new ArrayList<>();
@@ -1328,12 +1327,18 @@ public class Control {
 
         @Override
         protected void onPopupList() {
-            RequestParams rp = new RequestParams();
-            rp.add("Field",getName());
-            rp.add("Where",getWhere());
-            rp.add("OrderBy",getOrderBy());
-            rp.add("Select",getSelect());
-            new DataService().postForLookups(getUrl(), rp, new Function<ArrayList<DataService.Lookup>, Void>() {
+            String select = "it0 => new {it0.Id, it0." + getDisplayField() + " as Name}";
+            String orderBy = getDisplayField();
+            if(getOrderBy() != null && getOrderBy().length() !=0)orderBy = getOrderBy();
+            else if(getFormula() != null && getFormula().length() != 0)orderBy = getFormula().replace("{0}." + getName(),"it0");
+            if(getFormula() != null && getFormula().length() != 0){
+                select = "it0 => new {it0.Id, it0." + getFormula().replace("{0}." + getName(),"it0") + " as Name}";
+            }
+            //String path =  getName() + "[]";
+            //if(getPath() != null && getPath().length() != 0) path = getPath() + "." + path;
+
+
+            new DataService().postForList(DataService.Lookup.class, getFullPath(), select, getWhere(), orderBy, new Function<ArrayList<DataService.Lookup>, Void>() {
                 @Override
                 public Void apply(ArrayList<DataService.Lookup> lookups) {
                     PopupLookup.create(getCaption(),lookups,getValue() == null? null : getValue().getId(),(lookup)->{
@@ -1369,7 +1374,7 @@ public class Control {
                 RequestParams rp = new RequestParams();
                 String json ="new {Id," + getDisplayField() + " as Name}";
                 if(getFormula() != null && getFormula().length() != 0)
-                    json = "it0 => new {it0.Id," + getFormula().replace("{0}","it0") + " as Name}";
+                    json = "it0 => new {it0.Id," + getFormula().replace("{0}." + getName(),"it0") + " as Name}";
                 rp.add("Select",json);
                 rp.add("Field",getName());
 
@@ -1461,11 +1466,15 @@ public class Control {
         }
 
 
-        public void addNewRecord(ArrayList<ControlBase> controls,String entityName,int action){
+        public void addNewRecord(String path,ArrayList<ControlBase> controls,String entityName,int action){
+            for (int i = 0; i < controls.size(); i++) {
+                controls.get(i).setPath(path);
+            }
+
             ArrayList<LookupControlBase> popupInputs = (ArrayList<LookupControlBase>)controls.stream()
                     .filter(o -> o instanceof LookupControlBase)
                     .map(o -> (LookupControlBase)o)
-                    .filter(o -> o.getPopupIndex() >= 0)
+                    .filter(o -> o.getPopupIndex() >= 0 && o.getValue() == null)
                     .sorted(Comparator.comparing(s -> s.getPopupIndex()))
                     .collect(Collectors.toList());
             ShowAdd(popupInputs,controls,entityName,action);
@@ -1804,6 +1813,16 @@ public class Control {
         }
 
         @Override
+        public void addListDetails(TableRow row, JSONObject data) {
+
+        }
+
+        @Override
+        public void addListHeader(TableRow row) {
+
+        }
+
+        @Override
         protected Serializable convertValue(Object value) {
             if(value == null || value == JSONObject.NULL) return  null; else return  (Serializable)value;
         }
@@ -2078,7 +2097,7 @@ public class Control {
         }
 
         public int getWidth(){
-            int singleSize = 470;
+            int singleSize = BaseActivity.ControlWidth;
             if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
             else return ControlSize;
         }
@@ -2193,6 +2212,12 @@ public class Control {
         public String getPath(){
             return  Path;
         }
+        public String getFullPath(){
+            if(getPath() == null || getPath().length() == 0)return getName();
+            else return getPath() + "." + getName();
+        }
+
+
         public T setPath(String path) {
             Path = path;
             return (T)this;
@@ -2230,6 +2255,7 @@ public class Control {
                 U oldValue = Value;
                 Value = value;
                 valueChange(oldValue,value);
+                if(valueChangedListener != null)valueChangedListener.invoke(oldValue,value);
             }
             else{
                 Value = value;
@@ -2290,6 +2316,13 @@ public class Control {
         //private void readValue(JSONObject obj,String field){
 
         //}
+
+        public Control.ActionButton getButton(String name){
+           if(getButtons() == null)return null;
+            Optional<Control.ActionButton> button = getButtons().stream().filter(i-> i.getName().equals(name)).findFirst();
+            if(button.isPresent())return button.get();
+            else return null;
+        }
 
 
         public void addListDetails(TableRow row, JSONObject data){
@@ -2392,6 +2425,12 @@ public class Control {
         public abstract void valueChange(U oldValue, U newValue);
         private transient boolean viewCreated =false;
         protected abstract void addValueView(ViewGroup container);
+
+        private transient Function2<U,U,Void> valueChangedListener;
+        public T setValueChangedListener(Function2<U, U, Void> valueChangedListener) {
+            this.valueChangedListener = valueChangedListener;
+            return (T)this;
+        }
 
         protected abstract void requestFocus();
         public  String getUrlParam(){
