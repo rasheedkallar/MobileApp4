@@ -7,6 +7,7 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.shapes.RectShape;
@@ -210,7 +211,7 @@ public class Control {
                 }
             }
 
-            if(getUrl(Control.ACTION_REFRESH) != null && GridData == null)
+            if(getPath() == null && GridData == null)
                 refreshGrid(table_layout);
             else if(GridData != null)refreshDetailedView(GridData);
         }
@@ -284,6 +285,8 @@ public class Control {
         protected void rowAdded(ArrayList<ControlBase> controls,JSONObject data){
 
         }
+
+        /*
         protected String getUrl(String action){
             if(getEntityName() == null || getEntityName().length() == 0){
                 return null;
@@ -297,6 +300,9 @@ public class Control {
                     return "EntityApi/GetEntityList?entity=" + getEntityName() ;
             }
         }
+
+        */
+
 
 
         protected String getWhere(String action){
@@ -438,6 +444,10 @@ public class Control {
             }
         }
 
+
+
+
+
         public void refreshGrid(TableLayout table){
             table_layout = table;
             ArrayList<ControlBase> controls = getControls(ACTION_REFRESH);
@@ -451,33 +461,26 @@ public class Control {
                 else if(getForeignFieldName() != null && getForeignFieldName().length() != 0 )groupWhere = getForeignFieldName() + " == " + getParentId();
                 if(where != null && groupWhere != null )where = "(" + groupWhere + ") and (" + where + ")";
                 else if(groupWhere != null )where = groupWhere;
-                rp.add("Where",where);
-                rp.add("OrderBy",getOrderBy(ACTION_REFRESH));
-                rp.add("Select",getSelect(ACTION_REFRESH));
-                new DataService().postForJArray(getUrl(ACTION_REFRESH), rp, new Function<JSONArray, Void>() {
-                    @Override
-                    public Void apply(JSONArray jsonArray) {
-                        refreshDetailedView(jsonArray);
-                        return null;
-                    }
+                new DataService().postForList(getFullPathNew(),getSelect(ACTION_REFRESH),where ,getOrderBy(ACTION_REFRESH), jsonArray -> {
+                    refreshDetailedView(jsonArray);
+                    return null;
                 },table.getContext());
             }
         }
 
+
+
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls){
             if(popupInputs == null || popupInputs.size() == 0){
                 new PopupForm()
-                    .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getEntityName(),0L))
+                    .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getFullPathNew(),0L))
                     .show( getRootActivity().getSupportFragmentManager(),null);
 
             }else{
-                popupInputs.get(0).onPopupList(getRootActivity(),new Function<DataService.Lookup, Void>() {
-                    @Override
-                    public Void apply(DataService.Lookup lookup) {
-                        popupInputs.remove(popupInputs.get(0));
-                        ShowAdd(popupInputs,controls);
-                        return null;
-                    }
+                popupInputs.get(0).onPopupList(getRootActivity(), (Function<DataService.Lookup, Void>) lookup -> {
+                    popupInputs.remove(popupInputs.get(0));
+                    ShowAdd(popupInputs,controls);
+                    return null;
                 });
 
             }
@@ -508,46 +511,42 @@ public class Control {
             }
             else if(action.getName().equals(Control.ACTION_EDIT)){
                 RequestParams rp = new RequestParams();
-                rp.add("Json",getSelect(ACTION_EDIT));
-                new DataService().postForJObject(getUrl(ACTION_EDIT) , rp, new Function<JSONObject, Void>() {
-                    @Override
-                    public Void apply(JSONObject jsonObject) {
-                        //System.out.println(jsonObject.toString());
-                        EditControls = getControls(action.getName());
-                        //String path = getPath()  == null || getPath().length() == 0 ? getName()  : getPath() + "." + getName();
-                        //path = path + "[" + getSelectedId() + "]";
-                        for (int i = 0; i < EditControls.size(); i++) {
-                            EditControls.get(i).setPath(getFullPath());
-                        }
-                        for (int i = 0; i < EditControls.size(); i++) {
-                            if(DetailedControlBase.class.isAssignableFrom(EditControls.get(i).getClass())){
-                                DetailedControlBase ctrl = (DetailedControlBase)EditControls.get(i);
-                                ctrl.setParentId(getSelectedId());
-                            }
-                        }
-                        if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
-                            EditControls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
-                        }
-                        for (int i = 0; i < EditControls.size(); i++) {
-                            EditControls.get(i).readValueJSONObject(jsonObject,EditControls.get(i).getName());
-                        }
-                        new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getEntityName(),getSelectedId())).show( getRootActivity().getSupportFragmentManager(),null);
-                        return null;
+                new DataService().postForSelect(getFullPath(),getSelect(ACTION_EDIT), jsonObject -> {
+                    //System.out.println(jsonObject.toString());
+                    EditControls = getControls(action.getName());
+                    //String path = getPath()  == null || getPath().length() == 0 ? getName()  : getPath() + "." + getName();
+                    //path = path + "[" + getSelectedId() + "]";
+                    for (int i = 0; i < EditControls.size(); i++) {
+                        EditControls.get(i).setPath(getFullPath());
                     }
+                    for (int i = 0; i < EditControls.size(); i++) {
+                        if(DetailedControlBase.class.isAssignableFrom(EditControls.get(i).getClass())){
+                            DetailedControlBase ctrl = (DetailedControlBase)EditControls.get(i);
+                            ctrl.setParentId(getSelectedId());
+                        }
+                    }
+                    if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
+                        EditControls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
+                    }
+                    for (int i = 0; i < EditControls.size(); i++) {
+                        EditControls.get(i).readValueJSONObject(jsonObject,EditControls.get(i).getName());
+                    }
+                    new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getFullPath(),getSelectedId())).show( getRootActivity().getSupportFragmentManager(),null);
+                    return null;
                 }, getRootActivity());
             }
             else if(action.getName().equals(Control.ACTION_DELETE)){
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", new Function<Void, Boolean>() {
                     @Override
                     public Boolean apply(Void unused) {
-                        new DataService().delete(getUrl(ACTION_DELETE), new Function<String, Void>() {
-                            @Override
-                            public Void apply(String s) {
-                                setSelectedId(null);
-                                refreshGrid(table_layout);
-                                return null;
-                            }
-                        }, getRootActivity());
+                        new DataService().postForDelete(getFullPath(), b -> {
+                            setSelectedId(null);
+                            refreshGrid(table_layout);
+                            return null;
+                        },  s -> {
+                            PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                            return null;
+                        });
                         return true;
                     }
                 }).show(((BaseActivity)action.button.getContext()).getSupportFragmentManager(), null);
@@ -596,7 +595,7 @@ public class Control {
         }
         @Override
         public void addForSelectQuery(FieldList list) {
-            String formula = "@0.RefFiles.Where(img=>img.RefId == " + getParentId() + " && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Select(img => new{img.Id,img.FileName})";
+            String formula = "@0.refFiles.Where(img=>img.RefId == " + getParentId() + " && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Select(img => new{img.Id,img.FileName})";
             list.addForSelectQuery(getName(),getName(), formula);
         }
 
@@ -604,9 +603,9 @@ public class Control {
         public void onButtonClick(ActionButton button) {
             if(button.Name.equals(Control.ACTION_DELETE)){
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)->{
-                    new DataService().delete("EntityApi/DeleteEntity?entity=RefFile&id=" + getSelectedId(), new Function<String, Void>() {
+                    new DataService().postForDelete("refFiles[" + getSelectedId() + "]", new Function<Boolean, Void>() {
                         @Override
-                        public Void apply(String s) {
+                        public Void apply(Boolean s) {
                             getValue().remove(getSelectedId());
                             for (int i = 0; i < main_layout.getChildCount(); i++) {
                                 Object id = main_layout.getChildAt(i).getTag();
@@ -617,12 +616,12 @@ public class Control {
                             }
                             setSelectedId(null);
                             getActionButton(Control.ACTION_DELETE).setEnabled(false);
-
-
                             return null;
                         }
-                    }, getRootActivity());
-
+                    }, s -> {
+                        PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                        return null;
+                    });
                     return true;
                 }).show(getRootActivity().getSupportFragmentManager(),null);
             }
@@ -703,7 +702,7 @@ public class Control {
                 getValue().add(id);
             }
             ImageView imageView = GetImageView(id);
-            new DataService().get("refFile/Get/" + id, new AsyncHttpResponseHandler() {
+            new DataService().get("EntityApi/GetImage/" + id, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
@@ -754,6 +753,11 @@ public class Control {
             return path;
         }
 
+        public String getFullPathNew(){
+            if(getPath() == null || getPath().length() == 0)return getName() + "[]";
+            else return   getPath() + "." + getName() + "[]";
+        }
+
         @Override
         protected Drawable getEditorBackground() {
             return null;
@@ -778,19 +782,17 @@ public class Control {
 
         @Override
         public boolean validate() {
-            boolean valid = super.validate();
-            if(valid) {
-                if (getParentId() == null || getParentId() == 0) valid = true;
-                else if (!getIsRequired()) valid = true;
-                else if (getValue() == null || getValue().size() == 0) valid = false;
-                if (CaptionTextView != null) {
-                    if (rl != null && valid) rl.setBackground(getHeaderBackground());
-                    else if (rl != null) rl.setBackground(getHeaderErrorBackground());
-                    else if (CaptionTextView != null && valid)
-                        CaptionTextView.setBackground(getHeaderBackground());
-                    else if (CaptionTextView != null)
-                        CaptionTextView.setBackground(getHeaderErrorBackground());
-                }
+            boolean valid = true;
+            if (getParentId() == null || getParentId() == 0) valid = true;
+            else if (!getIsRequired()) valid = true;
+            else if (getValue() == null || getValue().size() == 0) valid = false;
+            if (CaptionTextView != null) {
+                if (rl != null && valid) rl.setBackground(getHeaderBackground());
+                else if (rl != null) rl.setBackground(getHeaderErrorBackground());
+                else if (CaptionTextView != null && valid)
+                    CaptionTextView.setBackground(getHeaderBackground());
+                else if (CaptionTextView != null)
+                    CaptionTextView.setBackground(getHeaderErrorBackground());
             }
             return valid;
         }
@@ -1288,8 +1290,8 @@ public class Control {
             super(name, caption,entityName, displayField);
             setEntityName(entityName);
         }
-        public void addNewRecord(ArrayList<ControlBase> controls,int action){
-            addNewRecord(getFullPath(),controls,getEntityName(),action);
+        public void addNewRecord(ArrayList<ControlBase> controls,String actionPath){
+            addNewRecord(getFullPath(),controls,actionPath);
         }
 
 
@@ -1338,15 +1340,12 @@ public class Control {
             //if(getPath() != null && getPath().length() != 0) path = getPath() + "." + path;
 
 
-            new DataService().postForList(DataService.Lookup.class, getFullPath(), select, getWhere(), orderBy, new Function<ArrayList<DataService.Lookup>, Void>() {
-                @Override
-                public Void apply(ArrayList<DataService.Lookup> lookups) {
-                    PopupLookup.create(getCaption(),lookups,getValue() == null? null : getValue().getId(),(lookup)->{
-                        setValue(lookup);
-                        return true;
-                    }).show(getRootActivity().getSupportFragmentManager(),null);
-                    return null;
-                }
+            new DataService().postForList(DataService.Lookup.class, getFullPath(), select, getWhere(), orderBy, lookups -> {
+                PopupLookup.create(getCaption(),lookups,getValue() == null? null : getValue().getId(),(lookup)->{
+                    setValue(lookup);
+                    return true;
+                }).show(getRootActivity().getSupportFragmentManager(),null);
+                return null;
             }, getRootActivity());
         }
 
@@ -1371,19 +1370,16 @@ public class Control {
         @Override
         public T readValueObject(Object value) {
             if(value != null && getEntityName() !=null && Long.class.isAssignableFrom(value.getClass())) {
-                RequestParams rp = new RequestParams();
+                //RequestParams rp = new RequestParams();
                 String json ="new {Id," + getDisplayField() + " as Name}";
                 if(getFormula() != null && getFormula().length() != 0)
                     json = "it0 => new {it0.Id," + getFormula().replace("{0}." + getName(),"it0") + " as Name}";
-                rp.add("Select",json);
-                rp.add("Field",getName());
+                //rp.add("Select",json);
+                //rp.add("Field",getName());
 
-                new DataService().postForLookup("EntityApi/GetForeignLookup?entity=" + getEntityName() + "&id=" + value, rp, new Function<DataService.Lookup, Void>() {
-                    @Override
-                    public Void apply(DataService.Lookup lookup) {
-                        setValue(lookup);
-                        return null;
-                    }
+                new DataService().postForSelect(DataService.Lookup.class,getFullPath() + "[" + value + "]",json, lookup -> {
+                    setValue(lookup);
+                    return null;
                 }, getRootActivity());
             }
             else {
@@ -1466,7 +1462,7 @@ public class Control {
         }
 
 
-        public void addNewRecord(String path,ArrayList<ControlBase> controls,String entityName,int action){
+        public void addNewRecord(String path,ArrayList<ControlBase> controls,String actionPath){
             for (int i = 0; i < controls.size(); i++) {
                 controls.get(i).setPath(path);
             }
@@ -1477,13 +1473,13 @@ public class Control {
                     .filter(o -> o.getPopupIndex() >= 0 && o.getValue() == null)
                     .sorted(Comparator.comparing(s -> s.getPopupIndex()))
                     .collect(Collectors.toList());
-            ShowAdd(popupInputs,controls,entityName,action);
+            ShowAdd(popupInputs,controls,path,actionPath);
         }
-        private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls,String entityName,int action){
-            setAction(action);
+        private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls,String path,String actionPath){
+
             if(popupInputs == null || popupInputs.size() == 0){
                 new PopupForm()
-                        .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,entityName,0L).setAction(action))
+                        .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,path,0L).setActionPath(actionPath))
                         .show( getRootActivity().getSupportFragmentManager(),null);
 
             }else{
@@ -1491,7 +1487,7 @@ public class Control {
                     @Override
                     public Void apply(DataService.Lookup lookup) {
                         popupInputs.remove(popupInputs.get(0));
-                        ShowAdd(popupInputs,controls,entityName,action);
+                        ShowAdd(popupInputs,controls,path,actionPath);
                         return null;
                     }
                 });
@@ -1512,14 +1508,7 @@ public class Control {
             }
             return (T)this;
         }
-        @Override
-        protected Drawable getEditorBackground(){
-            GradientDrawable orderStyle = new GradientDrawable(
-                    GradientDrawable.Orientation.LEFT_RIGHT,
-                    new int[] {Color.parseColor("#E3E0E0"),Color.parseColor("#E3E0E0")});
-            orderStyle.setCornerRadius(0f);
-            return orderStyle;
-        }
+
         private boolean initialFocus = false;
         @Override
         protected void requestFocus() {
@@ -2007,6 +1996,7 @@ public class Control {
                 CaptionTextView.setPadding(10, 10, 10, 10);
                 CaptionTextView.setLayoutParams(CaptionTextViewP);
                 CaptionTextView.setText(getCaption());
+                CaptionTextView.setTypeface(null, Typeface.BOLD);
                 CaptionTextView.setTextColor(ContextCompat.getColor(container.getContext(), R.color.white));
                 CaptionTextView.setBackground(getHeaderBackground());
                 CaptionTextView.setId(HEADER_CONTAINER_ID);
@@ -2109,7 +2099,7 @@ public class Control {
         protected Drawable getHeaderBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[] {Color.parseColor("#012723"),Color.parseColor("#008477"),Color.parseColor("#008477"),Color.parseColor("#012723")});
+                    new int[] {Color.parseColor("#012723"),Color.parseColor("#BA008477"),Color.parseColor("#BA008477"),Color.parseColor("#012723")});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
@@ -2132,7 +2122,7 @@ public class Control {
         protected Drawable getHeaderErrorBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[] {Color.parseColor("#500505"),Color.parseColor("#D51212"),Color.parseColor("#D51212"),Color.parseColor("#500505")});
+                    new int[] {Color.parseColor("#500505"),Color.parseColor("#BAD51212"),Color.parseColor("#BAD51212"),Color.parseColor("#500505")});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
@@ -2159,6 +2149,7 @@ public class Control {
 
             RootLayout.setEnabled(getEnabled());
             container.addView(RootLayout);
+            container.setBackground(getEditorBackground());
             addContentView(RootLayout);
         }
 

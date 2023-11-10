@@ -8,6 +8,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -15,7 +16,10 @@ import android.widget.Toast;
 
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
+import com.example.myapplication.model.PopupBase;
+import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupForm;
+import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.PopupSearch;
 import com.example.myapplication.model.Utility;
@@ -40,24 +44,57 @@ public  class InvCheckInActivity extends BaseActivity {
     public InvCheckInActivity(){
         Controls.add(new InvCheckInDetailedControl());
     }
-    public static  class ItemSearchControl extends Control.SearchControlBase {
-        public ItemSearchControl(Function2<String,String,Boolean> onItemSelected) {
-            super("InvItemUnit", "Item",null ,"InvCheckInLine","FullDescription");
-            setFormula("{0}.InvItemUnit.ItemNumber.ToString() + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction.ToString() + \"\r\n\" + {0}.InvItemUnit.InvItem.Description");
 
+    public  static  class PopupItemBarcode extends PopupBase<PopupItemBarcode, PopupItemBarcode.PopupItemBarcodeArgs>
+    {
+        public static PopupItemBarcode create(String header, Long unitId){
+            PopupItemBarcode barcode = new PopupItemBarcode();
+            barcode.setArgs(new PopupItemBarcodeArgs(header,unitId));
+            return barcode;
+        }
+        @Override
+        public void AddControls(LinearLayout container) {
+
+
+        }
+        public static class  PopupItemBarcodeArgs extends PopupArgs<PopupItemBarcodeArgs> {
+            public PopupItemBarcodeArgs(String header,Long unitId){
+                super(header);
+                setCancelButton("Close");
+                setOkButton(null);
+            }
+            private Long UnitId;
+            public Long getUnitId() {
+                return UnitId;
+            }
+
+            public void setUnitId(Long unitId) {
+                UnitId = unitId;
+            }
+        }
+    }
+
+
+
+    public static  class ItemSearchControl extends Control.SearchControlBase {
+
+        private static String ItemFormula = "{0}.InvItemUnit == null ? null : {0}.InvItemUnit.ItemNumber.ToString() + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction.ToString() + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
+        public ItemSearchControl() {
+            super("InvItemUnit", "Item",null ,"InvCheckInLine","FullDescription");
+            setFormula(ItemFormula);
             ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
+            searchControls.add(Control.getEditTextControl("Unit","Unit").setColumnWidth(100));
+            searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3).setColumnWidth(200));
             searchControls.add(Control.getEditTextControl("Description","Description"));
-            searchControls.add(Control.getEditTextControl("Unit","Unit"));
-            searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3));
             setControls(searchControls);
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD));
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_INBOX).setEnabled(false));
-            OnItemSelected  = onItemSelected;
+
             //setAction(ItemFormPopup.SET_ITEM_ACTION);
         }
 
-        private transient Function2<String,String,Boolean> OnItemSelected;
+
 
         @Override
         protected void textChange(EditText editor, int keyCode) {
@@ -66,7 +103,8 @@ public  class InvCheckInActivity extends BaseActivity {
                 if( editor.getText() !=null){
                     String barcode = editor.getText().toString().trim();
                     if(barcode != null && barcode.length() !=0 && barcode.indexOf(' ') <0){
-                        new DataService().getJObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+
+                        new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                             @Override
                             public Void apply(JSONObject jsonObject) {
                                 if(jsonObject == null){
@@ -77,7 +115,7 @@ public  class InvCheckInActivity extends BaseActivity {
                                 else{
                                     try {
                                         setValue(new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()),jsonObject.get("FullDescription").toString()));
-                                        OnItemSelected.invoke(jsonObject.get("Description").toString(),editor.getText().toString().trim());
+                                        //OnItemSelected.invoke(jsonObject.get("Description").toString(),editor.getText().toString().trim());
                                         Popup.dismiss();
                                     }
                                     catch (JSONException e)
@@ -86,9 +124,11 @@ public  class InvCheckInActivity extends BaseActivity {
                                     }
 
                                 }
+
                                 return null;
                             }
-                        },editor.getContext());
+                        }, editor.getContext());
+
 
                     }
                 }
@@ -97,15 +137,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 super.textChange(editor,  keyCode) ;
             }
         }
-        @Override
-        protected boolean itemSelected(TableRow row, JSONObject data, DataService.Lookup lookup) {
-            super.itemSelected(row, data, lookup);
-            try{
-                OnItemSelected.invoke(data.get("Description").toString(),null);
-            }catch (JSONException e){
-            }
-            return true;
-        }
+
         @Override
         public void valueChange(DataService.Lookup oldValue, DataService.Lookup newValue) {
             super.valueChange(oldValue,newValue);
@@ -126,34 +158,6 @@ public  class InvCheckInActivity extends BaseActivity {
             units.add("OFR");
             return units;
         }
-        public class EditTextControlBarcode extends Control.EditTextControl {
-            public EditTextControlBarcode() {
-                super("Barcode", "Barcode");
-                setIsRequired(false);
-                setFormula("null");
-            }
-
-            @Override
-            protected void updateValueToJSONObject(JSONObject data, String field, Serializable value) {
-
-                if(value !=null && value.toString().length() !=0){
-                    try{
-                        JSONArray arra = new JSONArray();
-                        JSONObject ob = new JSONObject();
-                        ob.put("Code",value.toString());
-                        arra.put(ob);
-                        data.put("InvItemBarcodes",arra);
-
-                    }catch (JSONException e){
-
-                    }
-
-
-
-                }
-                //super.updateValueToJSONObject(data, field, value);
-            }
-        }
 
         DataService.Lookup itemLookup = null;
 
@@ -170,52 +174,46 @@ public  class InvCheckInActivity extends BaseActivity {
                     controls.get(0).getButtons().clear();
                 }
                 controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS).setValue(itemLookup == null? "PCS" : null));
-                controls.add(Control.getEditDecimalControl("Fraction","Fraction").setDecimalPlaces(3).setValue(1.0));
-                controls.add(new EditTextControlBarcode());
+                controls.add(Control.getEditDecimalControl("Fraction","Fraction").setDecimalPlaces(3).setValue(itemLookup == null? 1.0 : null));
+
                 if(itemLookup == null) {
                     controls.add(Control.getLookupForeignControl("InvItem.InvItemGroup", "Item Group", "InvItemUnit", "Code").setEnabled(false));
                     controls.add(Control.getHiddenControl("InvItem.ItemTaxId", 1));
                 }
                 itemLookup = null;
-                addNewRecord(getFullPath(),controls,"InvItemUnit",3003);
+                addNewRecord(getFullPath(),controls,getFullPath());
 
             }
             else if(button.getName() == Control.ACTION_ADD_SUB){
 
-                new DataService().postForSelect(DataService.Lookup.class, getPath(), "new {InvItemUnit.InvItem.Id,InvItemUnit.InvItem.Description as Name}", new Function<DataService.Lookup, Void>() {
-                    @Override
-                    public Void apply(DataService.Lookup lookup) {
-                        itemLookup  = lookup;
-                        onButtonClick(getButton(Control.ACTION_ADD));
-                        return null;
-                    }
+                new DataService().postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
+                    itemLookup  = lookup;
+                    onButtonClick(getButton(Control.ACTION_ADD));
+                    return null;
                 }, getRootActivity());
 
 
 
             }
             else if(button.getName() == Control.ACTION_INBOX){
-                new DataService().getLookupList("InvItem/Get?unitId=" + getValue().getId().toString(), new Function<ArrayList<DataService.Lookup>, Void>() {
-                    @Override
-                    public Void apply(ArrayList<DataService.Lookup> lookups) {
-
-                        String description = "Unit Picker";
-                        if(getValue() !=null && getValue().getName() != null && getValue().getName().indexOf('\n') > 0)
-                            description =  getValue().getName().substring(getValue().getName().indexOf('\n') +1);
-                        PopupLookup pl = PopupLookup.create(description,lookups,0L,(unit)->{
-                            if(unit == null){
-                                onButtonClick(getActionButton(Control.ACTION_ADD_SUB));
-                            }
-                            else {
-                                readValueObject(unit.getId());
-                            }
-                            return true;
-                        });
-                        pl.getArgs().setNullCaption("Add New Unit");
-                        pl.show(getRootActivity().getSupportFragmentManager(),null);
-                        return null;
-                    }
-                },getRootActivity());
+                new DataService().postForList(DataService.Lookup.class,
+                    "InvItemUnits[" + getValue().getId() + "].InvItem.InvItemUnits[]",
+                    "new {Id, Code + \" \" + Fraction.ToString() as Name}",
+                    "", "Code + \" \" + Fraction.ToString()",
+                lookups -> {
+                    PopupLookup pl = PopupLookup.create(getCaption(),lookups,0L,(unit)->{
+                        if(unit == null){
+                            onButtonClick(getActionButton(Control.ACTION_ADD_SUB));
+                        }
+                        else {
+                            readValueObject(unit.getId());
+                        }
+                        return true;
+                    });
+                    pl.getArgs().setNullCaption("Add New Unit");
+                    pl.show(getRootActivity().getSupportFragmentManager(),null);
+                    return null;
+                }, getRootActivity());
             }
             else
             {
@@ -224,12 +222,9 @@ public  class InvCheckInActivity extends BaseActivity {
         }
         @Override
         protected void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack) {
-            new DataService().getJArray("InvItem/Get?keyWords=" + keywords, new Function<JSONArray, Void>() {
-                @Override
-                public Void apply(JSONArray array) {
-                    callBack.apply(array);
-                    return null;
-                }
+            new DataService().getList("InvItem/Get?keyWords=" + keywords, array -> {
+                callBack.apply(array);
+                return null;
             }, getRootActivity());
         }
     }
@@ -262,30 +257,9 @@ public  class InvCheckInActivity extends BaseActivity {
                 super.onButtonClick(getButton(Control.ACTION_ADD));
             }
             else if(action.getName() == Control.ACTION_BARCODE){
-                new DataService().getLookupList("InvItem/Get?unitId=" + getSelectedId(), new Function<ArrayList<DataService.Lookup>, Void>() {
-                    @Override
-                    public Void apply(ArrayList<DataService.Lookup> lookups) {
 
-                        try{
-                            JSONObject obj = (JSONObject) getSelectedRow().getTag();
-                            String description = obj.get("Description").toString();
-                            String fullDescription = obj.get("FullDescription").toString();
-                            PopupLookup pl = PopupLookup.create(description,lookups,0L,(unit)->{
-                                if(unit == null){
-                                    onButtonClick(getActionButton(Control.ACTION_ADD_SUB));
-                                }
-                                else {
-                                    readValueObject(unit.getId());
-                                }
-                                return true;
-                            });
-                            pl.show(getRootActivity().getSupportFragmentManager(),null);
-                        }catch (JSONException e){
 
-                        }
-                        return null;
-                    }
-                },getRootActivity());
+
 
 
             }
@@ -296,45 +270,21 @@ public  class InvCheckInActivity extends BaseActivity {
         }
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
+
+
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action == Control.ACTION_ADD || action == Control.ACTION_EDIT || action == Control.ACTION_REFRESH){
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                 if(action != Control.ACTION_REFRESH) {
-                    controls.add(new ItemSearchControl(
-                        new Function2<String, String, Boolean>()
-                        {
-                            @Override
-                            public Boolean invoke(String description, String barcode) {
-                                getControl("Description").setValue(description);
-                                if(barcode != null  && barcode.length() != 0)getControl("Barcode").setValue(barcode);
-                              return null;
-                            }
-                        }
-                    ).setValue(AddLookup).setPopupIndex(clickAdd?-1:0)
-                    .setValueChangedListener(
-                            new Function2<DataService.Lookup, DataService.Lookup, Void>()
-                            {
-                                @Override
-                                public Void invoke(DataService.Lookup lookup, DataService.Lookup lookup2) {
-
-                                    String[] values = lookup2.getName().split("\r\n");
-                                    if(values.length>1)
-                                        getControl("Description").setValue(values[1]);
-                                    else
-                                        getControl("Description").setValue(lookup2.getName());
-                                    return null;
-                                }
-                            }
-                        )
-                    );
+                    controls.add(new ItemSearchControl().setValue(AddLookup).setPopupIndex(clickAdd?-1:0));
+                    controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(false).setValue(AddDescription));
                 }
-                if(action == Control.ACTION_REFRESH)
-                    controls.add(Control.getEditTextControl("FullDescription","Description").setFormula("{0}.InvItemUnit == null ? {0}.Description : {0}.InvItemUnit.ItemNumber.ToString() + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction.ToString() + \"\r\n\" + {0}.InvItemUnit.InvItem.Description"));
-                else
-                    controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setValue(AddDescription));
                 controls.add(Control.getEditDecimalControl("Qty","Qty").setDecimalPlaces(3));
-                controls.add(Control.getEditTextControl("Barcode","Barcode").setValue(AddBarcode).setIsRequired(false));
-                if(action != Control.ACTION_REFRESH) {
+                controls.add(Control.getEditDecimalControl("Amount","Amt+VAT").setIsRequired(false));
+                if(action == Control.ACTION_REFRESH) {
+                    controls.add(Control.getEditTextControl("FullDescription","Description").setFormula(ItemSearchControl.ItemFormula));
+                }
+                else{
                     controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine").setIsRequired(false));
                 }
                 return controls;
@@ -359,7 +309,7 @@ public  class InvCheckInActivity extends BaseActivity {
 
         @Override
         protected String getOrderBy(String action) {
-            return "Status == \"Draft\" ? 1 : 2, Id Desc";
+            return "Status == \"Draft\" ? 1 : Status == \"Final\" ? 2 : 3, Id Desc";
         }
 
         @Override
@@ -380,7 +330,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 catch (JSONException e){
 
                 }
-
                 tv.setBackgroundColor(colour);
             }
         }
@@ -396,18 +345,12 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(SelectedStatus != null && (SelectedStatus.equals("Final") || SelectedStatus.equals("Cancel")))stats.add("Draft");
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Final");
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Cancel");
-                PopupLookup.create(getCaption(), stats, null, new Function<DataService.Lookup, Boolean>() {
-                    @Override
-                    public Boolean apply(DataService.Lookup lookup) {
-                        new DataService().postForLong("InvCheckIn/UpdateStatus?id=" + getSelectedId() + "&status=" + lookup.getName(),  new RequestParams(), new Function<Long, Void>() {
-                            @Override
-                            public Void apply(Long aLong) {
-                                refreshGrid(table_layout);
-                                return null;
-                            }
-                        },getRootActivity());
-                        return true;
-                    }
+                PopupLookup.create(getCaption(), stats, null, lookup -> {
+                    new DataService().postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getSelectedId() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
+                        refreshGrid(table_layout);
+                        return null;
+                    },getRootActivity());
+                    return true;
                 }).show(((BaseActivity)action.getButton().getContext()).getSupportFragmentManager(),null);
             }
             else {

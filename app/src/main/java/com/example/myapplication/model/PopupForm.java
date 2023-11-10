@@ -85,11 +85,11 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
     public void doOk() {
 
         PopupFormArgs args = this.getArgs();
-        String entityName = args.getEntityName();
-        if(entityName == null){
-            entityName = getRootActivity().getLocalClassName();
-            if(entityName.endsWith("Activity"))entityName = entityName.substring(0,entityName.length() - 8);
-        }
+        //String entityName = args.getEntityName();
+        //if(entityName == null){
+        //    entityName = getRootActivity().getLocalClassName();
+        //    if(entityName.endsWith("Activity"))entityName = entityName.substring(0,entityName.length() - 8);
+        //}
 
 
         if(!validate()){
@@ -99,39 +99,47 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             List<Control.ControlBase> controls = getArgs().getControls();
             if(controls != null && controls.size() != 0){
                 JSONObject obj = new JSONObject();
-                try{
-                    if(getArgs().getValue() !=null)obj.put("Id",getArgs().getValue());
-                }catch (JSONException e){
-                }
-
-
                 for (Control.ControlBase control : getArgs().getControls()) {
                     control.updateValueToJSONObject(obj);
                 }
-                RequestParams rp = new RequestParams();
-
-
-                rp.put("Json",obj);
-                new DataService().postForLong(getUrl(), rp, new Function<Long, Void>() {
-                    @Override
-                    public Void apply(Long aLong) {
-                        doAfterSaved(aLong);
-                        return null;
-                    }
-                }, getContext());
+                new DataService().postForSave(getArgs().getPath(), obj, aLong -> {
+                    doAfterSaved(aLong);
+                    return null;
+                }, s -> {
+                    PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                    getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                    return null;
+                });
             }
         }
     }
 
-    protected String getUrl(){
-        return "EntityApi/SaveEntity?entity=" + getArgs().getEntityName() ;
+    private String getFullPathNew(){
+        String path = getArgs().getPath();
+        if(path.endsWith("[]"))return path;
+        else if(path.endsWith("]")){
+            return path.substring(0,path.lastIndexOf("[")) + "[]";
+        }
+        else return path;
     }
+
+
+    //protected String getUrl(){
+    //    return "EntityApi/SaveEntity?entity=" + getArgs().getEntityName() ;
+    //}
     protected void doAfterSaved(Long id){
+
         Long detailedCount = getArgs().getControls().stream().filter(i-> Control.DetailedControlBase.class.isAssignableFrom(i.getClass())).count();
         boolean defaultClose = (getArgs().getValue() != null && getArgs().getValue() != 0L) || detailedCount == null || detailedCount == 0L;
-
         if(getArgs().getValue() == null || getArgs().getValue() == 0L){
+            getArgs().setValue(id);
+            String path = getArgs().getPath();
+            if(path.endsWith("[]")){
+                path = path.substring(0,path.length() -1) + id + "]";
+                getArgs().setPath(path);
+            }
             for (int j = 0; j < getArgs().getControls().size(); j++) {
+                getArgs().getControls().get(j).setPath(path);
                 if(Control.DetailedControlBase.class.isAssignableFrom(getArgs().getControls().get(j).getClass())){
                     Control.DetailedControlBase dc = (Control.DetailedControlBase)getArgs().getControls().get(j);
                     dc.setParentId(id);
@@ -139,19 +147,17 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
                 }
             }
         }
-        getArgs().setValue(id);
-
         boolean returnVal = defaultClose;
         for (int i = 0; i < getRootActivity().Controls.size(); i++) {
             Control.ControlBase control = getRootActivity().Controls.get(i);
             if(Control.DetailedControl.class.isAssignableFrom(control.getClass())){
                 Control.DetailedControl dc = (Control.DetailedControl)control;
-                if(dc.getEntityName() != null && dc.getEntityName().equals(getArgs().getEntityName())){
+                if(dc.getFullPathNew().equals(getFullPathNew())){
                     boolean rv = dc.doAfterSaved(id,defaultClose);
                     if(rv != defaultClose)returnVal = rv;
                 }
             }
-            if(getArgs().getAction() != 0 && control.getAction() == getArgs().getAction()){
+            if( control.getFullPath().equals(getArgs().getActionPath())){
                 control.readValueObject(id);
             }
         }
@@ -162,12 +168,12 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
                     Control.ControlBase control = p.getArgs().getControls().get(j);
                     if(Control.DetailedControl.class.isAssignableFrom(control.getClass())){
                         Control.DetailedControl dc = (Control.DetailedControl)control;
-                        if(dc.getEntityName() != null && dc.getEntityName().equals(getArgs().getEntityName())){
+                        if(dc.getFullPathNew().equals(getFullPathNew())){
                             boolean rv = dc.doAfterSaved(id,defaultClose);
                             if(rv != defaultClose)returnVal = rv;
                         }
                     }
-                    if(getArgs().getAction() != 0 && control.getAction() == getArgs().getAction()){
+                    if(control.getFullPath().equals(getArgs().getActionPath())){
                         control.readValueObject(id);
                     }
                 }
@@ -255,14 +261,14 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
 
 
     public static class  PopupFormArgs extends PopupArgs<PopupFormArgs> {
-        public PopupFormArgs( String header,List<Control.ControlBase> controls,String entityName,Long value){
+        public PopupFormArgs( String header,List<Control.ControlBase> controls,String path,Long value){
             super(header);
             setCanceledOnTouchOutside(false);
             setCancelOnDestroyView(false);
             setCancelButton("Cancel");
             setOkButton("Save");
             setValue(value);
-            setEntityName(entityName);
+            setPath(path);
             setIdName("Id");
             if(controls == null)setControls(new ArrayList<Control.ControlBase>());
             else setControls(controls);
@@ -274,14 +280,14 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             else return null;
         }
 
-        private int Action=0;
+        private String ActionPath;
 
-        public int getAction() {
-            return Action;
+        public String getActionPath() {
+            return ActionPath;
         }
 
-        public PopupFormArgs setAction(int action) {
-            Action = action;
+        public PopupFormArgs setActionPath(String actionPath) {
+            ActionPath = actionPath;
             return  this;
         }
 
@@ -290,12 +296,12 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             return Controls;
         }
 
-        private String EntityName;
-        public String getEntityName() {
-            return EntityName;
+        private String Path;
+        public String getPath() {
+            return Path;
         }
-        public PopupFormArgs setEntityName(String entityName) {
-            EntityName = entityName;
+        public PopupFormArgs setPath(String path) {
+            Path = path;
             return this;
         }
 

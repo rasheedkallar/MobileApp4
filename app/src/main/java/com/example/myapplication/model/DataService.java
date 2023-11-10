@@ -36,6 +36,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ public class DataService {
 
 
 
-    //private static String serverIp = "10.207.176.91"; //office
+    private static String serverIp = "10.207.176.91"; //office
 
     //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
     //private static String serverIp = "10.207.176.91"; //office CORP
@@ -62,7 +63,7 @@ public class DataService {
 
     //private static String serverIp = "abunaser01/"; //shop
 
-    private static String serverIp = "192.168.0.126"; //home
+    //private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homeWifi
     //192.168.0.126
     private static String  serverPort = "80";
@@ -72,138 +73,161 @@ public class DataService {
         String port = serverPort;
         if(BaseActivity.IpAddress != null && BaseActivity.IpAddress.length() != 0)ip = BaseActivity.IpAddress;
         if(BaseActivity.Port != null && BaseActivity.Port != 0)port = BaseActivity.Port.toString();
-        if(port == "80")return  "http://" + ip + "/api/";
+        if(port.equals("80"))return  "http://" + ip + "/api/";
         else return  "http://" + ip + ":" + port + "/api/";
     }
 
+
+    public  void postForSelect(String path, String select,Function<JSONObject,Void>  success, Context context){
+        RequestParams param = new RequestParams();
+        param.put("Path",path);
+        param.add("Select",select);
+        postForObject(JSONObject.class,"EntityApi/Select",param,success,context);
+    }
     public <T extends Serializable> void postForSelect(Class<T> type,String path, String select,Function<T,Void>  success, Context context){
         RequestParams param = new RequestParams();
-        param.add("Path",path);
+        param.put("Path",path);
         param.add("Select",select);
-        postForString("EntityApi/Select",param ,new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                try{
-                    if(JSONObject.class.isAssignableFrom(type)){
-                        success.apply((T)new JSONObject(s));
-                    }else if(JsonArray.class.isAssignableFrom(type)){
-                        success.apply((T)new JSONArray(s));
-                    }else{
-                        Gson gson = new GsonBuilder().create();
-                        T result = (T)gson.fromJson(s, type);
-                        success.apply(result);
-                    }
-                }
-                catch (JSONException e ){
-                }
-                catch (Exception e ){
-                }
-                return null;
-            }
-        }, context);
+        postForObject(type,"EntityApi/Select",param,success,context);
     }
-
-
-    public <T extends Serializable> void postForList(Class<T> type,String path, String select,String where,String orderBy,Function<ArrayList<T>,Void>  success, Context context){
-        RequestParams param = new RequestParams();
-        param.add("Path",path);
-        param.add("Select",select);
-        param.add("Where",where);
-        param.add("OrderBy",orderBy);
-        postForString("EntityApi/List",param ,new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                try{
-                    Gson gson = new GsonBuilder().create();
-                    Type listType = TypeToken.getParameterized(ArrayList.class, type).getType();
-                    ArrayList<T> result = (ArrayList<T>)gson.fromJson(s,listType);
-                    success.apply(result);
-                }
-                catch (Exception e){
-                    Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                }
-                return null;
-            }
-        }, context);
-    }
-
 
     public  void postForList(String path, String select,String where,String orderBy,Function<JSONArray,Void>  success, Context context){
+
         RequestParams param = new RequestParams();
-        param.add("Path",path);
+        param.put("Path",path);
+        param.add("Where",where);
+        param.add("OrderBy",orderBy);
+        param.add("Select",select);
+        postForObject(JSONArray.class,"EntityApi/List",param,success,context);
+    }
+    public <T extends Serializable> void postForList(Class<T> type,String path, String select,String where,String orderBy,Function<ArrayList<T>,Void>  success, Context  context) {
+        postForList(type, path,  select, where,orderBy, success, s -> {
+            Toast.makeText(context,s,Toast.LENGTH_SHORT);
+            return null;
+        });
+    }
+    public <T extends Serializable> void postForList(Class<T> type,String path, String select,String where,String orderBy,Function<ArrayList<T>,Void>  success, Function<String,Void>  failure){
+        RequestParams param = new RequestParams();
+        param.put("Path",path);
         param.add("Select",select);
         param.add("Where",where);
         param.add("OrderBy",orderBy);
-        postForString("EntityApi/List",param ,new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-
-                try {
-                    JSONArray array = new JSONArray(s);
-                    success.apply(array);
-                }
-                catch (JSONException e) {
-                    Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                }
-                return null;
+        postForString("EntityApi/List", param, s -> {
+            try{
+                Gson gson = new GsonBuilder().create();
+                ArrayList<T> result = (ArrayList<T>)gson.fromJson(s, TypeToken.getParameterized(ArrayList.class, type));
+                success.apply(result);
             }
-        }, context);
+            catch (Exception e ){
+                String result =formatError(s);
+                failure.apply(result);
+            }
+            return null;
+        },failure);
+    }
+    public <T extends Serializable> void postForDelete(String path, Function<Boolean,Void>  success, Function<String,Void>  failure){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        postForObject(Boolean.class,"EntityApi/Delete",param,success,failure);
+    }
+    public <T extends Serializable> void postForSave(String path,JSONObject saveJson ,Function<Long,Void>  success, Function<String,Void>  failure){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.put("SaveJson",saveJson);
+        postForObject(Long.class,"EntityApi/Save",param,success,failure);
     }
 
-    public <T extends Serializable> void postForObject(Class<T> type,String path, String select,String where,String orderBy,Function<T,Void>  success, Context context){
-        RequestParams param = new RequestParams();
-        param.add("Path",path);
-        param.add("Select",select);
-        param.add("Where",where);
-        param.add("OrderBy",orderBy);
-        postForString("EntityApi/Select",param ,new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                try{
+    public <T> void postForObject(Class<T> type,String url,RequestParams param,Function<T,Void>  success, Context context){
+        postForObject(type, url, param, success, s -> {
+            Toast.makeText(context,s,Toast.LENGTH_SHORT);
+            return null;
+        });
+    }
+
+    private <T>  ArrayList<T> ConvertToList(Class<T> type, String json){
+        Gson gson = new GsonBuilder().create();
+        return  (ArrayList<T>)gson.fromJson(json, type);
+    }
+    private <T> ArrayList<T> ConvertToMyList(Class<T> type, String json) {
+        Gson gson = new GsonBuilder().create();
+        Type listType = new TypeToken<ArrayList<T>>(){}.getType();
+        return gson.fromJson(json, listType);
+    }
+
+
+    public <T> void postForObject(Class<T> type,String url,RequestParams param,Function<T,Void>  success, Function<String,Void>  failure){
+        postForString(url,param , s -> {
+            try{
+                if(JSONObject.class.isAssignableFrom(type)){
+                    success.apply((T)new JSONObject(s));
+                }else if(JSONArray.class.isAssignableFrom(type)){
+                    success.apply((T)new JSONArray(s));
+                }else{
                     Gson gson = new GsonBuilder().create();
-                    T result = (T)gson.fromJson(s,type);
+                    T result = (T)gson.fromJson(s, type);
                     success.apply(result);
                 }
-                catch (Exception e){
-                    Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                }
-                return null;
             }
-        }, context);
-    }
-
-
-    public  void postForObject(String path, String select,String where,String orderBy,Function<JSONArray,Void>  success, Context context){
-        RequestParams param = new RequestParams();
-        param.add("Path",path);
-        param.add("Select",select);
-        param.add("Where",where);
-        param.add("OrderBy",orderBy);
-        postForString("EntityApi/Select",param ,new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-
-                try {
-                    JSONArray array = new JSONArray(s);
-                    success.apply(array);
-                }
-                catch (JSONException e) {
-                    Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                }
-                return null;
+            catch (JSONException e ){
+                String result = formatError(s);
+                failure.apply(result);
             }
-        }, context);
+            catch (Exception e ){
+                String result =formatError(s);
+                failure.apply(result);
+            }
+            return null;
+        },failure);
     }
 
 
-
-    public  void get(String url, AsyncHttpResponseHandler response){
-
-        String finalUrl= getRootUrl() + url;  //office
-        AsyncHttpClient hc = new AsyncHttpClient();
-
-        hc.get(finalUrl, response);
+    public <T  extends Serializable>  void getList(Class<T> type,String url,Function<ArrayList<T>,Void>  success, Context context){
+        ParameterizedType parameterizedType = (ParameterizedType) TypeToken.getParameterized(ArrayList.class, type).getType();
+        getObject((Class<ArrayList<T>>) parameterizedType.getRawType(), url, success, s -> {
+            Toast.makeText(context,s,Toast.LENGTH_SHORT);
+            return null;
+        });
     }
+
+    public  void getList(String url,Function<JSONArray,Void>  success, Context context){
+        getObject(JSONArray.class, url, success, context);
+    }
+
+    public  void getObject(String url,Function<JSONObject,Void>  success, Context context){
+        getObject(JSONObject.class, url, success, context);
+    }
+    public <T>  void getObject(Class<T> type,String url,Function<T,Void>  success, Context context){
+
+        getObject(type, url, success, s -> {
+            Toast.makeText(context,s,Toast.LENGTH_SHORT);
+            return null;
+        });
+    }
+    public <T> void getObject(Class<T> type,String url,Function<T,Void>  success, Function<String,Void>  failure){
+        getString(url, s -> {
+            try{
+                if(JSONObject.class.isAssignableFrom(type)){
+                    success.apply((T)new JSONObject(s));
+                }else if(JSONArray.class.isAssignableFrom(type)){
+                    success.apply((T)new JSONArray(s));
+                }else{
+                    Gson gson = new GsonBuilder().create();
+                    T result = (T)gson.fromJson(s, type);
+                    success.apply(result);
+                }
+            }
+            catch (JSONException e ){
+                String result = formatError(s);
+                failure.apply(result);
+            }
+            catch (Exception e ){
+                String result =formatError(s);
+                failure.apply(result);
+            }
+            return null;
+        },failure);
+    }
+
     public  void getString(String url, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         get(url, new AsyncHttpResponseHandler() {
@@ -230,6 +254,19 @@ public class DataService {
             }
         });
     }
+    public  void getString(String url, Function<String,Void> success, Context context){
+        getString(url,success, new Function<String, Void>() {
+            @Override
+            public Void apply(String s) {
+                Toast.makeText(context,s,Toast.LENGTH_SHORT);
+                return null;
+            }
+        });
+    }
+
+
+    /*
+
     public  void getJArray(String url, Function<JSONArray,Void> success, Function<String,Void> failure){
         getString(url, new Function<String, Void>() {
             @Override
@@ -303,16 +340,32 @@ public class DataService {
         });
 
     }
-    public  void getString(String url, Function<String,Void> success, Context context){
-        getString(url,success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                return null;
+
+     */
+
+    private String formatError(String json){
+        System.out.println("Error on service request");
+        try{
+            Gson gson = new GsonBuilder().create();
+            String result = gson.fromJson(json,String.class);
+            for (String item: result.split("\r\n")) {
+                System.out.println(item);
             }
-        });
+            return result;
+        }
+        catch (Exception e){
+            return json;
+        }
     }
 
+
+    public  void get(String url, AsyncHttpResponseHandler response){
+
+        String finalUrl= getRootUrl() + url;  //office
+        AsyncHttpClient hc = new AsyncHttpClient();
+
+        hc.get(finalUrl, response);
+    }
 
 
 
@@ -324,9 +377,7 @@ public class DataService {
         new AsyncHttpClient().put(finalUrl,params, response);
     }
 
-    public static abstract   class onImageUpload{
-        public abstract void imageUpload(Bitmap image,String message);
-    }
+
     private String URLEncode(String data){
 
         if(data == null)return  "";
@@ -385,7 +436,7 @@ public class DataService {
         });
     }
 
-
+    /*
 
 
 
@@ -571,7 +622,7 @@ public class DataService {
         }, failure);
     }
 
-
+    */
     public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         System.out.println(params);
@@ -611,61 +662,7 @@ public class DataService {
     }
 
 
-
-    public  void post(String url, RequestParams params, AsyncHttpResponseHandler response){
-
-        String finalUrl= getRootUrl() + url;  //office
-        new AsyncHttpClient().post(finalUrl,params, response);
-    }
-
-
-    public  void getById(Context context, String url, Long id, DataService.GetByIdResponse response){
-        get(url +  "?id=" + id.toString(),new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String result = new String(responseBody);
-                try {
-                    JSONObject data = new JSONObject(result);
-                    response.onSuccess(data);
-                }
-                catch (JSONException ex){
-                    Toast.makeText(context, "getById Error:" + result, Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String result = "getById Error:";
-                if(responseBody != null)result =  result  +  new String(responseBody);
-                result = result +  error.getMessage() + error.getStackTrace().toString();
-                for (String item: result.split("\r\n")) {
-                    System.out.println(result);
-                }
-                Toast.makeText(context,  result, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-    public  void getLookup(Context context, String lookup, DataService.LookupResponse response){
-        get("Lookup?type=" + lookup,new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String result = new String(responseBody);
-                Gson gson = new GsonBuilder().create();
-                Type listType = new TypeToken<ArrayList<Lookup>>(){}.getType();
-                //ArrayList<Lookup> list = gson.fromJson(result, listType);
-                List<DataService.Lookup> lookup = gson.fromJson(result, listType);
-                response.onSuccess(lookup);
-            }
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String result = new String(responseBody);
-                for (String item: result.split("\r\n")) {
-                    System.out.println(result);
-                }
-                Toast.makeText(context, "getLookup Error:" + result, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
+    /*
     public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure){
         getString(url, new Function<String, Void>() {
             @Override
@@ -692,6 +689,9 @@ public class DataService {
         });
     }
 
+
+     */
+
     //public  void getObject(String[] lookups, Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure) {
     //
     //}
@@ -701,7 +701,7 @@ public class DataService {
     //
     //}
 
-
+/*
 
 
         public  void getLookups(Context context, String[] lookups, DataService.LookupsResponse response){
@@ -730,25 +730,8 @@ public class DataService {
             }
         });
     }
+*/
 
-
-    public abstract  class DataResponse {
-        public abstract void onSuccess(String data);
-    }
-    public static abstract  class LookupResponse {
-        public abstract void onSuccess(List<Lookup> lookup);
-    }
-    public static abstract  class GetByIdResponse {
-        public abstract void onSuccess(JSONObject data);
-    }
-
-    public static abstract  class DeleteByIdResponse {
-        public abstract void onSuccess(Boolean deleted);
-    }
-
-    public static abstract  class LookupsResponse {
-        public abstract void onSuccess(List<Lookup>[] lookups);
-    }
     public static class Lookup implements Serializable {
 
         private String Properties;
