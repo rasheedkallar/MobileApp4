@@ -51,10 +51,10 @@ public class DataService {
 
 
 
-    private static String serverIp = "10.207.176.91"; //office
+    //private static String serverIp = "10.207.176.91"; //office
 
     //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
-    //private static String serverIp = "10.207.176.91"; //office CORP
+    private static String serverIp = "10.207.176.91"; //office CORP
     //private static String serverIp = "10.205.50.22"; //office ADT HUB
 
 
@@ -113,15 +113,7 @@ public class DataService {
         param.add("Where",where);
         param.add("OrderBy",orderBy);
         postForString("EntityApi/List", param, s -> {
-            try{
-                Gson gson = new GsonBuilder().create();
-                ArrayList<T> result = (ArrayList<T>)gson.fromJson(s, TypeToken.getParameterized(ArrayList.class, type));
-                success.apply(result);
-            }
-            catch (Exception e ){
-                String result =formatError(s);
-                failure.apply(result);
-            }
+            convertResult(TypeToken.getParameterized(ArrayList.class, type),s,success,failure);
             return null;
         },failure);
     }
@@ -143,44 +135,12 @@ public class DataService {
             return null;
         });
     }
-
-    private <T>  ArrayList<T> ConvertToList(Class<T> type, String json){
-        Gson gson = new GsonBuilder().create();
-        return  (ArrayList<T>)gson.fromJson(json, type);
-    }
-    private <T> ArrayList<T> ConvertToMyList(Class<T> type, String json) {
-        Gson gson = new GsonBuilder().create();
-        Type listType = new TypeToken<ArrayList<T>>(){}.getType();
-        return gson.fromJson(json, listType);
-    }
-
-
     public <T> void postForObject(Class<T> type,String url,RequestParams param,Function<T,Void>  success, Function<String,Void>  failure){
         postForString(url,param , s -> {
-            try{
-                if(JSONObject.class.isAssignableFrom(type)){
-                    success.apply((T)new JSONObject(s));
-                }else if(JSONArray.class.isAssignableFrom(type)){
-                    success.apply((T)new JSONArray(s));
-                }else{
-                    Gson gson = new GsonBuilder().create();
-                    T result = (T)gson.fromJson(s, type);
-                    success.apply(result);
-                }
-            }
-            catch (JSONException e ){
-                String result = formatError(s);
-                failure.apply(result);
-            }
-            catch (Exception e ){
-                String result =formatError(s);
-                failure.apply(result);
-            }
+            convertResult(TypeToken.get(type),s,success,failure);
             return null;
         },failure);
     }
-
-
     public <T  extends Serializable>  void getList(Class<T> type,String url,Function<ArrayList<T>,Void>  success, Context context){
         ParameterizedType parameterizedType = (ParameterizedType) TypeToken.getParameterized(ArrayList.class, type).getType();
         getObject((Class<ArrayList<T>>) parameterizedType.getRawType(), url, success, s -> {
@@ -205,29 +165,10 @@ public class DataService {
     }
     public <T> void getObject(Class<T> type,String url,Function<T,Void>  success, Function<String,Void>  failure){
         getString(url, s -> {
-            try{
-                if(JSONObject.class.isAssignableFrom(type)){
-                    success.apply((T)new JSONObject(s));
-                }else if(JSONArray.class.isAssignableFrom(type)){
-                    success.apply((T)new JSONArray(s));
-                }else{
-                    Gson gson = new GsonBuilder().create();
-                    T result = (T)gson.fromJson(s, type);
-                    success.apply(result);
-                }
-            }
-            catch (JSONException e ){
-                String result = formatError(s);
-                failure.apply(result);
-            }
-            catch (Exception e ){
-                String result =formatError(s);
-                failure.apply(result);
-            }
+            convertResult(TypeToken.get(type),s,success,failure);
             return null;
         },failure);
     }
-
     public  void getString(String url, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         get(url, new AsyncHttpResponseHandler() {
@@ -265,83 +206,35 @@ public class DataService {
     }
 
 
-    /*
-
-    public  void getJArray(String url, Function<JSONArray,Void> success, Function<String,Void> failure){
-        getString(url, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
-                else {
-                    try {
-                        JSONArray array = new JSONArray(s);
-                        success.apply(array);
-
-                    } catch (JSONException e) {
-                        failure.apply(s);
-                    }
+    private <T> void convertResult(TypeToken token, String data,Function<T,Void>  success, Function<String,Void>  failure){
+        T result = null;
+        if(!data.equals("null")) { //true
+            try {
+                if (JSONObject.class.isAssignableFrom(token.getRawType())) {
+                    result = (T) new JSONObject(data);
+                } else if (JSONArray.class.isAssignableFrom(token.getRawType())) {
+                    result = (T) new JSONArray(data);
+                } else {
+                    if(Boolean.class.isAssignableFrom(token.getRawType()) && !data.equals("null") && !data.equals("true")&& !data.equals("false"))
+                        throw new Exception("Value error");
+                    Gson gson = new GsonBuilder().create();
+                    result = (T) gson.fromJson(data, token);
                 }
-                return null;
-            }
-        }, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                failure.apply(s);
-                return null;
-            }
-        });
+            } catch (JSONException e) {
+                String error = formatError(data);
+                failure.apply(error);
+                return;
 
-    }
-    public  void getJArray(String url, Function<JSONArray,Void> success, Context context){
-        getJArray(url,success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                return null;
+            } catch (Exception e) {
+                String error = formatError(data);
+                failure.apply(error);
+                return;
+
             }
-        });
+        }
+        success.apply(result);
     }
 
-    public  void getJObject(String url, Function<JSONObject,Void> success, Context context){
-        getJObject(url,success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                return null;
-            }
-        });
-    }
-
-
-
-
-    public  void getJObject(String url, Function<JSONObject,Void> success, Function<String,Void> failure){
-        getString(url, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
-                else {
-                    try {
-                        JSONObject obj = new JSONObject(s);
-                        success.apply(obj);
-
-                    } catch (JSONException e) {
-                        failure.apply(s);
-                    }
-                }
-                return null;
-            }
-        }, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                failure.apply(s);
-                return null;
-            }
-        });
-
-    }
-
-     */
 
     private String formatError(String json){
         System.out.println("Error on service request");
@@ -387,11 +280,6 @@ public class DataService {
             return  data;
         }
     }
-    //public  void upload(Context context,File file,String fileName, String entity,String fileGroup,Long id, AsyncHttpResponseHandler handler) {
-    //    upload( context, file, fileName,  entity, id,fileGroup ,null,  handler);
-    //}
-
-    //Maximum request length exceeded.
 
     public  void upload(File file,String fileName, String entity,Long id,String fileGroup , String path, Function<Long,Void> success, Context context){
 
@@ -407,7 +295,7 @@ public class DataService {
         }
         System.out.println(params);
 
-        String finalUrl= getRootUrl() + "refFile/Post?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+        String finalUrl= getRootUrl() + "EntityApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
 
         AsyncHttpClient  cl = new AsyncHttpClient();
         //cl.setTimeout(10000);
@@ -435,194 +323,6 @@ public class DataService {
             }
         });
     }
-
-    /*
-
-
-
-    public  void delete(String url, Function<String,Void> success,Context context){
-        System.out.println(url);
-        String finalUrl= getRootUrl() + url;  //office
-        new AsyncHttpClient().delete(finalUrl, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String result = new String(responseBody);
-                System.out.println(result);
-                if(result.equals("\"Success\"")){
-                    success.apply("Success");
-                }
-                else{
-                    Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String result ="Error on : Delete file";
-                if(responseBody != null)result = result + "\r\n" + new String(responseBody);
-                if(error != null) {
-                    result = result + "\r\n" + error.getMessage();
-
-                }
-                for (String item: result.split("\r\n")) {
-                    System.out.println(result);
-                }
-                Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    public  void postForJArray(String url, RequestParams params,Function<JSONArray,Void> success, Context context){
-        postForJArray(url, params, success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                return null;
-            }
-        });
-    }
-    public  void postForJArray(String url, RequestParams params,Function<JSONArray,Void> success, Function<String,Void> failure){
-        postForString(url, params, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
-                else {
-                    try {
-                        JSONArray array = new JSONArray(s);
-                        success.apply(array);
-
-                    } catch (JSONException e) {
-                        failure.apply(s);
-                    }
-                }
-                return null;
-            }
-        }, failure);
-    }
-    public  void postForLong(String url, RequestParams params, Function<Long,Void> success, Context context){
-        postForLong(url, params, success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                return null;
-            }
-        });
-    }
-    public  void postForLong(String url, RequestParams params,Function<Long,Void> success, Function<String,Void> failure){
-        postForString(url, params, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
-                else {
-                    try {
-                        Long id = Long.parseLong(s);
-                        success.apply(id);
-
-                    } catch (Exception e) {
-                        failure.apply(s);
-                    }
-                }
-                return null;
-            }
-        }, failure);
-    }
-
-    public  void postForLookups(String url, RequestParams params,Function<ArrayList<Lookup>,Void> success, Context context){
-        postForLookups(url, params, success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                return null;
-            }
-        });
-    }
-    public  void postForLookups(String url, RequestParams params,Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure){
-        postForString(url, params, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
-                else {
-                    try {
-                        Gson gson = new GsonBuilder().create();
-                        Type listType = new TypeToken<ArrayList<Lookup>>(){}.getType();
-                        ArrayList<DataService.Lookup> lookups = gson.fromJson(s, listType);
-                        success.apply(lookups);
-
-                    } catch (Exception e) {
-                        failure.apply(s);
-                    }
-                }
-                return null;
-            }
-        }, failure);
-    }
-
-    public  void postForLookup(String url, RequestParams params,Function<Lookup,Void> success, Context context){
-        postForLookup(url, params, success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                return null;
-            }
-        });
-    }
-    public  void postForLookup(String url, RequestParams params,Function<Lookup,Void> success, Function<String,Void> failure){
-        postForString(url, params, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
-                else {
-                    try {
-                        Gson gson = new GsonBuilder().create();
-                        Type listType = new TypeToken<Lookup>(){}.getType();
-                        DataService.Lookup lookup = gson.fromJson(s, listType);
-                        success.apply(lookup);
-
-                    } catch (Exception e) {
-                        failure.apply(s);
-                    }
-                }
-                return null;
-            }
-        }, failure);
-    }
-
-
-
-    public  void postForJObject(String url, RequestParams params,Function<JSONObject,Void> success, Context context){
-        postForJObject(url, params, success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-                return null;
-            }
-        });
-    }
-    public  void postForJObject(String url, RequestParams params,Function<JSONObject,Void> success, Function<String,Void> failure){
-        postForString(url, params, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s.equals("null"))success.apply(null);
-                else {
-                    try {
-                        JSONObject object = new JSONObject(s);
-                        success.apply(object);
-
-                    } catch (JSONException e) {
-                        failure.apply(s);
-                    }
-                }
-                return null;
-            }
-        }, failure);
-    }
-
-    */
     public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         System.out.println(params);
@@ -660,78 +360,6 @@ public class DataService {
             }
         });
     }
-
-
-    /*
-    public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure){
-        getString(url, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                if(s == null || s.length() == 0 || s == "null")success.apply(new ArrayList<>());
-                else{
-                    Gson gson = new GsonBuilder().create();
-                    Type listType = new TypeToken<ArrayList<Lookup>>() {}.getType();
-                    ArrayList<Lookup> lookups = gson.fromJson(s, listType);
-                    success.apply(lookups);
-                }
-                return null;
-            }
-        },failure);
-    }
-    public  void getLookupList(String url, Function<ArrayList<Lookup>,Void> success, Context context){
-        getLookupList(url, success, new Function<String, Void>() {
-            @Override
-            public Void apply(String s) {
-                Toast.makeText(context,s,Toast.LENGTH_SHORT);
-
-                return null;
-            }
-        });
-    }
-
-
-     */
-
-    //public  void getObject(String[] lookups, Function<ArrayList<Lookup>,Void> success, Function<String,Void> failure) {
-    //
-    //}
-
-
-    //public  void getLookups(String[] lookups, Function<ArrayList<Lookup>,Void> success, Context context) {
-    //
-    //}
-
-/*
-
-
-        public  void getLookups(Context context, String[] lookups, DataService.LookupsResponse response){
-        get("Lookup?types=" + String.join("&types=", lookups),new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String result = new String(responseBody);
-                Gson gson = new GsonBuilder().create();
-                Type listType = new TypeToken<List<Lookup>[]>(){}.getType();
-                List<Lookup>[] list = gson.fromJson(result, listType);
-
-                response.onSuccess(list);
-            }
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                if(responseBody == null){
-                    String result = error.toString();
-                    Toast.makeText(context, "getLookups Error:" + result, Toast.LENGTH_SHORT).show();
-                }
-                else{
-                    String result = new String(responseBody);
-                    Toast.makeText(context, "getLookups Error:" + result, Toast.LENGTH_SHORT).show();
-                }
-
-
-            }
-        });
-    }
-*/
-
     public static class Lookup implements Serializable {
 
         private String Properties;
@@ -776,9 +404,9 @@ public class DataService {
         public void setProperties(String properties) {
             Properties = properties;
         }
-        //public JSONObject getDatas() throws JSONException {
-        //    return  new JSONObject(Properties);
-        //}
+        public JSONObject getDatas() throws JSONException {
+            return  new JSONObject(Properties);
+        }
 
         public JSONObject convertProperties() throws JSONException{
             return  new JSONObject(Properties);

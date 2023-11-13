@@ -92,30 +92,48 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
         if (savedInstanceState != null && getArgs().getCancelOnDestroyView()) doCancel();
     }
 
+    protected TextView Title;
+
+
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
 
         PopupBase.PopupArgs args = getArgs();
-
-        LinearLayout linearLayout = new LinearLayout(getActivity());
+        ScrollView sv = null;
+        LinearLayout linearLayout  = null;
+        linearLayout = new LinearLayout(getActivity());
         LinearLayout.LayoutParams lllP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         //linearLayout.setPadding(2, 2, 2, 2);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.setLayoutParams(lllP);
+        if(args.getEnableScroll()) {
+            sv = new ScrollView(getContext());
+            ScrollView.LayoutParams scP = new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT);
+            scP.setLayoutDirection(LinearLayout.HORIZONTAL);
+            sv.setLayoutParams(scP);
+            sv.addView(linearLayout);
+        }
         container = linearLayout;
 
-        TextView caption = new TextView(getActivity());
+        Title = new TextView(getActivity());
         TableLayout.LayoutParams cParam = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 500);
-        caption.setPadding(10, 10, 10, 10);
-        caption.setLayoutParams(cParam);
-        caption.setText(args.getHeader());
-        caption.setTextSize(30);
-        caption.setTextColor(Color.parseColor("#8CD0E4"));
-        caption.setBackgroundColor(Color.parseColor("#225C6E"));
+        Title.setPadding(10, 10, 10, 10);
+        Title.setLayoutParams(cParam);
+        Title.setText(args.getHeader());
+        Title.setTextSize(30);
+        Title.setTextColor(Color.parseColor("#8CD0E4"));
+        Title.setBackgroundColor(Color.parseColor("#225C6E"));
 
         AlertDialog.Builder AlertDialogBuilder = new AlertDialog.Builder(getActivity());
-        AlertDialogBuilder.setCustomTitle(caption);
-        AlertDialogBuilder.setView(linearLayout);
+        AlertDialogBuilder.setCustomTitle(Title);
+        if(args.getEnableScroll()) {
+            AlertDialogBuilder.setView(sv);
+        }
+        else{
+            AlertDialogBuilder.setView(linearLayout);
+        }
+
+
         if (args.getOkButton() != null) {
             AlertDialogBuilder.setPositiveButton(args.getOkButton(), null);
         }
@@ -182,12 +200,20 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
 
         public PopupArgs( String header){
             setHeader(header);
-            setCanceledOnTouchOutside(true);
-            setCancelOnDestroyView(true);
             Header = header;
         }
+        private Boolean EnableScroll = false;
 
-        private boolean CancelOnDestroyView;
+        public U setEnableScroll(Boolean enableScroll) {
+            EnableScroll = enableScroll;
+            return (U)this;
+        }
+
+        public  Boolean getEnableScroll() {
+            return EnableScroll;
+        }
+
+        private boolean CancelOnDestroyView = true;
         public boolean getCancelOnDestroyView() {
             return CancelOnDestroyView;
         }
@@ -195,7 +221,7 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
             CancelOnDestroyView = cancelOnDestroyView;
             return this;
         }
-        private boolean CanceledOnTouchOutside;
+        private boolean CanceledOnTouchOutside = true;
         public boolean getCanceledOnTouchOutside(){
             return CanceledOnTouchOutside;
         }
@@ -206,9 +232,9 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
         }
 
         private String Header;
-        public PopupArgs<U> setHeader(String header) {
+        public U setHeader(String header) {
             Header = header;
-            return this;
+            return (U)this;
         }
         public String getHeader() {
             return Header;
@@ -231,9 +257,9 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
             return OkButton;
         }
 
-        public PopupArgs<U> setOkButton(String okButton) {
+        public U setOkButton(String okButton) {
             OkButton = okButton;
-            return this;
+            return (U)this;
         }
     }
 

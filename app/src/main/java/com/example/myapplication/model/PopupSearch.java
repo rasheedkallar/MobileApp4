@@ -112,7 +112,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
 
                 }
                 DataService.Lookup l = new DataService.Lookup();
-                l.setId(getSelectedId());
+                l.setId(getValue());
                 l.setName(display);
                 if(getListener().onItemSelected(row,obj,l))PopupSearch.super.doOk();
                 //if(OnItemSelected.apply(l))PopupSearch.super.doOk();

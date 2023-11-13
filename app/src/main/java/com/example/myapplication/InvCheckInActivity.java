@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -20,6 +21,7 @@ import com.example.myapplication.model.PopupBase;
 import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupHtml;
+import com.example.myapplication.model.PopupInput;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.PopupSearch;
 import com.example.myapplication.model.Utility;
@@ -47,29 +49,96 @@ public  class InvCheckInActivity extends BaseActivity {
 
     public  static  class PopupItemBarcode extends PopupBase<PopupItemBarcode, PopupItemBarcode.PopupItemBarcodeArgs>
     {
-        public static PopupItemBarcode create(String header, Long unitId){
-            PopupItemBarcode barcode = new PopupItemBarcode();
-            barcode.setArgs(new PopupItemBarcodeArgs(header,unitId));
-            return barcode;
-        }
+
         @Override
         public void AddControls(LinearLayout container) {
+            Long invCheckInLineId = getArgs().getInvCheckInLineId();
+            String s ="it0 => new{it0.Id,it0.Description,it0.InvItemUnits.OrderBy(Fraction).Select(it1 => new {it1.Id,it1.ItemNumber.ToString() + \" \" + it1.Code + \" \" + it1.Fraction.ToString() as Unit,it1.InvItemBarcodes.OrderByDescending(Id).Select(it2 => new{it2.Id,it2.Code}) as InvItemBarcodes}) as InvItemUnits}";
+            new DataService().postForSelect("InvCheckInLines[" + invCheckInLineId + "].InvItemUnit.InvItem", s, jsonObject -> {
+                try{
+                    Title.setText(jsonObject.getString("Description"));
+                    JSONArray units = (JSONArray)jsonObject.get("InvItemUnits");
+                    for (int i = 0; i < units.length(); i++) {
+                        JSONObject unit = (JSONObject)units.get(i);
+                        BarcodeDetailedControl dc = new BarcodeDetailedControl("InvItemUnits[" + unit.get("Id") + "].InvItemBarcodes" ,unit.getString("Unit"));
+                        dc.readValueJSONObject(unit,"InvItemBarcodes");
+                        dc.addView(container);
+                    }
+                }catch (JSONException e){
+                }
+                return null;
+            }, getContext());
+        }
+        public static class BarcodeDetailedControl extends  Control.DetailedControl{
+            public BarcodeDetailedControl(String name, String caption) {
+                super(name, caption, null, null);
+                //setControlSize(Control.CONTROL_SIZE_SINGLE);
+                getButtons().remove(getButton(Control.ACTION_REFRESH));
+                getButtons().remove(getButton(Control.ACTION_EDIT));
+            }
+            @Override
+            protected ArrayList<Control.ControlBase> getControls(String action) {
+                ArrayList<Control.ControlBase> barcodeControls = new ArrayList<Control.ControlBase>();
+                if(action == Control.ACTION_REFRESH) {
+                   barcodeControls.add(Control.getEditTextControl("Code", "Barcode"));
+                }
+                return barcodeControls;
+            }
 
+            private void AddBarcode(String barcode){
+                JSONObject json = new JSONObject();
+                try{
+                    json.put("Code",barcode.trim());
+                }
+                catch (Exception e){
+                }
+                new DataService().postForSave(getFullPathNew(), json, aLong -> {
+                    readValueObject(aLong);
+                    refreshGrid(Table);
+                    return null;
+                }, s -> {
+                    PopupHtml.create("Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                    return null;
+                });
+            }
 
+            @Override
+            public void onButtonClick(Control.ActionButton action) {
+                if(action.getName().equals(Control.ACTION_ADD)){
+                    PopupInput pi =  PopupInput.create("Barcode", s -> {
+                        AddBarcode(s);
+                        return true;
+                    });
+                    pi.setInputListener((integer, s) -> {
+                        if(integer == 10){
+                            AddBarcode(s);
+                           return true;
+                        }
+                        else{
+                            return false;
+                        }
+                    });
+                    pi.show(getRootActivity().getSupportFragmentManager(),null);
+                }
+                else {
+                    super.onButtonClick(action);
+                }
+            }
         }
         public static class  PopupItemBarcodeArgs extends PopupArgs<PopupItemBarcodeArgs> {
-            public PopupItemBarcodeArgs(String header,Long unitId){
+            public PopupItemBarcodeArgs(String header,Long invCheckInLineId){
                 super(header);
                 setCancelButton("Close");
                 setOkButton(null);
+                setInvCheckInLineId(invCheckInLineId);
             }
-            private Long UnitId;
-            public Long getUnitId() {
-                return UnitId;
+            private Long InvCheckInLineId;
+            public Long getInvCheckInLineId() {
+                return InvCheckInLineId;
             }
 
-            public void setUnitId(Long unitId) {
-                UnitId = unitId;
+            public void setInvCheckInLineId(Long invCheckInLineId) {
+                InvCheckInLineId = invCheckInLineId;
             }
         }
     }
@@ -80,25 +149,20 @@ public  class InvCheckInActivity extends BaseActivity {
 
         private static String ItemFormula = "{0}.InvItemUnit == null ? null : {0}.InvItemUnit.ItemNumber.ToString() + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction.ToString() + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
         public ItemSearchControl() {
-            super("InvItemUnit", "Item",null ,"InvCheckInLine","FullDescription");
+            super("InvItemUnit", "Item",null ,"FullDescription");
             setFormula(ItemFormula);
             ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
             searchControls.add(Control.getEditTextControl("Unit","Unit").setColumnWidth(100));
             searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3).setColumnWidth(200));
+
             searchControls.add(Control.getEditTextControl("Description","Description"));
             setControls(searchControls);
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD));
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_INBOX).setEnabled(false));
-
-            //setAction(ItemFormPopup.SET_ITEM_ACTION);
         }
-
-
-
         @Override
         protected void textChange(EditText editor, int keyCode) {
-
             if(keyCode == 10){
                 if( editor.getText() !=null){
                     String barcode = editor.getText().toString().trim();
@@ -175,7 +239,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 }
                 controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS).setValue(itemLookup == null? "PCS" : null));
                 controls.add(Control.getEditDecimalControl("Fraction","Fraction").setDecimalPlaces(3).setValue(itemLookup == null? 1.0 : null));
-
+                controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setIsRequired(false));
                 if(itemLookup == null) {
                     controls.add(Control.getLookupForeignControl("InvItem.InvItemGroup", "Item Group", "InvItemUnit", "Code").setEnabled(false));
                     controls.add(Control.getHiddenControl("InvItem.ItemTaxId", 1));
@@ -257,12 +321,11 @@ public  class InvCheckInActivity extends BaseActivity {
                 super.onButtonClick(getButton(Control.ACTION_ADD));
             }
             else if(action.getName() == Control.ACTION_BARCODE){
-
-
-
-
-
+                PopupItemBarcode pib = new PopupItemBarcode();
+                pib.setArgs(new PopupItemBarcode.PopupItemBarcodeArgs("Barcode",getValue()).setEnableScroll(true));
+                pib.show(((BaseActivity)action.getButton().getContext()).getSupportFragmentManager(),null);
             }
+
 
             else {
                 super.onButtonClick(action);
@@ -280,7 +343,17 @@ public  class InvCheckInActivity extends BaseActivity {
                     controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(false).setValue(AddDescription));
                 }
                 controls.add(Control.getEditDecimalControl("Qty","Qty").setDecimalPlaces(3));
-                controls.add(Control.getEditDecimalControl("Amount","Amt+VAT").setIsRequired(false));
+                controls.add(Control.getEditDecimalControl("Amount","Amt+VAT").setIsRequired(false).addButton(Control.ACTION_PERCENT, new Function<View, Boolean>() {
+                    @Override
+                    public Boolean apply(View view) {
+                        Control.EditDecimalControl amt = getControl("Amount");
+                        if(amt.getValue() != null){
+                            Double v  = amt.getValue() + (amt.getValue() * 5 /100);
+                            amt.setValue(v);
+                        }
+                        return null;
+                    }
+                }));
                 if(action == Control.ACTION_REFRESH) {
                     controls.add(Control.getEditTextControl("FullDescription","Description").setFormula(ItemSearchControl.ItemFormula));
                 }
@@ -346,8 +419,8 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Final");
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Cancel");
                 PopupLookup.create(getCaption(), stats, null, lookup -> {
-                    new DataService().postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getSelectedId() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
-                        refreshGrid(table_layout);
+                    new DataService().postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getValue() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
+                        refreshGrid(Table);
                         return null;
                     },getRootActivity());
                     return true;
