@@ -160,36 +160,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
                 }, this);
 
 
-                /*
-                new DataService().upload(activity,image_file,newFileName,image_entityName,image_fileGroup,image_entity_id,new AsyncHttpResponseHandler() {
-                    @Override
-                    public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
-                        String result = new String(responseBody);
-                        System.out.println(result);
-                        Bitmap imageBitmap;
-                        try {
-                             imageBitmap = MediaStore.Images.Media.getBitmap(getBaseContext().getContentResolver(), image_uri);
-                        }
-                        catch (IOException e){
-                            imageBitmap = null;
-                        }
-                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_id,Long.parseLong(result));
-                    }
-                    @Override
-                    public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
-                        String result = "Error found";
-                        if(responseBody == null && error != null){
-                            result = error.getMessage();
-                        }
-                        else if(responseBody != null){
-                            result = new String(responseBody);
-                        }
-                        System.out.println(result);
-                        Toast.makeText(BaseActivity.this, "Fail to pick image " + result, Toast.LENGTH_SHORT).show();
-                    }
-                });
 
-                 */
             }
         });
         pickImageLauncher = registerForActivityResult(
@@ -226,25 +197,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
                         }
                     }, this);
 
-                       /*
 
-                        @Override
-                        public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
-                            String result = new String(responseBody);
-                            System.out.println(result);
-                            //if(imageListener != null)imageListener.getImage(imageBitmap,Long.parseLong(result));
-              }
-
-                        @Override
-                        public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
-                            String result = new String(responseBody);
-                            System.out.println(result);
-                            Toast.makeText(BaseActivity.this, "Fail to capture image " + result, Toast.LENGTH_SHORT).show();
-                        }
-                    });
-
-
-                        */
                 }catch (IOException e){
 
                 }
@@ -284,7 +237,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
         savedInstanceState.putString("image_entityName",image_entityName);
         savedInstanceState.putString("image_fileGroup",image_fileGroup);
 
-        //image_fileGroup
+
 
         savedInstanceState.putSerializable("Controls",Controls);
 
@@ -462,6 +415,10 @@ public abstract class BaseActivity extends AppCompatActivity  {
                 break;
             case "Stock Receive":
                 intent = new Intent(this,InvCheckInActivity.class);
+                break;
+
+            case "Inspect Unit":
+                intent = new Intent(this,InspectUnitActivity.class);
                 break;
 
             case "Test":

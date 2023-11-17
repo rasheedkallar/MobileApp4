@@ -88,7 +88,7 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
     @Override
     public void AddControls(LinearLayout container) {
 
-        detailed_control = new Control.DetailedControl("",getArgs().getHeader(),null,null) {
+        detailed_control = new Control.DetailedControl(null,getArgs().getHeader()) {
             @Override
             protected ArrayList<Control.ControlBase> getControls(String action) {
 

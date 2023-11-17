@@ -50,6 +50,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import cz.msebera.android.httpclient.Header;
+import kotlin.jvm.functions.Function2;
 
 
 public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
@@ -85,13 +86,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
     public void doOk() {
 
         PopupFormArgs args = this.getArgs();
-        //String entityName = args.getEntityName();
-        //if(entityName == null){
-        //    entityName = getRootActivity().getLocalClassName();
-        //    if(entityName.endsWith("Activity"))entityName = entityName.substring(0,entityName.length() - 8);
-        //}
-
-
         if(!validate()){
             getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
         }
@@ -124,9 +118,15 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
     }
 
 
-    //protected String getUrl(){
-    //    return "EntityApi/SaveEntity?entity=" + getArgs().getEntityName() ;
-    //}
+    public Function<Long,Boolean> SaveListener;
+    public PopupForm setSaveListener(Function<Long,Boolean> saveListener) {
+        SaveListener = saveListener;
+        return this;
+    }
+    public Function<Long,Boolean> getSaveListener() {
+        return SaveListener;
+    }
+
     protected void doAfterSaved(Long id){
 
         Long detailedCount = getArgs().getControls().stream().filter(i-> Control.DetailedControlBase.class.isAssignableFrom(i.getClass())).count();
@@ -180,24 +180,12 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             }
         }
         getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        if(getSaveListener() != null){
+            returnVal = getSaveListener().apply(id);
+        }
         if(returnVal)super.doOk();
     }
 
-    /*
-
-    public RequestParams getPostRequestParams(){
-        RequestParams params = new RequestParams();
-        PopupFormArgs args = this.getArgs();
-        if(args.getValue() != null && args.getIdName() != null && args.getIdName().length() != 0){
-            params.put(args.getIdName(),args.getValue());
-        }
-        for (Control.ControlBase control : getArgs().getControls()) {
-            control.updateSaveParameters(params);
-        }
-        return params;
-    }
-
-    */
     @Override
     public void AddControls(LinearLayout container) {
 
@@ -212,8 +200,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         FieldsContainer.setLayoutParams(fblP);
         FieldsContainer.setFlexWrap(FlexWrap.WRAP);
         sv.addView(FieldsContainer);
-
-
 
         EditText txt = new EditText(getContext());
         TableLayout.LayoutParams txtP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -261,7 +247,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
 
 
     public static class  PopupFormArgs extends PopupArgs<PopupFormArgs> {
-        public PopupFormArgs( String header,List<Control.ControlBase> controls,String path,Long value){
+        public PopupFormArgs( String header,ArrayList<Control.ControlBase> controls,String path,Long value){
             super(header);
             setCanceledOnTouchOutside(false);
             setCancelOnDestroyView(false);
@@ -291,8 +277,8 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             return  this;
         }
 
-        private List<Control.ControlBase> Controls;
-        public List<Control.ControlBase> getControls() {
+        private ArrayList<Control.ControlBase> Controls;
+        public ArrayList<Control.ControlBase> getControls() {
             return Controls;
         }
 
@@ -325,7 +311,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             return this;
         }
 
-        public PopupFormArgs setControls(List<Control.ControlBase> controls) {
+        public PopupFormArgs setControls(ArrayList<Control.ControlBase> controls) {
             Controls = controls;
             return this;
         }

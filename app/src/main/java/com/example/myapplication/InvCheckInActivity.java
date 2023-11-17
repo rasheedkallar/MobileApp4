@@ -15,6 +15,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupBase;
@@ -47,101 +48,6 @@ public  class InvCheckInActivity extends BaseActivity {
         Controls.add(new InvCheckInDetailedControl());
     }
 
-    public  static  class PopupItemBarcode extends PopupBase<PopupItemBarcode, PopupItemBarcode.PopupItemBarcodeArgs>
-    {
-
-        @Override
-        public void AddControls(LinearLayout container) {
-            Long invCheckInLineId = getArgs().getInvCheckInLineId();
-            String s ="it0 => new{it0.Id,it0.Description,it0.InvItemUnits.OrderBy(Fraction).Select(it1 => new {it1.Id,it1.ItemNumber.ToString() + \" \" + it1.Code + \" \" + it1.Fraction.ToString() as Unit,it1.InvItemBarcodes.OrderByDescending(Id).Select(it2 => new{it2.Id,it2.Code}) as InvItemBarcodes}) as InvItemUnits}";
-            new DataService().postForSelect("InvCheckInLines[" + invCheckInLineId + "].InvItemUnit.InvItem", s, jsonObject -> {
-                try{
-                    Title.setText(jsonObject.getString("Description"));
-                    JSONArray units = (JSONArray)jsonObject.get("InvItemUnits");
-                    for (int i = 0; i < units.length(); i++) {
-                        JSONObject unit = (JSONObject)units.get(i);
-                        BarcodeDetailedControl dc = new BarcodeDetailedControl("InvItemUnits[" + unit.get("Id") + "].InvItemBarcodes" ,unit.getString("Unit"));
-                        dc.readValueJSONObject(unit,"InvItemBarcodes");
-                        dc.addView(container);
-                    }
-                }catch (JSONException e){
-                }
-                return null;
-            }, getContext());
-        }
-        public static class BarcodeDetailedControl extends  Control.DetailedControl{
-            public BarcodeDetailedControl(String name, String caption) {
-                super(name, caption, null, null);
-                //setControlSize(Control.CONTROL_SIZE_SINGLE);
-                getButtons().remove(getButton(Control.ACTION_REFRESH));
-                getButtons().remove(getButton(Control.ACTION_EDIT));
-            }
-            @Override
-            protected ArrayList<Control.ControlBase> getControls(String action) {
-                ArrayList<Control.ControlBase> barcodeControls = new ArrayList<Control.ControlBase>();
-                if(action == Control.ACTION_REFRESH) {
-                   barcodeControls.add(Control.getEditTextControl("Code", "Barcode"));
-                }
-                return barcodeControls;
-            }
-
-            private void AddBarcode(String barcode){
-                JSONObject json = new JSONObject();
-                try{
-                    json.put("Code",barcode.trim());
-                }
-                catch (Exception e){
-                }
-                new DataService().postForSave(getFullPathNew(), json, aLong -> {
-                    readValueObject(aLong);
-                    refreshGrid(Table);
-                    return null;
-                }, s -> {
-                    PopupHtml.create("Error",s).show(getRootActivity().getSupportFragmentManager(),null);
-                    return null;
-                });
-            }
-
-            @Override
-            public void onButtonClick(Control.ActionButton action) {
-                if(action.getName().equals(Control.ACTION_ADD)){
-                    PopupInput pi =  PopupInput.create("Barcode", s -> {
-                        AddBarcode(s);
-                        return true;
-                    });
-                    pi.setInputListener((integer, s) -> {
-                        if(integer == 10){
-                            AddBarcode(s);
-                           return true;
-                        }
-                        else{
-                            return false;
-                        }
-                    });
-                    pi.show(getRootActivity().getSupportFragmentManager(),null);
-                }
-                else {
-                    super.onButtonClick(action);
-                }
-            }
-        }
-        public static class  PopupItemBarcodeArgs extends PopupArgs<PopupItemBarcodeArgs> {
-            public PopupItemBarcodeArgs(String header,Long invCheckInLineId){
-                super(header);
-                setCancelButton("Close");
-                setOkButton(null);
-                setInvCheckInLineId(invCheckInLineId);
-            }
-            private Long InvCheckInLineId;
-            public Long getInvCheckInLineId() {
-                return InvCheckInLineId;
-            }
-
-            public void setInvCheckInLineId(Long invCheckInLineId) {
-                InvCheckInLineId = invCheckInLineId;
-            }
-        }
-    }
 
 
 
@@ -184,6 +90,7 @@ public  class InvCheckInActivity extends BaseActivity {
                                     }
                                     catch (JSONException e)
                                     {
+                                        System.out.println(e.getMessage());
                                         Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
                                     }
 
@@ -228,36 +135,20 @@ public  class InvCheckInActivity extends BaseActivity {
         @Override
         protected void onButtonClick(Control.ActionButton button) {
             if(button.getName() == Control.ACTION_ADD){
-                ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-                if(itemLookup == null){
-                    controls.add(Control.getEditTextControl("InvItem.Description","Description").setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS).setControlSize(Control.CONTROL_SIZE_DOUBLE));
-                }
-                else{
-                    controls.add(Control.getLookupForeignControl("InvItem","Item","InvItemUnit","Description").setValue(itemLookup));
-
-                    controls.get(0).getButtons().clear();
-                }
-                controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS).setValue(itemLookup == null? "PCS" : null));
-                controls.add(Control.getEditDecimalControl("Fraction","Fraction").setDecimalPlaces(3).setValue(itemLookup == null? 1.0 : null));
-                controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setIsRequired(false));
-                if(itemLookup == null) {
-                    controls.add(Control.getLookupForeignControl("InvItem.InvItemGroup", "Item Group", "InvItemUnit", "Code").setEnabled(false));
-                    controls.add(Control.getHiddenControl("InvItem.ItemTaxId", 1));
-                }
-                itemLookup = null;
-                addNewRecord(getFullPath(),controls,getFullPath());
-
+                ArrayList<Control.ControlBase> controls = new Item.PopupItemForm("",getFullPath()).getArgs().getControls();
+                addNewRecord(getFullPath(),controls, getFullPath());
             }
             else if(button.getName() == Control.ACTION_ADD_SUB){
-
                 new DataService().postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
-                    itemLookup  = lookup;
-                    onButtonClick(getButton(Control.ACTION_ADD));
+                    ArrayList<Control.ControlBase> controls = new ArrayList<>();
+                    controls.add(0,Control.getLookupForeignControl("InvItem","Item","Description").setValue(lookup));
+                    controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
+                    controls.add(Control.getEditDecimalControl("Fraction","Fraction").setDecimalPlaces(3));
+                    controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setIsRequired(false));
+                    controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
+                    addNewRecord(getFullPath(),controls, getFullPath());
                     return null;
                 }, getRootActivity());
-
-
-
             }
             else if(button.getName() == Control.ACTION_INBOX){
                 new DataService().postForList(DataService.Lookup.class,
@@ -294,7 +185,7 @@ public  class InvCheckInActivity extends BaseActivity {
     }
     public static class InvCheckInLineDetailedControl extends Control.DetailedControl {
         public InvCheckInLineDetailedControl() {
-            super("InvCheckInLines", "Items","InvCheckInLine","CheckInId");
+            super("InvCheckInLines", "Items");
             getButtons().add(0,new Control.ActionButton(Control.ACTION_SEARCH));
             getButtons().add(3,new Control.ActionButton(Control.ACTION_BARCODE).setEnabled(false));
             getButtons().remove(getButton(Control.ACTION_REFRESH));
@@ -304,7 +195,7 @@ public  class InvCheckInActivity extends BaseActivity {
             super.selectRow(row, header, tableLayout);
             getActionButton(Control.ACTION_BARCODE).setEnabled(true);
         }
-        public DataService.Lookup AddLookup;
+
         public String AddDescription;
         public String AddBarcode;
 
@@ -312,7 +203,7 @@ public  class InvCheckInActivity extends BaseActivity {
         @Override
         public void onButtonClick(Control.ActionButton action) {
             BaseActivity activity = (BaseActivity)action.getButton().getContext();
-            AddLookup = null;
+
             AddDescription = null;
             AddBarcode  = null;
             clickAdd = true;
@@ -321,8 +212,8 @@ public  class InvCheckInActivity extends BaseActivity {
                 super.onButtonClick(getButton(Control.ACTION_ADD));
             }
             else if(action.getName() == Control.ACTION_BARCODE){
-                PopupItemBarcode pib = new PopupItemBarcode();
-                pib.setArgs(new PopupItemBarcode.PopupItemBarcodeArgs("Barcode",getValue()).setEnableScroll(true));
+                Item.PopupItemBarcode pib = new Item.PopupItemBarcode();
+                pib.setArgs(new Item.PopupItemBarcode.PopupItemBarcodeArgs("Barcode", "InvCheckInLines[" + getValue() + "].InvItemUnit.InvItem"    ).setEnableScroll(true));
                 pib.show(((BaseActivity)action.getButton().getContext()).getSupportFragmentManager(),null);
             }
 
@@ -339,7 +230,7 @@ public  class InvCheckInActivity extends BaseActivity {
             if(action == Control.ACTION_ADD || action == Control.ACTION_EDIT || action == Control.ACTION_REFRESH){
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                 if(action != Control.ACTION_REFRESH) {
-                    controls.add(new ItemSearchControl().setValue(AddLookup).setPopupIndex(clickAdd?-1:0));
+                    controls.add(new ItemSearchControl().setPopupIndex(clickAdd?-1:0));
                     controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(false).setValue(AddDescription));
                 }
                 controls.add(Control.getEditDecimalControl("Qty","Qty").setDecimalPlaces(3));
@@ -369,7 +260,7 @@ public  class InvCheckInActivity extends BaseActivity {
     }
     public static class InvCheckInDetailedControl extends Control.DetailedControl {
         public InvCheckInDetailedControl() {
-            super("InvCheckIns", "Stock Receive","InvCheckIn",null);
+            super("InvCheckIns", "Stock Receive");
             setEnableScroll(true);
             getButtons().add(new Control.ActionButton(Control.ACTION_STATUS).setEnabled(false));
             getButtons().remove(getActionButton(Control.ACTION_DELETE));
@@ -401,7 +292,7 @@ public  class InvCheckInActivity extends BaseActivity {
                     }
                 }
                 catch (JSONException e){
-
+                    System.out.println(e.getMessage());
                 }
                 tv.setBackgroundColor(colour);
             }
@@ -438,6 +329,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 JSONObject obj = (JSONObject)row.getTag();
                 SelectedStatus = obj.get("Status").toString();
             }catch (JSONException e){
+                System.out.println(e.getMessage());
                 SelectedStatus = null;
             }
         }
@@ -456,7 +348,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getDateTimeControl("CheckInTime","Date").setColumnWidth(225));
                 controls.add(Control.getEditTextControl("RefNum","Ref#").setColumnWidth(200));
                 controls.add(Control.getEditTextControl("BusEmployee.Code","Em").setColumnWidth(125));
-                controls.add(Control.getLookupForeignControl("BusSupplier","Supplier","InvCheckIn","Name").setColumnWidth(500));
+                controls.add(Control.getLookupForeignControl("BusSupplier","Supplier","Name").setColumnWidth(500));
                 controls.add(Control.getHiddenControl( "Status", null));
                 return controls;
             }
@@ -466,8 +358,8 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(action.equals(Control.ACTION_ADD)){
                     controls.add(Control.getHiddenControl( "Status", "Draft"));
                  }
-                controls.add(Control.getLookupForeignControl( "BusSupplier", "Supplier","InvCheckIn","Name"));
-                controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","InvCheckIn","ShortName"));
+                controls.add(Control.getLookupForeignControl( "BusSupplier", "Supplier","Name"));
+                controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","ShortName"));
                 controls.add(new InvCheckInLineDetailedControl());
                 controls.add(Control.getImageControl( "Images", "Invoice Images","InvCheckIn").setIsRequired(false));
                 return controls;

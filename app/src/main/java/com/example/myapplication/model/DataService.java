@@ -54,7 +54,7 @@ public class DataService {
     //private static String serverIp = "10.207.176.91"; //office
 
     //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
-    private static String serverIp = "10.207.176.91"; //office CORP
+    //private static String serverIp = "10.207.176.91"; //office CORP
     //private static String serverIp = "10.205.50.22"; //office ADT HUB
 
 
@@ -63,7 +63,7 @@ public class DataService {
 
     //private static String serverIp = "abunaser01/"; //shop
 
-    //private static String serverIp = "192.168.0.126"; //home
+    private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homeWifi
     //192.168.0.126
     private static String  serverPort = "80";
@@ -255,9 +255,11 @@ public class DataService {
     public  void get(String url, AsyncHttpResponseHandler response){
 
         String finalUrl= getRootUrl() + url;  //office
-        AsyncHttpClient hc = new AsyncHttpClient();
+        AsyncHttpClient ahc = new AsyncHttpClient();
 
-        hc.get(finalUrl, response);
+        ahc.setResponseTimeout(50000);
+
+        ahc.get(finalUrl, response);
     }
 
 
@@ -299,7 +301,7 @@ public class DataService {
 
         AsyncHttpClient  cl = new AsyncHttpClient();
         //cl.setTimeout(10000);
-        cl.setResponseTimeout(10000);
+        cl.setResponseTimeout(50000);
         //cl.setConnectTimeout(10000);
         cl.post(finalUrl, params, new AsyncHttpResponseHandler() {
             @Override
@@ -327,7 +329,10 @@ public class DataService {
         System.out.println(url);
         System.out.println(params);
         String finalUrl= getRootUrl() + url;  //office
-        new AsyncHttpClient().post(finalUrl, params, new AsyncHttpResponseHandler() {
+
+        AsyncHttpClient ahc  = new AsyncHttpClient();
+        ahc.setResponseTimeout(50000);
+        ahc.post(finalUrl, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);

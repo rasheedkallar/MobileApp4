@@ -118,8 +118,8 @@ public class Control {
         return new LookupListControl(name,caption,displayField,lookups);
     }
 
-    public static LookupForeignControl getLookupForeignControl( String name, String caption,String entityName ,String displayField){
-        return new LookupForeignControl(name,caption,entityName,displayField);
+    public static LookupForeignControl getLookupForeignControl( String name, String caption,String displayField){
+        return new LookupForeignControl(name,caption,displayField);
     }
 
 
@@ -157,7 +157,7 @@ public class Control {
     //}
 
     public static abstract class DetailedControl extends DetailedControlBase<DetailedControl> {
-        public DetailedControl(String name,String caption,String entityName,String foreignFieldName) {
+        public DetailedControl(String name,String caption) {
             super(name, caption);
             ArrayList<ActionButton> buttons = new ArrayList<ActionButton>();
             buttons.add(new ActionButton(Control.ACTION_ADD));
@@ -219,7 +219,7 @@ public class Control {
                 }
             }
 
-            if(getPath() == null && GridData == null)
+            if(getPath() == null && getName() != null && getName().length() != 0 && GridData == null)
                 refreshGrid(Table);
             else if(GridData != null)refreshDetailedView(GridData);
         }
@@ -232,6 +232,7 @@ public class Control {
 
             }
             catch (JSONException e){
+                System.out.println(e.getMessage());
                 setValue(null);
             }
             selectRow(row,header_row,Table);
@@ -390,6 +391,12 @@ public class Control {
                     addHeaderRow(Table, controls);
                     boolean selectionFound = false;
                     final TableLayout parentTable = Table;
+
+                    ArrayList<ControlBase> Aggr = getControls(ACTION_REFRESH);
+                    ArrayList<ControlBase> AggrCal = new ArrayList<>();
+
+
+
                     for (int i = 0; i < data.length(); i++) {
                         JSONObject obj = (JSONObject) data.get(i);
                         getValues().add(Long.parseLong(obj.get(getIdFieldName()).toString()));
@@ -398,16 +405,9 @@ public class Control {
                         Table.addView(item);
                         TableRow.LayoutParams itemP = new TableRow.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                         itemP.setMargins(0, 0, 0, 5);
-                        //itemP.setMargins(5,5,5,5);
-                        //item.setWeightSum(controls.size());
                         item.setLayoutParams(itemP);
-                        //item.setPadding(5, 5, 5, 5);
                         item.setTag(obj);
                         if (i % 2 == 0) item.setBackgroundColor(Color.parseColor("#9FDBD6"));
-
-                        //04DBC7
-
-
                         item.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -428,6 +428,7 @@ public class Control {
                                 selectionFound = true;
 
                             } catch (Exception e) {
+                                System.out.println(e.getMessage());
                                 setValue(null);
                                 selectionFound = false;
                             }
@@ -447,6 +448,7 @@ public class Control {
                     }
 
                 } catch (JSONException e) {
+                    System.out.println(e.getMessage());
                     Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
@@ -512,13 +514,13 @@ public class Control {
                 ArrayList<LookupControlBase> popupInputs = (ArrayList<LookupControlBase>)EditControls.stream()
                     .filter(o -> o instanceof LookupControlBase)
                     .map(o -> (LookupControlBase)o)
-                    .filter(o -> o.getPopupIndex() >= 0)
+                    .filter(o -> o.getPopupIndex() >= 0 && o.getValue() == null)
                     .sorted(Comparator.comparing(s -> s.getPopupIndex()))
                     .collect(Collectors.toList());
                 ShowAdd(popupInputs,EditControls);
             }
             else if(action.getName().equals(Control.ACTION_EDIT)){
-                RequestParams rp = new RequestParams();
+
                 new DataService().postForSelect(getFullPath(),getSelect(ACTION_EDIT), jsonObject -> {
                     //System.out.println(jsonObject.toString());
                     EditControls = getControls(action.getName());
@@ -568,7 +570,7 @@ public class Control {
     public static class ImageControl extends DetailedControlBase<ImageControl> {
         public ImageControl(String name, String caption,String entityName){
             super(name, caption);
-
+            setEntityName(entityName);
             ArrayList<ActionButton> buttons = new ArrayList<ActionButton>();
             buttons.add(new ActionButton(Control.ACTION_CAMERA));
             buttons.add(new ActionButton(Control.ACTION_GALLERY));
@@ -771,6 +773,9 @@ public class Control {
 
         @Override
         public String getFullPath(){
+
+            if(getName().equals("."))return getPath();
+
             String path;
 
             if(getPath() == null || getPath().length() == 0)path = "";
@@ -784,8 +789,10 @@ public class Control {
         }
 
         public String getFullPathNew(){
-            if(getPath() == null || getPath().length() == 0)return getName() + "[]";
-            else return   getPath() + "." + getName() + "[]";
+            String path = getFullPath();
+            if(path.endsWith("[]"))return path;
+            else if(path.endsWith("]"))return path.substring(0,path.lastIndexOf("[")) + "[]";
+            else return path + "[]";
         }
 
         @Override
@@ -941,6 +948,7 @@ public class Control {
                     }
                     setValues(a);
                 } catch (Exception e) {
+                    System.out.println(e.getMessage());
                     setValues(new ArrayList<>());
                 }
                 refreshDetailedView((JSONArray)value);
@@ -1130,6 +1138,7 @@ public class Control {
                             return date;
                         }
                         catch (ParseException e){
+                            System.out.println(e.getMessage());
                         }
                         break;
                     }
@@ -1149,6 +1158,7 @@ public class Control {
                 else return false;
             }
             catch (Exception e){
+                System.out.println(e.getMessage());
                 return false;
             }
         }
@@ -1289,7 +1299,7 @@ public class Control {
 
 
     public static class LookupForeignControl extends LookupForeignControlBase<LookupForeignControl> {
-        public LookupForeignControl(String name, String caption,String entityName ,String displayField) {
+        public LookupForeignControl(String name, String caption,String displayField) {
             super(name, caption, displayField);
 
         }
@@ -1332,10 +1342,6 @@ public class Control {
             if(getFormula() != null && getFormula().length() != 0){
                 select = "it0 => new {it0.Id, it0." + getFormula().replace("{0}." + getName(),"it0") + " as Name}";
             }
-            //String path =  getName() + "[]";
-            //if(getPath() != null && getPath().length() != 0) path = getPath() + "." + path;
-
-
             new DataService().postForList(DataService.Lookup.class, getFullPath(), select, getWhere(), orderBy, lookups -> {
                 PopupLookup.create(getCaption(),lookups,getValue() == null? null : getValue().getId(),(lookup)->{
                     setValue(lookup);
@@ -1370,15 +1376,20 @@ public class Control {
         @Override
         public T readValueObject(Object value) {
             if(value != null  && Long.class.isAssignableFrom(value.getClass())) {
-                //RequestParams rp = new RequestParams();
                 String json ="new {Id," + getDisplayField() + " as Name}";
-                if(getFormula() != null && getFormula().length() != 0)
-                    json = "it0 => new {it0.Id," + getFormula().replace("{0}." + getName(),"it0") + " as Name}";
-                //rp.add("Select",json);
-                //rp.add("Field",getName());
-
-                new DataService().postForSelect(DataService.Lookup.class,getFullPath() + "[" + value + "]",json, lookup -> {
+                if(getFormula() != null && getFormula().length() != 0) {
+                    if(getName().equals("."))
+                        json = "it0 => new {it0.Id," + getFormula().replace("{0}", "it0") + " as Name}";
+                    else
+                    json = "it0 => new {it0.Id," + getFormula().replace("{0}." + getName(), "it0") + " as Name}";
+                }
+                String path = getFullPath() + "[" + value + "]";
+                if(getName().equals("."))path = getPath();
+                new DataService().postForSelect(DataService.Lookup.class,path,json, lookup -> {
                     setValue(lookup);
+                    if(txtValue != null){
+                        txtValue.setText(lookup.getName());
+                    }
                     return null;
                 }, getRootActivity());
             }
@@ -1475,6 +1486,35 @@ public class Control {
                     .collect(Collectors.toList());
             ShowAdd(popupInputs,controls,path,actionPath);
         }
+
+        protected String getSelect(ArrayList<ControlBase> controls){
+            FieldList fields = new FieldList(0);
+            fields.Fields.put("Id","it0.Id");
+            for (com.example.myapplication.model.Control.ControlBase control : controls) {
+                control.addForSelectQuery(fields);
+            }
+            return "it0 => " + fields.getSelectString();
+        }
+
+        public void editRecord(String path,ArrayList<ControlBase> controls,String actionPath){
+            new DataService().postForSelect(path,getSelect(controls), jsonObject -> {
+                try {
+                    for (int i = 0; i < controls.size(); i++) {
+                        controls.get(i).setPath(path);
+                        if(DetailedControlBase.class.isAssignableFrom(controls.get(i).getClass())){
+                            DetailedControlBase ctrl = (DetailedControlBase)controls.get(i);
+                            ctrl.setParentId(jsonObject.getLong("Id"));
+                        }
+                        controls.get(i).readValueJSONObject(jsonObject,controls.get(i).getName());
+                    }
+                    new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",controls,path,jsonObject.getLong("Id")).setActionPath(actionPath))
+                            .show( getRootActivity().getSupportFragmentManager(),null);
+                } catch (JSONException e) {
+
+                }
+               return null;
+            }, getRootActivity());
+        }
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls,String path,String actionPath){
 
             if(popupInputs == null || popupInputs.size() == 0){
@@ -1560,6 +1600,7 @@ public class Control {
                         return new DataService.Lookup(Long.parseLong(vjo.get("Id").toString()),display);
                     }
                 }catch (JSONException e){
+                    System.out.println(e.getMessage());
 
                 }
             }
@@ -1714,6 +1755,7 @@ public class Control {
                 Double.parseDouble(value);
                 return true;
             }catch (Exception e){
+                System.out.println(e.getMessage());
                 return false;
             }
         }
@@ -1761,6 +1803,7 @@ public class Control {
                 Integer.parseInt(value);
                 return true;
             }catch (Exception e){
+                System.out.println(e.getMessage());
                 return false;
             }
         }
@@ -1856,11 +1899,11 @@ public class Control {
             super( name, caption);
         }
         private boolean InEditMode = false;
-        protected transient  TextView EditTextInput;
-        public TextView getEditTextInput() {
+        protected transient  EditText EditTextInput;
+        public EditText getEditTextInput() {
             return EditTextInput;
         }
-        public T setEditTextInput(TextView editTextInput) {
+        public T setEditTextInput(EditText editTextInput) {
             EditTextInput = editTextInput;
             return (T)this;
         }
@@ -2232,6 +2275,15 @@ public class Control {
         }
 
 
+        private String Aggregate = null;
+        public String getAggregate(){
+            return  Aggregate;
+        }
+        public T setAggregate(String caption) {
+            Aggregate = caption;
+            return (T)this;
+        }
+
 
 
         private String Caption = null;
@@ -2495,6 +2547,7 @@ public class Control {
                 }
             }
             catch (JSONException e){
+                System.out.println(e.getMessage());
 
             }
 
@@ -2515,6 +2568,7 @@ public class Control {
                 }
             }
             catch (JSONException e){
+                System.out.println(e.getMessage());
 
             }
 

@@ -14,17 +14,18 @@
         android:title="Stock Receive"
         app:showAsAction="never" />
 
-
     <item
-        android:id="@+id/mnu_test"
-        android:title="Test"
+        android:id="@+id/Inspect_Unit"
+        android:title="Inspect Unit"
         app:showAsAction="never" />
-
     <item
         android:id="@+id/mnu_settings"
         android:title="Settings"
         app:showAsAction="never" />
 
-
+    <item
+        android:id="@+id/mnu_test"
+        android:title="Test"
+        app:showAsAction="never" />
 
 </menu>

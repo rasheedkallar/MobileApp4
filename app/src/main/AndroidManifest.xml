@@ -44,6 +44,12 @@
             android:exported="false" />
 
         <activity
+            android:name=".InspectUnitActivity"
+            android:exported="false" />
+
+
+
+        <activity
 
             android:name=".TestActivity"
             android:exported="false" />

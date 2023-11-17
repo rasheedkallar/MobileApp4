@@ -48,7 +48,7 @@ public class TestActivity extends BaseActivity {
     }
     public static class InvCheckInDetailedControl extends Control.DetailedControl {
         public InvCheckInDetailedControl() {
-            super("InvCheckIns", "Stock Receive","InvCheckIn",null);
+            super("InvCheckIns", "Stock Receive");
         }
 
 

@@ -61,6 +61,7 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
 
         }
         catch (ClassCastException e) {
+            System.out.println(e.getMessage());
             Log.d("MyDialog", "Popup allowed only under BaseActivity");
         }
     }
