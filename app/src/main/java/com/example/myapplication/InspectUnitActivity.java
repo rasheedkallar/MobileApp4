@@ -19,8 +19,10 @@ import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupForm;
+import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupInput;
 import com.example.myapplication.model.PopupSearch;
+import com.loopj.android.http.RequestParams;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,6 +46,7 @@ public class InspectUnitActivity extends BaseActivity {
     {
         public PopupItemNewForm() {
             super("New Item","InvItemUnits[]");
+
             getArgs().getControls().add(new Item.BarcodeDetailedControl("InvItemBarcodes","Barcode").setIsRequired(false));
         }
 
@@ -51,13 +54,57 @@ public class InspectUnitActivity extends BaseActivity {
         protected void doAfterSaved(Long id) {
             super.doAfterSaved(id);
             new DataService().postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(Id=" + id + ").Select(InvItem).FirstOrDefault()", null, array -> {
-                ((InspectUnitActivity)getRootActivity()).SearchItem(array,id);
+                try {
+                    ((InspectUnitActivity)getRootActivity()).SearchItem(array.getJSONObject(0),id);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
                 ((InspectUnitActivity)getRootActivity()).SearchControl.setValue(null);
                 return null;
             }, getRootActivity());
         }
     }
+    public static class PopupItemStockForm extends PopupForm
+    {
+        public PopupItemStockForm(String header,Long itemUnitId,Double stock,Function<Double,Boolean> callBack) {
+            ArrayList<Control.ControlBase> controls = new ArrayList<>();
+            controls.add(new Control.EditDecimalControl("CurrentStock","Current Stock").setDecimalPlaces(3).setEnabled(false).setValue(stock).setControlSize(LinearLayout.LayoutParams.MATCH_PARENT));
+            controls.add(new Control.EditDecimalControl("NewStock","New Stock").setDecimalPlaces(3).setControlSize(LinearLayout.LayoutParams.MATCH_PARENT));
+            PopupForm.PopupFormArgs ara = new PopupFormArgs(header,controls,"InvItemUnits[]",0L);
+            ara.setCanceledOnTouchOutside(true);
+            ara.setCancelOnDestroyView(true);
+            setArgs(ara);
+            CallBack = callBack;
+            ItemUnitId = itemUnitId;
+        }
+        private Function<Double,Boolean> CallBack;
+        private Long ItemUnitId;
+        @Override
+        public void doOk() {
 
+            if(!validate()){
+                getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+            }
+            else {
+
+                JSONObject obj = new JSONObject();
+                try {
+                    obj.put("itemUnitId",ItemUnitId);
+                    obj.put("stock",getArgs().getControls().get(1).getValue());
+                    obj.put("user","mobile");
+                    new DataService().postForExecute(Integer.class, "sp_UpdateStock", obj, new Function<Integer, Void>() {
+                        @Override
+                        public Void apply(Integer integer) {
+                            if(CallBack.apply((Double)getArgs().getControls().get(0).getValue()))dismiss();
+                            return null;
+                        }
+                    }, getRootActivity());
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
 
 
 
@@ -65,11 +112,11 @@ public class InspectUnitActivity extends BaseActivity {
 
 
 
-    private void  SearchItem(JSONArray data,Long selectId)  {
+    private void  SearchItem(JSONObject obj,Long selectId)  {
         RootLayout.removeAllViews();
-        if(data.length() != 0){
+
             try {
-                JSONObject obj = (JSONObject)data.get(0);
+
                 Long id = obj.getLong("Id");
 
                 DataService.Lookup item = new DataService.Lookup(id,obj.getString("Description"));
@@ -88,6 +135,24 @@ public class InspectUnitActivity extends BaseActivity {
                 ItemControl.addView(RootLayout);
                 Controls.clear();
                 Item.InvItemUnitDetails dc = new Item.InvItemUnitDetails(ItemControl.getValue());
+                dc.addButton(Control.ACTION_STOCK, view -> {
+                    JSONObject data1 = (JSONObject)dc.getSelectedRow().getTag();
+                    try {
+                         new PopupItemStockForm(data1.getString("Description"),dc.getValue(),data1.getDouble("Stock"), new Function<Double, Boolean>() {
+                            @Override
+                            public Boolean apply(Double aDouble) {
+                                dc.refreshGrid();
+                                return true;
+                            }
+                        }).show(getSupportFragmentManager(),null);
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
+
+
+                    return null;
+                });
+
                 dc.setPath("InvItems[" + id + "]");
                 dc.setValue(selectId);
                 Controls.add(dc);
@@ -97,7 +162,7 @@ public class InspectUnitActivity extends BaseActivity {
             } catch (JSONException e) {
                 throw new RuntimeException(e);
             }
-        }
+
     }
 
 
@@ -128,9 +193,17 @@ public class InspectUnitActivity extends BaseActivity {
         SearchControl.addButton(Control.ACTION_SEARCH, view -> {
 
             ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
-            searchControls.add(Control.getEditTextControl("Unit","Unit").setColumnWidth(100));
-            searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3).setColumnWidth(200));
-            searchControls.add(Control.getEditTextControl("Description","Description"));
+            //searchControls.add(Control.getEditTextControl("Unit","Unit").setColumnWidth(100));
+            //searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3).setColumnWidth(200));
+            //searchControls.add(Control.getEditTextControl("Description","Description"));
+
+            searchControls.add(Control.getEditTextControl("Unit","Unit").setColumnWeight(3));
+            searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3).setColumnWeight(4));
+            searchControls.add(Control.getEditTextControl("Description","Description").setColumnWeight(12));
+
+
+
+
             PopupSearch Popup = PopupSearch.create("Item Search", searchControls, "Description");
 
             Popup.setListener(new PopupSearch.PopupSearchListener() {
@@ -139,7 +212,11 @@ public class InspectUnitActivity extends BaseActivity {
 
                     if(lookup != null){
                         new DataService().postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(it1=> it1.Id = " + lookup.getId() + ").Select(it1=> it1.InvItem).FirstOrDefault()", null, array -> {
-                            SearchItem(array,lookup.getId());
+                            try {
+                                SearchItem(array.getJSONObject(0),lookup.getId());
+                            } catch (JSONException e) {
+                                throw new RuntimeException(e);
+                            }
                             SearchControl.setValue(null);
                             return null;
                         }, getBaseContext());
@@ -192,11 +269,69 @@ public class InspectUnitActivity extends BaseActivity {
                 if(s.length() >= start + after && start + after >1) {
                     int ascii = (int) s.charAt(start + after -1);
                     if(ascii == 10){
+
                         String barcode = null;
                         if(SearchControl.getEditTextInput().getText() != null)barcode = SearchControl.getEditTextInput().getText().toString().trim();
                         SearchControl.getEditTextInput().setText(barcode);
                         SearchControl.getEditTextInput().selectAll();
                         if(barcode.length() != 0) {
+
+                            RequestParams rp = new RequestParams();
+                            rp.add("Barcode",barcode);
+                            rp.add("Select",Select);
+                            new DataService().postForObject("InvItem/GetItemByBarcode", rp, jsonObject -> {
+
+
+
+                                Long unitId = null;
+                                try {
+                                    if(jsonObject == null || jsonObject.equals(JSONObject.NULL)){
+                                        RootLayout.removeAllViews();
+                                        return  null;
+                                    }
+                                    else{
+                                        unitId = jsonObject.getLong("UnitId");
+                                        SearchItem(jsonObject,unitId);
+                                        return null;
+                                    }
+
+
+
+                                } catch (JSONException e) {
+                                    throw new RuntimeException(e);
+                                }
+
+
+
+
+
+
+                            }, new Function<String, Void>() {
+                                @Override
+                                public Void apply(String s) {
+                                    return null;
+                                }
+                            });
+
+                            /*
+
+                            new DataService().postForList("InvItems[]", sel, "it0=> it0 = @0.InvItemUnits.Where(it1=> it1.Id = @0.tvf_GetItemUnitIdByBarcode(\"" + barcode + "\")).Select(it1=> it1.InvItem).FirstOrDefault()", null, array -> {
+                                Long unitId = null;
+                                if(array.length() !=0) {
+                                    try {
+                                        unitId = ((JSONObject)array.get(0)).getJSONObject("UnitId").getLong("Id");
+                                    } catch (JSONException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                }
+
+                                SearchItem(array,unitId);
+                                return null;
+                            }, getBaseContext());
+
+                            */
+
+                            /*
 
                             String sel = Select.substring(0,Select.length() -1);
                             sel = sel + ",@0.InvItemBarcodes.Where(it1=> it1.Code = \"" + barcode + "\").Select(it1=> new {InvItemUnit.Id}).FirstOrDefault() as UnitId}";
@@ -214,6 +349,8 @@ public class InspectUnitActivity extends BaseActivity {
                                 SearchItem(array,unitId);
                                 return null;
                             }, getBaseContext());
+
+                             */
                         }
 
                     }

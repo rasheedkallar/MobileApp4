@@ -18,6 +18,18 @@
         android:id="@+id/Inspect_Unit"
         android:title="Inspect Unit"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/AccountReconciliation"
+        android:title="Account Reconciliation"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/SalesPreview"
+        android:title="Sales Preview"
+        app:showAsAction="never" />
+
+
     <item
         android:id="@+id/mnu_settings"
         android:title="Settings"

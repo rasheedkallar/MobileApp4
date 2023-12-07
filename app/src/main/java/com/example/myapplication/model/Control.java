@@ -1,86 +1,51 @@
 package com.example.myapplication.model;
-
-import android.app.Activity;
-import android.app.Notification;
-import android.content.Context;
-import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.shapes.RectShape;
-import android.graphics.drawable.shapes.Shape;
-import android.graphics.text.LineBreakConfig;
-import android.graphics.text.LineBreaker;
-import android.icu.util.Output;
-import android.renderscript.Sampler;
-import android.telephony.CellSignalStrength;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
-import android.text.format.DateUtils;
 import android.text.method.DigitsKeyListener;
-import android.text.method.ReplacementTransformationMethod;
-import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.annotation.ColorInt;
 import androidx.core.content.ContextCompat;
-
 import com.example.myapplication.BaseActivity;
-
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import cz.msebera.android.httpclient.Header;
 import kotlin.jvm.functions.Function2;
 
 public class Control {
@@ -103,9 +68,20 @@ public class Control {
 
     public static String ACTION_PERCENT= "Percent";
 
+    public static String ACTION_STOCK= "Stock";
+    public static String ACTION_CHECKED= "Checked";
+
+
 
     public static int CONTROL_SIZE_DOUBLE = -20;
     public static int CONTROL_SIZE_SINGLE = -10;
+
+    public static String AGGREGATE_SUM = "Sum";
+    public static String AGGREGATE_AVERAGE = "Average";
+    public static String AGGREGATE_COUNT = "Count";
+    public static String AGGREGATE_MAX = "Max";
+    public static String AGGREGATE_MIN = "Min";
+
 
     public static HiddenControl getHiddenControl( String name, Serializable value){
         return new HiddenControl(name,value);
@@ -180,6 +156,15 @@ public class Control {
 
         protected transient TableLayout Table;
 
+        public TableLayout getTable() {
+            return Table;
+        }
+
+        public DetailedControl setTable(TableLayout table) {
+            Table = table;
+            return  this;
+        }
+
         protected transient FlexboxLayout filter_layout;
         protected transient List<ControlBase> FilterControls = null;
         public List<ControlBase> getFilterControls() {
@@ -247,35 +232,53 @@ public class Control {
             SelectedRow = row;
             if(getActionButton(Control.ACTION_EDIT) != null) getActionButton(Control.ACTION_EDIT).setEnabled(true);
             if(getActionButton(Control.ACTION_DELETE) != null)getActionButton(Control.ACTION_DELETE).setEnabled(true);
+
+            int RowIndex = -1;
+
             for (int i = 0; i < tableLayout.getChildCount(); i++) {
+
+
+
                 TableRow otherRow = (TableRow)tableLayout.getChildAt(i);
-                if(row == otherRow){
-                    GradientDrawable orderStyle;
-
-                    if(i % 2 != 0) {
-                        orderStyle = new GradientDrawable(
-                                GradientDrawable.Orientation.TOP_BOTTOM,
-                                new int[]{Color.parseColor("#136861"), Color.parseColor("#9FDBD6"), Color.parseColor("#9FDBD6"), Color.parseColor("#136861")});
 
 
-                    }else{
+                if(otherRow.getTag() != null) {
+                    RowIndex  ++;
 
-                        orderStyle = new GradientDrawable(
-                                GradientDrawable.Orientation.TOP_BOTTOM,
-                                new int[]{Color.GRAY, Color.WHITE, Color.WHITE, Color.GRAY});
+                    if (row == otherRow) {
+                        GradientDrawable orderStyle;
 
+                        if (RowIndex % 2 == 0) {
+                            orderStyle = new GradientDrawable(
+                                    GradientDrawable.Orientation.TOP_BOTTOM,
+                                    new int[]{Color.BLACK, Color.parseColor("#9FDBD6"), Color.parseColor("#9FDBD6"), Color.BLACK});
+
+
+                        } else {
+
+                            orderStyle = new GradientDrawable(
+                                    GradientDrawable.Orientation.TOP_BOTTOM,
+                                    new int[]{Color.BLACK, Color.parseColor("#FDF8CB"), Color.parseColor("#FDF8CB"), Color.BLACK});
+
+                        }
+                        orderStyle.setCornerRadius(0f);
+                        otherRow.setBackground(orderStyle);
+                        //item
                     }
-                    orderStyle.setCornerRadius(0f);
-                    otherRow.setBackground(orderStyle);
+                    else
+                    {
+                        otherRow.setBackground(null);
 
-                }
-                else if(header != otherRow){
-                    if(i % 2 != 0)otherRow.setBackgroundColor(Color.parseColor("#9FDBD6"));
-                    else otherRow.setBackground(null);
+                        if (RowIndex % 2 == 0)
+                            otherRow.setBackgroundColor(Color.parseColor("#9FDBD6"));
+                        else
+                            otherRow.setBackgroundColor(Color.parseColor("#FDF8CB"));
+                    }
                 }
             }
         }
         private transient TableRow header_row;
+
         private void addHeaderRow(TableLayout table,ArrayList<ControlBase> controls){
             header_row = new TableRow(table.getContext());
 
@@ -284,6 +287,7 @@ public class Control {
             table.addView(header_row);
             TableLayout.LayoutParams headerP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             header_row.setLayoutParams(headerP);
+            //header_row.setTag(null);
             //header_row.setBackgroundColor(Color.parseColor("#008477"));
             //header_row.setPadding(5, 5, 5, 5);
             for (com.example.myapplication.model.Control.ControlBase control : controls) {
@@ -376,6 +380,60 @@ public class Control {
         private transient JSONArray GridData = null;
 
 
+        public static class AggregateValue{
+            public AggregateValue(String aggregate){
+                Aggregate = aggregate;
+            }
+            private  Double NumberValue = null;
+            private Integer Count = 0;
+            //private Object Obj = null;
+            private String Aggregate = Control.AGGREGATE_SUM;
+            public void putValue(Object value){
+                if(value != null){
+                    try{
+                        Class clazz = value.getClass();
+                        if (Aggregate.equals(Control.AGGREGATE_SUM) || Aggregate.equals(Control.AGGREGATE_AVERAGE) &&  Number.class.isAssignableFrom(clazz)) {
+                            if(NumberValue == null)NumberValue = 0D;
+                            NumberValue = NumberValue + Double.parseDouble(value.toString());
+                        }
+                        else if(Aggregate.equals(Control.AGGREGATE_MIN)){
+                            if(Number.class.isAssignableFrom(clazz) && (NumberValue == null || NumberValue > Double.parseDouble(value.toString()))){
+                                NumberValue = Double.parseDouble(value.toString());
+                            }
+
+                        }
+                        else if(Aggregate.equals(Control.AGGREGATE_MAX)){
+                            if(Number.class.isAssignableFrom(clazz) && (NumberValue == null || NumberValue < Double.parseDouble(value.toString()))){
+                                NumberValue = Double.parseDouble(value.toString());
+                            }
+                        }
+                        Count++;
+                    }
+                    catch (Exception e){
+
+                    }
+                }
+            }
+            public Object getValue(){
+                if(NumberValue == null){
+                    return null;
+                }
+                else if(Aggregate.equals(Control.AGGREGATE_AVERAGE)){
+                    return  NumberValue / Double.parseDouble(Count.toString());
+                }
+                else if(Aggregate.equals(Control.AGGREGATE_COUNT)){
+                    return  Double.parseDouble(Count.toString());
+                }
+                else {
+                    return  NumberValue;
+                }
+            }
+
+
+
+        }
+
+
         @Override
         public void refreshDetailedView(JSONArray data) {
             if(Table == null)GridData = data;
@@ -392,14 +450,20 @@ public class Control {
                     boolean selectionFound = false;
                     final TableLayout parentTable = Table;
 
-                    ArrayList<ControlBase> Aggr = getControls(ACTION_REFRESH);
-                    ArrayList<ControlBase> AggrCal = new ArrayList<>();
-
-
-
+                    ArrayList<ControlBase> AggregateControls = getControls(ACTION_REFRESH);
+                    HashMap<String,AggregateValue> Aggregate = new HashMap<>();
+                    for (int i = 0; i < AggregateControls.size(); i++) {
+                        if(AggregateControls.get(i).getAggregate() != null && AggregateControls.get(i).getAggregate().length() !=0 && !Aggregate.containsKey(AggregateControls.get(i).getName())){
+                            Aggregate.put(AggregateControls.get(i).getName(),new AggregateValue(AggregateControls.get(i).getAggregate()));
+                        }
+                    }
                     for (int i = 0; i < data.length(); i++) {
                         JSONObject obj = (JSONObject) data.get(i);
-                        getValues().add(Long.parseLong(obj.get(getIdFieldName()).toString()));
+
+                        if(obj.has(getIdFieldName()))
+                            getValues().add(Long.parseLong(obj.get(getIdFieldName()).toString()));
+                        else
+                            getValues().add(0L);
                         TableRow item = new TableRow(Table.getContext());
                         item.setGravity(Gravity.CENTER_VERTICAL);
                         Table.addView(item);
@@ -408,6 +472,7 @@ public class Control {
                         item.setLayoutParams(itemP);
                         item.setTag(obj);
                         if (i % 2 == 0) item.setBackgroundColor(Color.parseColor("#9FDBD6"));
+                        else item.setBackgroundColor(Color.parseColor("#FDF8CB"));
                         item.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -418,10 +483,10 @@ public class Control {
 
                         for (com.example.myapplication.model.Control.ControlBase control : dtControls) {
                             control.addListDetails(item, obj);
+                            if(Aggregate.containsKey(control.getName()))Aggregate.get(control.getName()).putValue(control.getValue());
                         }
                         rowAdded(dtControls,obj);
                         if (getValue() != null && Long.parseLong(obj.get(getIdFieldName()).toString()) == getValue()) {
-
                             try {
                                 setValue(Long.parseLong(obj.get(getIdFieldName()).toString()));
                                 selectRow(item, header_row, parentTable);
@@ -434,6 +499,30 @@ public class Control {
                             }
                         }
 
+                    }
+                    if(Aggregate.size() >0){
+
+                        TableRow.LayoutParams itemP = new TableRow.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+
+                        GradientDrawable orderStyle = new GradientDrawable(
+                                GradientDrawable.Orientation.TOP_BOTTOM,
+                                new int[]{Color.parseColor("#182B36"), Color.parseColor("#6FC1F6"), Color.parseColor("#6FC1F6"), Color.parseColor("#182B36")});
+                        TableRow item1 = new TableRow(Table.getContext());
+                        item1.setLayoutParams(itemP);
+                        item1.setGravity(Gravity.CENTER_VERTICAL);
+                        item1.setBackground(orderStyle);
+                        Table.addView(item1,1);
+
+                        TableRow item2 = new TableRow(Table.getContext());
+                        item2.setLayoutParams(itemP);
+                        item2.setGravity(Gravity.CENTER_VERTICAL);
+                        item2.setBackground(orderStyle);
+                        Table.addView(item2);
+                        for (com.example.myapplication.model.Control.ControlBase control : AggregateControls) {
+                            if(Aggregate.containsKey(control.getName()))control.readValueObject(Aggregate.get(control.getName()).getValue());
+                            control.addListDetails(item1);
+                            control.addListDetails(item2);
+                        }
                     }
                     if (selectionFound) {
                         if (getActionButton(Control.ACTION_EDIT) != null)
@@ -457,7 +546,9 @@ public class Control {
 
 
 
-
+        public void refreshGrid() {
+            refreshGrid(getTable());
+        }
         public void refreshGrid(TableLayout table){
             Table = table;
             ArrayList<ControlBase> controls = getControls(ACTION_REFRESH);
@@ -828,7 +919,12 @@ public class Control {
             setControlSize(RelativeLayout.LayoutParams.MATCH_PARENT);
         }
 
-
+        @Override
+        public T setCaption(String caption) {
+            super.setCaption(caption);
+            if(CaptionTextView != null)CaptionTextView.setText(caption);
+            return (T)this;
+        }
 
         @Override
         public boolean validate() {
@@ -1381,7 +1477,7 @@ public class Control {
                     if(getName().equals("."))
                         json = "it0 => new {it0.Id," + getFormula().replace("{0}", "it0") + " as Name}";
                     else
-                    json = "it0 => new {it0.Id," + getFormula().replace("{0}." + getName(), "it0") + " as Name}";
+                        json = "it0 => new {it0.Id," + getFormula().replace("{0}." + getName(), "it0") + " as Name}";
                 }
                 String path = getFullPath() + "[" + value + "]";
                 if(getName().equals("."))path = getPath();
@@ -2151,9 +2247,29 @@ public class Control {
         }
 
         protected Drawable getEditorBackground(){
-            GradientDrawable orderStyle = new GradientDrawable(
-                    GradientDrawable.Orientation.LEFT_RIGHT,
-                    new int[] {Color.TRANSPARENT,Color.TRANSPARENT,Color.TRANSPARENT,Color.GRAY});
+            GradientDrawable orderStyle;
+
+            if(getIsRequired() && getEnabled()){
+                orderStyle = new GradientDrawable(
+                        GradientDrawable.Orientation.LEFT_RIGHT,
+                        new int[] {Color.parseColor("#FDF8CB"),Color.parseColor("#FDF8CB"),Color.parseColor("#FDF8CB"),Color.GRAY});
+
+
+                //#FDF8CB
+            }
+            else if(getEnabled()){
+                orderStyle = new GradientDrawable(
+                        GradientDrawable.Orientation.LEFT_RIGHT,
+                        new int[] {Color.WHITE,Color.WHITE,Color.WHITE,Color.GRAY});
+
+            }else{
+                orderStyle = new GradientDrawable(
+                        GradientDrawable.Orientation.LEFT_RIGHT,
+                        new int[] {Color.GRAY,Color.GRAY,Color.GRAY,Color.GRAY});
+
+            }
+
+
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
@@ -2195,7 +2311,7 @@ public class Control {
 
             RootLayout.setEnabled(getEnabled());
             container.addView(RootLayout);
-            container.setBackground(getEditorBackground());
+            //container.setBackground(getEditorBackground());
             addContentView(RootLayout);
         }
 
@@ -2334,7 +2450,7 @@ public class Control {
             return ColumnWeight;
         }
 
-        private  int ColumnWidth = TableRow.LayoutParams.WRAP_CONTENT;
+        private  int ColumnWidth = 0;
 
         public T setColumnWidth(int columnWidth) {
             ColumnWidth = columnWidth;
@@ -2386,25 +2502,18 @@ public class Control {
 
 
         public void addListDetails(TableRow row, JSONObject data){
+            setValue(null);
+            readValueJSONObject(data,getName());
+            addListDetails(row);
+        }
+
+        public void addListDetails(TableRow row){
             ListTextView = new TextView(row.getContext());
             TableRow.LayoutParams hcP = new TableRow.LayoutParams(ColumnWidth, TableRow.LayoutParams.MATCH_PARENT,ColumnWeight);
             ListTextView.setLayoutParams(hcP);
             ListTextView.setPadding(10,0,10,0);
             ListTextView.setGravity(Gravity.CENTER_VERTICAL);
-            //itemP.height = ViewGroup.LayoutParams.MATCH_PARENT;
             ListTextView.setTextAlignment(TextAlignment);
-            //ListTextView.setTransformationMethod(WordBreakTransformationMethod.getInstance());
-
-            //ListTextView.setBreakStrategy(LineBreaker.BREAK_STRATEGY_SIMPLE);
-            //ListTextView.setLineBreakStyle(LineBreakConfig.LINE_BREAK_STYLE_STRICT);
-            setValue(null);
-
-
-            readValueJSONObject(data,getName());
-            //readValue(data,getName());
-
-
-
             ListTextView.setText(getFormatValue(getValue()));
             row.addView(ListTextView);
         }
@@ -2709,6 +2818,30 @@ public class Control {
                 else if (Name.equals( Control.ACTION_PERCENT)) {
                     paths = getPaths(new String[]{"M7.5,11C9.43,11 11,9.43 11,7.5S9.43,4 7.5,4S4,5.57 4,7.5S5.57,11 7.5,11zM7.5,6C8.33,6 9,6.67 9,7.5S8.33,9 7.5,9S6,8.33 6,7.5S6.67,6 7.5,6z","M4.0025,18.5831l14.5875,-14.5875l1.4142,1.4142l-14.5875,14.5875z","M16.5,13c-1.93,0 -3.5,1.57 -3.5,3.5s1.57,3.5 3.5,3.5s3.5,-1.57 3.5,-3.5S18.43,13 16.5,13zM16.5,18c-0.83,0 -1.5,-0.67 -1.5,-1.5s0.67,-1.5 1.5,-1.5s1.5,0.67 1.5,1.5S17.33,18 16.5,18z"} ,enabled);
                 }
+                else if (Name.equals( Control.ACTION_STOCK)) {
+                    paths = getPaths(new String[]{"M10,4h4v4h-4z","M4,16h4v4h-4z","M4,10h4v4h-4z","M4,4h4v4h-4z","M14,12.42l0,-2.42l-4,0l0,4l2.42,0z","M20.88,11.29l-1.17,-1.17c-0.16,-0.16 -0.42,-0.16 -0.58,0L18.25,11L20,12.75l0.88,-0.88C21.04,11.71 21.04,11.45 20.88,11.29z","M11,18.25l0,1.75l1.75,0l6.67,-6.67l-1.75,-1.75z","M16,4h4v4h-4z"} ,enabled);
+                }
+                else if (Name.equals( Control.ACTION_CHECKED)) {
+                    paths = getPaths(new String[]{"M3,10h11v2h-11z","M3,6h11v2h-11z","M3,14h7v2h-7z","M20.59,11.93l-4.25,4.24l-2.12,-2.12l-1.41,1.41l3.53,3.54l5.66,-5.66z"} ,enabled);
+                }
+
+   /*
+
+   <vector android:autoMirrored="true" android:height="24dp"
+    android:tint="#AA2626" android:viewportHeight="24"
+    android:viewportWidth="24" android:width="24dp" xmlns:android="http://schemas.android.com/apk/res/android">
+    <path android:fillColor="@android:color/white" android:pathData="M3,10h11v2h-11z"/>
+    <path android:fillColor="@android:color/white" android:pathData="M3,6h11v2h-11z"/>
+    <path android:fillColor="@android:color/white" android:pathData="M3,14h7v2h-7z"/>
+    <path android:fillColor="@android:color/white" android:pathData="M20.59,11.93l-4.25,4.24l-2.12,-2.12l-1.41,1.41l3.53,3.54l5.66,-5.66z"/>
+</vector>
+
+
+      */
+
+
+
+
             }
             Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,24,24,paths);
             button.setBackground(d);

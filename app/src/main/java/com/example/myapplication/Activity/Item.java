@@ -1,7 +1,6 @@
 package com.example.myapplication.Activity;
 
-import android.app.Dialog;
-import android.os.Bundle;
+
 import android.text.InputType;
 import android.widget.LinearLayout;
 

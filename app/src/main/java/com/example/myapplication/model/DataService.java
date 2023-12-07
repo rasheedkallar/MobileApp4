@@ -2,46 +2,24 @@ package com.example.myapplication.model;
 import com.example.myapplication.BaseActivity;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
-import com.loopj.android.http.ResponseHandlerInterface;
-
 import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.entity.FileEntity;
-import cz.msebera.android.httpclient.util.ExceptionUtils;
 import kotlin.text.Charsets;
-
-
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.net.Uri;
-import android.os.Environment;
 import android.widget.Toast;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
 
 public class DataService {
@@ -54,7 +32,7 @@ public class DataService {
     //private static String serverIp = "10.207.176.91"; //office
 
     //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
-    //private static String serverIp = "10.207.176.91"; //office CORP
+    private static String serverIp = "10.207.176.91"; //office CORP
     //private static String serverIp = "10.205.50.22"; //office ADT HUB
 
 
@@ -63,7 +41,7 @@ public class DataService {
 
     //private static String serverIp = "abunaser01/"; //shop
 
-    private static String serverIp = "192.168.0.126"; //home
+    //private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homeWifi
     //192.168.0.126
     private static String  serverPort = "80";
@@ -129,12 +107,65 @@ public class DataService {
         postForObject(Long.class,"EntityApi/Save",param,success,failure);
     }
 
+    public <T extends Serializable> void postForExecute(Class<T> type,String path,JSONObject argsJson ,Function<T,Void>  success, Context context){
+        postForExecute(type,path,argsJson, success, s -> {
+            Toast.makeText(context,s,Toast.LENGTH_SHORT);
+            return null;
+        });
+    }
+    public <T extends Serializable> void postForExecute(Class<T> type,String path,JSONObject argsJson ,Function<T,Void>  success, Function<String,Void>  failure){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.put("ArgsJson",argsJson);
+        postForObject(type,"EntityApi/Execute", param, success, failure);
+    }
+
+    public  void postForExecuteList(String path, JSONObject argsJson,Function<JSONArray,Void>  success, Function<String,Void>  failure){
+
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.put("ArgsJson",argsJson);
+        postForObject(JSONArray.class,"EntityApi/Execute",param,success,failure);
+    }
+    public <T extends Serializable> void postForExecuteList(String path, JSONObject argsJson,Function<JSONArray,Void>  success, Context context){
+        postForExecuteList(path,argsJson, success, s -> {
+            Toast.makeText(context,s,Toast.LENGTH_SHORT);
+            return null;
+        });
+    }
+
+
+    public <T extends Serializable> void postForExecuteList(Class<T> type,String path,JSONObject argsJson ,Function<ArrayList<T>,Void>  success, Context context){
+        postForExecuteList(type,path,argsJson, success, s -> {
+            Toast.makeText(context,s,Toast.LENGTH_SHORT);
+            return null;
+        });
+    }
+    public <T extends Serializable> void postForExecuteList(Class<T> type,String path,JSONObject argsJson ,Function<ArrayList<T>,Void>  success, Function<String,Void>  failure){
+        RequestParams param = new RequestParams();
+        param.add("Path",path);
+        param.put("ArgsJson",argsJson);
+        postForString("EntityApi/Execute", param, s -> {
+            convertResult(TypeToken.getParameterized(ArrayList.class, type),s,success,failure);
+            return null;
+        },failure);
+    }
+
+
+
+
     public <T> void postForObject(Class<T> type,String url,RequestParams param,Function<T,Void>  success, Context context){
         postForObject(type, url, param, success, s -> {
             Toast.makeText(context,s,Toast.LENGTH_SHORT);
             return null;
         });
     }
+
+
+    public void postForObject(String url,RequestParams param,Function<JSONObject,Void>  success, Function<String,Void>  failure){
+        postForObject(JSONObject.class,url,param,success,failure);
+    }
+
     public <T> void postForObject(Class<T> type,String url,RequestParams param,Function<T,Void>  success, Function<String,Void>  failure){
         postForString(url,param , s -> {
             convertResult(TypeToken.get(type),s,success,failure);

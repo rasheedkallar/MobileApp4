@@ -16,9 +16,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -59,6 +62,19 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public abstract class BaseActivity extends AppCompatActivity  {
+
+
+    private boolean  EnableScroll = false;
+    public boolean getEnableScroll() {
+        return EnableScroll;
+    }
+    public void setEnableScroll(boolean enableScroll) {
+        EnableScroll = enableScroll;
+    }
+
+
+
+
     public static  final int TAKE_IMAGE_FROM_CAMERA = 1;
     public static  final int TAKE_IMAGE_FROM_GALLERY = -1;
     private static final int GALLERY_PERMISSION_REQUEST_CODE = 1;
@@ -69,6 +85,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
     public ArrayList<Control.ControlBase> Controls = new ArrayList<>();
 
     public static String IpAddress;
+    public static String User;
     public static Integer Port = 80;
     public static Integer ControlWidth = 470;
     public static Integer ButtonWidth = 223;
@@ -81,6 +98,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             controls.add(Control.getEditIntegerControl("Port","Port").setValue(Port));
             controls.add(Control.getEditIntegerControl("ControlWidth","Control Width").setValue(ControlWidth));
             controls.add(Control.getEditIntegerControl("ButtonWidth","Button Width").setValue(ButtonWidth));
+            controls.add(Control.getEditTextControl("User","User").setValue(User));
             setArgs(new PopupFormArgs("Settings",controls,"Settings",null));
         }
 
@@ -96,6 +114,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             SharedPreferences sharedPref = getRootActivity().getSharedPreferences("Settings",Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPref.edit();
             Control.EditTextControl ipAddress = getControl("IpAddress");
+            Control.EditTextControl user = getControl("User");
             Control.EditIntegerControl port = getControl("Port");
             Control.EditIntegerControl controlWidth  = getControl("ControlWidth");
             Control.EditIntegerControl buttonWidth = getControl("ButtonWidth");
@@ -103,6 +122,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
 
             editor.putString(ipAddress.getName(),ipAddress.getValue());
+            editor.putString(user.getName(),user.getValue());
             editor.putInt(port.getName(),port.getValue());
             editor.putInt(controlWidth.getName(),controlWidth.getValue());
             editor.putInt(buttonWidth.getName(),buttonWidth.getValue());
@@ -110,6 +130,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             editor.apply();
 
             IpAddress = ipAddress.getValue();
+            User = user.getValue();
             Port = port.getValue();
             ControlWidth = controlWidth.getValue();
             ButtonWidth = buttonWidth.getValue();
@@ -130,8 +151,28 @@ public abstract class BaseActivity extends AppCompatActivity  {
             Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
         }
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_base);
-        Container = (LinearLayout) findViewById(R.id.container);
+        Container = new LinearLayout(this);
+        LinearLayout.LayoutParams llValueP = new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        Container.setLayoutParams(llValueP);
+        Container.setOrientation(LinearLayout.VERTICAL);
+        if(EnableScroll){
+            ScrollView sv = new ScrollView(this);
+            RelativeLayout.LayoutParams svP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+            svP.setLayoutDirection(LinearLayout.HORIZONTAL);
+            sv.setLayoutParams(svP);
+            sv.addView(Container);
+            setContentView(sv);
+
+        }else{
+            setContentView(Container);
+        }
+
+
+
+
+
+        //setContentView(R.layout.activity_base);
+        //Container = (LinearLayout) findViewById(R.id.container);
 
         final BaseActivity activity = this;
 
@@ -211,6 +252,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
         }
         SharedPreferences sharedPref = getSharedPreferences("Settings",Context.MODE_PRIVATE);
         IpAddress = sharedPref.getString("IpAddress",null);
+        User = sharedPref.getString("User",null);
         Port = sharedPref.getInt("Port",80);
         ControlWidth = sharedPref.getInt("ControlWidth",470);
         ButtonWidth = sharedPref.getInt("ButtonWidth",223);
@@ -420,11 +462,15 @@ public abstract class BaseActivity extends AppCompatActivity  {
             case "Inspect Unit":
                 intent = new Intent(this,InspectUnitActivity.class);
                 break;
-
+            case "Account Reconciliation":
+                intent = new Intent(this,AccountReconciliation.class);
+                break;
+            case "Sales Preview":
+                intent = new Intent(this,SalesPreview.class);
+                break;
             case "Test":
                 intent = new Intent(this,TestActivity.class);
                 break;
-
             case "Settings":
                 SettingsPopupForm ps = new SettingsPopupForm();
                 ps.show(getSupportFragmentManager(),null);

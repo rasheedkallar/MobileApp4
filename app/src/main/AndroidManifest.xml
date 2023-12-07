@@ -47,7 +47,13 @@
             android:name=".InspectUnitActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".AccountReconciliation"
+            android:exported="false" />
 
+        <activity
+            android:name=".SalesPreview"
+            android:exported="false" />
 
         <activity
 

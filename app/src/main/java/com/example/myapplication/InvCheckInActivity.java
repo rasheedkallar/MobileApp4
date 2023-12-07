@@ -51,6 +51,7 @@ public  class InvCheckInActivity extends BaseActivity {
 
 
 
+
     public static  class ItemSearchControl extends Control.SearchControlBase {
 
         private static String ItemFormula = "{0}.InvItemUnit == null ? null : {0}.InvItemUnit.ItemNumber.ToString() + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction.ToString() + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
@@ -58,10 +59,9 @@ public  class InvCheckInActivity extends BaseActivity {
             super("InvItemUnit", "Item",null ,"FullDescription");
             setFormula(ItemFormula);
             ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
-            searchControls.add(Control.getEditTextControl("Unit","Unit").setColumnWidth(100));
-            searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3).setColumnWidth(200));
-
-            searchControls.add(Control.getEditTextControl("Description","Description"));
+            searchControls.add(Control.getEditTextControl("Unit","Unit").setColumnWeight(3));
+            searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3).setColumnWeight(4));
+            searchControls.add(Control.getEditTextControl("Description","Description").setColumnWeight(12));
             setControls(searchControls);
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD));
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
@@ -233,8 +233,8 @@ public  class InvCheckInActivity extends BaseActivity {
                     controls.add(new ItemSearchControl().setPopupIndex(clickAdd?-1:0));
                     controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(false).setValue(AddDescription));
                 }
-                controls.add(Control.getEditDecimalControl("Qty","Qty").setDecimalPlaces(3));
-                controls.add(Control.getEditDecimalControl("Amount","Amt+VAT").setIsRequired(false).addButton(Control.ACTION_PERCENT, new Function<View, Boolean>() {
+                controls.add(Control.getEditDecimalControl("Qty","Qty").setDecimalPlaces(3).setColumnWeight(3));
+                controls.add(Control.getEditDecimalControl("Amount","Amt +VAT").setAggregate(Control.AGGREGATE_SUM).setIsRequired(false).setColumnWeight(3).addButton(Control.ACTION_PERCENT, new Function<View, Boolean>() {
                     @Override
                     public Boolean apply(View view) {
                         Control.EditDecimalControl amt = getControl("Amount");
@@ -246,7 +246,7 @@ public  class InvCheckInActivity extends BaseActivity {
                     }
                 }));
                 if(action == Control.ACTION_REFRESH) {
-                    controls.add(Control.getEditTextControl("FullDescription","Description").setFormula(ItemSearchControl.ItemFormula));
+                    controls.add(Control.getEditTextControl("FullDescription","Description").setColumnWeight(8).setFormula(ItemSearchControl.ItemFormula));
                 }
                 else{
                     controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine").setIsRequired(false));
@@ -345,10 +345,10 @@ public  class InvCheckInActivity extends BaseActivity {
             }
             else if(action.equals(Control.ACTION_REFRESH)){
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
-                controls.add(Control.getDateTimeControl("CheckInTime","Date").setColumnWidth(225));
-                controls.add(Control.getEditTextControl("RefNum","Ref#").setColumnWidth(200));
-                controls.add(Control.getEditTextControl("BusEmployee.Code","Em").setColumnWidth(125));
-                controls.add(Control.getLookupForeignControl("BusSupplier","Supplier","Name").setColumnWidth(500));
+                controls.add(Control.getDateTimeControl("CheckInTime","Date").setColumnWeight(4));
+                controls.add(Control.getEditTextControl("RefNum","Ref#").setColumnWeight(3));
+                controls.add(Control.getEditTextControl("BusEmployee.Code","Em").setColumnWeight(2));
+                controls.add(Control.getLookupForeignControl("BusSupplier","Supplier","Name").setColumnWeight(9));
                 controls.add(Control.getHiddenControl( "Status", null));
                 return controls;
             }
@@ -369,4 +369,5 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         }
     }
+
 }
