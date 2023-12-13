@@ -971,12 +971,13 @@ public class Control {
                     button.addView(ActionLayout, new Function<Button, Void>() {
                         @Override
                         public Void apply(Button btn) {
-                            onButtonClick(button);
+                            if(button.getEnabled()){
+                                onButtonClick(button);
+                            }
                             return null;
                         }
                     });
                     if(button.button != null)button.button.setEnabled(getEnabled());
-
                 }
                 rl.addView(ActionLayout);
             }
@@ -1226,6 +1227,11 @@ public class Control {
 
                 Date date = null;
                 String input = value.toString().trim();
+
+                
+
+
+
                 for (String format: formats.keySet()) {
                     if(input.length() == formats.get(format).intValue()){
                         DateFormat dateFormat = new SimpleDateFormat(format);
@@ -1236,7 +1242,6 @@ public class Control {
                         catch (ParseException e){
                             System.out.println(e.getMessage());
                         }
-                        break;
                     }
                 }
 
@@ -2781,6 +2786,9 @@ public class Control {
         }
 
         private void setFormat(Button button, boolean enabled){
+
+
+
             ArrayList<VectorDrawableCreator.PathData> paths = new ArrayList<>();
             if(Name != null) {
                 if (Name.equals(Control.ACTION_ADD))
@@ -2853,8 +2861,10 @@ public class Control {
             button.setPadding(50,50,50,50);
             button.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
-                    buttonClick.apply((Button)v);
-                    if(getOnClick() != null)getOnClick().apply(v);
+                    if(Enabled) {
+                        buttonClick.apply((Button) v);
+                        if (getOnClick() != null) getOnClick().apply(v);
+                    }
                 }
             });
             LinearLayout.LayoutParams btLp= new LinearLayout.LayoutParams(Width,Height);

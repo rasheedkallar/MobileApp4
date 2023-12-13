@@ -7,6 +7,8 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupConfirmation;
@@ -23,8 +25,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public  class SalesPreview extends BaseActivity {
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,27 +35,35 @@ public  class SalesPreview extends BaseActivity {
             dc.RefreshData();
         }
         else{
-
+            SalesPreviewControl dc = (SalesPreviewControl)Controls.get(0);
+            if(dc.Data == null)dc.refreshGrid();
+            else dc.refreshDetailedView(dc.Data);
         }
     }
     public static class SalesPreviewControl extends Control.DetailedControl {
         public SalesPreviewControl() {
-            super("sp_SalesPrview", "Sales Preview");
+            super("sp_SalesPreview", "Sales Preview");
             setEnableScroll(true);
             getButtons().clear();
             addButton(Control.ACTION_REFRESH);
-
         }
         public void  RefreshData(){
-            new DataService().postForExecuteList("sp_SalesPrview", new JSONObject(), new Function<JSONArray, Void>() {
+            new DataService().postForExecuteList("sp_SalesPreview", new JSONObject(), new Function<JSONArray, Void>() {
                 @Override
                 public Void apply(JSONArray jsonArray) {
+
                     refreshDetailedView(jsonArray);
                     return null;
                 }
             }, getRootActivity());
         }
 
+        @Override
+        public void refreshDetailedView(JSONArray data) {
+            Data = data;
+            super.refreshDetailedView(data);
+        }
+        public transient  JSONArray Data = null;
         @Override
         public void onButtonClick(Control.ActionButton action) {
             if(action.getName() == Control.ACTION_REFRESH){
@@ -70,15 +78,37 @@ public  class SalesPreview extends BaseActivity {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action == null)return controls;
             if(action.equals(Control.ACTION_REFRESH)){
-                controls.add(Control.getDateControl("TransDate","Date"));
-                controls.add(Control.getEditDecimalControl("Credit","Credit").setAggregate(Control.AGGREGATE_SUM));
-                controls.add(Control.getEditDecimalControl("Card","Card").setAggregate(Control.AGGREGATE_SUM));
-                controls.add(Control.getEditDecimalControl("Cash","Cash").setAggregate(Control.AGGREGATE_SUM));
-                controls.add(Control.getEditDecimalControl("Total","Total").setAggregate(Control.AGGREGATE_SUM));
+                controls.add(Control.getDateControl("TransDate","Date").setColumnWeight(3));
+                controls.add(new PercentageDecimalControl("Cash","Cas"));
+                controls.add(new PercentageDecimalControl("Card","Crd"));
+                controls.add(new PercentageDecimalControl("Credit","Cdt"));
+                controls.add(new PercentageDecimalControl("Unsettiled","Ust"));
+                controls.add(new PercentageDecimalControl("WalkIn","Win"));
+                controls.add(new PercentageDecimalControl("Delivery","Del"));
+                controls.add(new PercentageDecimalControl("WalkinCar","Car"));
+                controls.add(Control.getEditDecimalControl("Total","Total").setAggregate(Control.AGGREGATE_AVERAGE).setColumnWeight(3));
                 return controls;
             }
             else{
                 return null;
+            }
+        }
+        public static class PercentageDecimalControl extends Control.EditDecimalControl
+        {
+            public PercentageDecimalControl(String name, String caption) {
+                super(name, caption);
+                setAggregate(Control.AGGREGATE_AVERAGE);
+                setDecimalPlaces(0);
+                setColumnWeight(1);
+            }
+            @Override
+            public void addListDetails(TableRow row) {
+                super.addListDetails(row);
+                double d = getValue()/100;
+                float f = (float)d;
+                int resultColor = ColorUtils.blendARGB(Color.WHITE, Color.GREEN,f);
+                resultColor = ColorUtils.blendARGB(resultColor, Color.TRANSPARENT,0.2F);
+                getListTextView().setBackgroundColor(resultColor);
             }
         }
         @Override

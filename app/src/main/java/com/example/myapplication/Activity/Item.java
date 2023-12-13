@@ -272,9 +272,10 @@ public class Item {
                 controls.add(Control.getEditTextPickerControl("Code", "Unit", getUnits(), null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
                 controls.add(Control.getEditDecimalControl("Fraction", "Fraction").setDecimalPlaces(3));
             }
-            controls.add(Control.getEditDecimalControl("SalesRate","Rate1").setColumnWidth(200).setIsRequired(false));
-            controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
+            controls.add(Control.getEditDecimalControl("SalesRate","Rate1").setColumnWidth(150).setIsRequired(false));
+            controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(150).setIsRequired(false));
             if(action.equals(Control.ACTION_REFRESH)) {
+                controls.add(Control.getEditDecimalControl("Cost","Cost").setColumnWidth(150));
                 controls.add(Control.getEditDecimalControl("Stock","Stock").setDecimalPlaces(3).setFormula("{0}.InvItem.Stock/{0}.Fraction").setColumnWidth(200));
             }
             else{
