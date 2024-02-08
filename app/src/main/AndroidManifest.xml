@@ -56,6 +56,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".TransactionMonitor"
+            android:exported="false" />
+
+        <activity
 
             android:name=".TestActivity"
             android:exported="false" />

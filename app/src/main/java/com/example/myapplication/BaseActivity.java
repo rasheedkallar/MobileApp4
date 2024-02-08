@@ -468,6 +468,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
             case "Sales Preview":
                 intent = new Intent(this,SalesPreview.class);
                 break;
+            case "Transaction Monitor":
+                intent = new Intent(this,TransactionMonitor.class);
+                break;
             case "Test":
                 intent = new Intent(this,TestActivity.class);
                 break;

@@ -263,11 +263,14 @@ public class Control {
                         }
                         orderStyle.setCornerRadius(0f);
                         otherRow.setBackground(orderStyle);
+                        otherRow.setPadding(0,20,0,20);
+
                         //item
                     }
                     else
                     {
                         otherRow.setBackground(null);
+                        otherRow.setPadding(0,0,0,0);
 
                         if (RowIndex % 2 == 0)
                             otherRow.setBackgroundColor(Color.parseColor("#9FDBD6"));
@@ -299,22 +302,7 @@ public class Control {
 
         }
 
-        /*
-        protected String getUrl(String action){
-            if(getEntityName() == null || getEntityName().length() == 0){
-                return null;
-            }
-            else{
-                if(action == ACTION_EDIT && getSelectedId() != null && getSelectedId() != 0L)
-                    return "EntityApi/GetEntity?entity=" + getEntityName() + "&id=" + getSelectedId();
-                else if(action == ACTION_DELETE && getSelectedId() != null && getSelectedId() != 0L)
-                    return "EntityApi/DeleteEntity?entity=" + getEntityName() + "&id=" + getSelectedId();
-                else
-                    return "EntityApi/GetEntityList?entity=" + getEntityName() ;
-            }
-        }
 
-        */
 
 
 
@@ -323,27 +311,14 @@ public class Control {
 
 
 
-            /*
-            List<String> values = new ArrayList<>();
-            if(getForeignFieldName() != null && getForeignFieldName().length() != 0){
-                if(getParentId() == null || getParentId() == 0L){
-                    values.add(getForeignFieldName() + "=");
-                }
-                else{
-                    values.add(getForeignFieldName() + "=" + getParentId().toString());
-                }
-            }
-            if(FilterControls != null && FilterControls.size() != 0){
-                for (ControlBase c : FilterControls) {
-                    values.add(c.getUrlParam());
-                }
-            }
-            if(values.size() ==0)return null;
-            else return String.join("&",values);
 
-             */
 
         }
+        protected int getTake(){
+            return 0;
+        }
+
+
         protected String getOrderBy(String action){
             return "Id Desc";
         }
@@ -511,12 +486,15 @@ public class Control {
                         item1.setLayoutParams(itemP);
                         item1.setGravity(Gravity.CENTER_VERTICAL);
                         item1.setBackground(orderStyle);
+                        item1.setPadding(0,20,0,20);
+
                         Table.addView(item1,1);
 
                         TableRow item2 = new TableRow(Table.getContext());
                         item2.setLayoutParams(itemP);
                         item2.setGravity(Gravity.CENTER_VERTICAL);
                         item2.setBackground(orderStyle);
+                        item2.setPadding(0,20,0,20);
                         Table.addView(item2);
                         for (com.example.myapplication.model.Control.ControlBase control : AggregateControls) {
                             if(Aggregate.containsKey(control.getName()))control.readValueObject(Aggregate.get(control.getName()).getValue());
@@ -557,39 +535,31 @@ public class Control {
                 RequestParams rp = new RequestParams();
                 String where = getWhere(ACTION_REFRESH);
                 if(where != null && where.length() == 0)where = null;
-                //String groupWhere = null;
-                //if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() == null)groupWhere = getForeignFieldName() + " == 0";
-                //else if(getForeignFieldName() != null && getForeignFieldName().length() != 0 )groupWhere = getForeignFieldName() + " == " + getParentId();
-                //if(where != null && groupWhere != null )where = "(" + groupWhere + ") and (" + where + ")";
-                //else if(groupWhere != null )where = groupWhere;
-                new DataService().postForList(getFullPathNew(),getSelect(ACTION_REFRESH),where ,getOrderBy(ACTION_REFRESH), jsonArray -> {
+
+                DataService.ListParams lp = new DataService.ListParams();
+                lp.Select =getSelect(ACTION_REFRESH);
+                lp.Where = where;
+                lp.OrderBy = getOrderBy(ACTION_REFRESH);
+                lp.Take = getTake();
+                new DataService().postForList(getFullPathNew(),lp, jsonArray -> {
                     refreshDetailedView(jsonArray);
                     return null;
                 },table.getContext());
             }
         }
-
-
-
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls){
             if(popupInputs == null || popupInputs.size() == 0){
                 new PopupForm()
                     .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getFullPathNew(),0L))
                     .show( getRootActivity().getSupportFragmentManager(),null);
-
             }else{
                 popupInputs.get(0).onPopupList(getRootActivity(), (Function<DataService.Lookup, Void>) lookup -> {
                     popupInputs.remove(popupInputs.get(0));
                     ShowAdd(popupInputs,controls);
                     return null;
                 });
-
             }
-
         }
-
-
-
         @Override
         public void onButtonClick(ActionButton action){
 
@@ -865,6 +835,7 @@ public class Control {
         @Override
         public String getFullPath(){
 
+            if(getName() == null)return null;
             if(getName().equals("."))return getPath();
 
             String path;
@@ -881,6 +852,7 @@ public class Control {
 
         public String getFullPathNew(){
             String path = getFullPath();
+            if(path == null)return null;
             if(path.endsWith("[]"))return path;
             else if(path.endsWith("]"))return path.substring(0,path.lastIndexOf("[")) + "[]";
             else return path + "[]";
@@ -1860,9 +1832,24 @@ public class Control {
                 return false;
             }
         }
+
+
+        private String DecimalFormat = null;
+        public String getDecimalFormat() {
+            return DecimalFormat;
+        }
+        public EditDecimalControl setDecimalFormat(String decimalFormat) {
+            DecimalFormat = decimalFormat;
+            return this;
+        }
+
         @Override
         public String getFormatValue(Double value) {
             if(value == null)return null;
+            if(DecimalFormat != null && DecimalFormat.length() !=0){
+                DecimalFormat df = new DecimalFormat( DecimalFormat);
+                return df.format(value);
+            }
             else if(DecimalPlaces == null || DecimalPlaces <0) return value.toString();
             else
             {
@@ -2575,11 +2562,11 @@ public class Control {
                     }
                 else if (dotIndex>0) {
                     String forObj = name.substring(0,dotIndex);
-                    Root = "it" + Index  + "." + name.substring(0,dotIndex);
+                    Root = "it" + Index  + "." + fullName.substring(0,fullName.length() - name.length() + dotIndex);
                     FieldList fl;
                     if(!ForeignFields.containsKey(forObj)) {
                         fl = new FieldList(Index);
-                        fl.Fields.put("Id","it" + Index  + "." + name.substring(0,dotIndex) + ".Id");
+                        fl.Fields.put("Id",Root + ".Id");
                         ForeignFields.put(forObj, fl);
                     }
                     else{

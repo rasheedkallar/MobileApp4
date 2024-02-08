@@ -41,7 +41,7 @@ public  class AccountReconciliation extends BaseActivity {
 
 
 
-    private static String Select = "AccTransactionLines.Where(ReconDate == null && AccTransaction.IsDraft == false).OrderByDescending(AccTransaction.TranDate).Select(it1 => new {it1.Id, it1.AccTransaction.TranNumber + \" \" + it1.RefNumber + \" \"  +  it1.Naration as Naration, it1.Debit - it1.Credit as Amount, new {it1.AccTransaction.Id,it1.AccTransaction.TranDate} as AccTransaction})";
+    private static String Select = "AccTransactionLines.Where(!Deleted && ReconDate == null && AccTransaction.Status == \"Final\").OrderByDescending(AccTransaction.TranDate).Select(it1 => new {it1.Id, it1.AccTransaction.TranNumber + \" \" + it1.RefNumber + \" \"  +  it1.Naration as Naration, it1.Debit - it1.Credit as Amount, new {it1.AccTransaction.Id,it1.AccTransaction.TranDate} as AccTransaction})";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

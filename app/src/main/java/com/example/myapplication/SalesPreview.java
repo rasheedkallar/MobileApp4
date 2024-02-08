@@ -42,7 +42,7 @@ public  class SalesPreview extends BaseActivity {
     }
     public static class SalesPreviewControl extends Control.DetailedControl {
         public SalesPreviewControl() {
-            super("sp_SalesPreview", "Sales Preview");
+            super(null, "Sales Preview");
             setEnableScroll(true);
             getButtons().clear();
             addButton(Control.ACTION_REFRESH);
@@ -133,4 +133,7 @@ public  class SalesPreview extends BaseActivity {
             }
         }
     }
+
+
+
 }

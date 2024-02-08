@@ -32,7 +32,7 @@ public class DataService {
     //private static String serverIp = "10.207.176.91"; //office
 
     //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
-    private static String serverIp = "10.207.176.91"; //office CORP
+    //private static String serverIp = "10.207.176.91"; //office CORP
     //private static String serverIp = "10.205.50.22"; //office ADT HUB
 
 
@@ -41,7 +41,7 @@ public class DataService {
 
     //private static String serverIp = "abunaser01/"; //shop
 
-    //private static String serverIp = "192.168.0.126"; //home
+    private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homeWifi
     //192.168.0.126
     private static String  serverPort = "80";
@@ -70,14 +70,51 @@ public class DataService {
     }
 
     public  void postForList(String path, String select,String where,String orderBy,Function<JSONArray,Void>  success, Context context){
+        ListParams lp = new ListParams();
+        lp.Where = where;
+        lp.OrderBy = orderBy;
+        lp.Select = select;
+        postForList(path,lp,success,context);
+    }
+    public  void postForList(String path,ListParams params ,Function<JSONArray,Void>  success, Context context){
+
+        postForList(path, params, success, s -> {
+            Toast.makeText(context,s,Toast.LENGTH_SHORT);
+            return  null;
+        });
+    }
+    public  void postForList(String path,ListParams params ,Function<JSONArray,Void>  success, Function<String,Void>  failure){
 
         RequestParams param = new RequestParams();
         param.put("Path",path);
-        param.add("Where",where);
-        param.add("OrderBy",orderBy);
-        param.add("Select",select);
-        postForObject(JSONArray.class,"EntityApi/List",param,success,context);
+        param.add("Where",params.Where);
+        param.add("OrderBy",params.OrderBy);
+        param.add("Select",params.Select);
+        param.put("Take",params.Take);
+        postForObject(JSONArray.class,"EntityApi/List",param,success,failure);
     }
+    public  void postForList(String path, String select,String where,String orderBy,Function<JSONArray,Void>  success, Function<String,Void>  failure){
+        ListParams lp = new ListParams();
+        lp.Where = where;
+        lp.OrderBy = orderBy;
+        lp.Select = select;
+        postForList(path,lp,success,failure);
+
+
+
+
+    }
+
+
+    public static class ListParams{
+        public String Select;
+        public String Where;
+        public String OrderBy;
+        public int Take;
+    }
+
+
+
     public <T extends Serializable> void postForList(Class<T> type,String path, String select,String where,String orderBy,Function<ArrayList<T>,Void>  success, Context  context) {
         postForList(type, path,  select, where,orderBy, success, s -> {
             Toast.makeText(context,s,Toast.LENGTH_SHORT);
@@ -396,6 +433,10 @@ public class DataService {
             }
         });
     }
+
+
+
+
     public static class Lookup implements Serializable {
 
         private String Properties;
