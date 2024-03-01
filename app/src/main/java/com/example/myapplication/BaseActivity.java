@@ -159,6 +159,18 @@ public abstract class BaseActivity extends AppCompatActivity  {
             Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
         }
         super.onCreate(savedInstanceState);
+
+        Intent intent;
+        if (1== 1) { // some condition to check
+            intent = new Intent(this, PriceChecker.class); // the activity to launch if logged in
+            startActivity(intent);
+            finish();
+            return;
+
+        }
+
+
+
         Container = new LinearLayout(this);
         LinearLayout.LayoutParams llValueP = new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         Container.setLayoutParams(llValueP);
