@@ -2713,7 +2713,7 @@ public class Control {
         public Button getButton() {
             return button;
         }
-        private int Width = 75;
+        private int Width = BaseActivity.ActionButtonWidth;
         public int getWidth() {
             return Width;
         }
@@ -2721,7 +2721,7 @@ public class Control {
             Width = width;
             return  this;
         }
-        private int Height = 75;
+        private int Height = BaseActivity.ActionButtonWidth;
         public int getHeight() {
             return Height;
         }

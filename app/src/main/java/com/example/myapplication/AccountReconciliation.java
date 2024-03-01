@@ -85,6 +85,7 @@ public  class AccountReconciliation extends BaseActivity {
                             DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
                             obj.put("ReconDate",format.format(new Date()));
                             new DataService().postForSave("AccTransactionLines[" + getValue() + "]", obj, aLong -> {
+                                getButton(Control.ACTION_CHECKED).setEnabled(false);
                                 RefreshData();
                                 return null;
                             }, s -> null);

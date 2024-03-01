@@ -90,6 +90,8 @@ public abstract class BaseActivity extends AppCompatActivity  {
     public static Integer ControlWidth = 470;
     public static Integer ButtonWidth = 223;
 
+    public static Integer ActionButtonWidth = 75;
+
     public static class SettingsPopupForm extends PopupForm
     {
         public SettingsPopupForm(){
@@ -98,6 +100,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
             controls.add(Control.getEditIntegerControl("Port","Port").setValue(Port));
             controls.add(Control.getEditIntegerControl("ControlWidth","Control Width").setValue(ControlWidth));
             controls.add(Control.getEditIntegerControl("ButtonWidth","Button Width").setValue(ButtonWidth));
+
+            controls.add(Control.getEditIntegerControl("ActionButtonWidth","Action Button Width").setValue(ActionButtonWidth));
+
             controls.add(Control.getEditTextControl("User","User").setValue(User));
             setArgs(new PopupFormArgs("Settings",controls,"Settings",null));
         }
@@ -118,6 +123,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             Control.EditIntegerControl port = getControl("Port");
             Control.EditIntegerControl controlWidth  = getControl("ControlWidth");
             Control.EditIntegerControl buttonWidth = getControl("ButtonWidth");
+            Control.EditIntegerControl actionButtonWidth = getControl("ActionButtonWidth");
 
 
 
@@ -126,6 +132,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             editor.putInt(port.getName(),port.getValue());
             editor.putInt(controlWidth.getName(),controlWidth.getValue());
             editor.putInt(buttonWidth.getName(),buttonWidth.getValue());
+            editor.putInt(actionButtonWidth.getName(),actionButtonWidth.getValue());
 
             editor.apply();
 
@@ -134,6 +141,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             Port = port.getValue();
             ControlWidth = controlWidth.getValue();
             ButtonWidth = buttonWidth.getValue();
+            ActionButtonWidth = actionButtonWidth.getValue();
             dismiss();
         }
     }
@@ -255,7 +263,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
         User = sharedPref.getString("User",null);
         Port = sharedPref.getInt("Port",80);
         ControlWidth = sharedPref.getInt("ControlWidth",470);
-        ButtonWidth = sharedPref.getInt("ButtonWidth",223);
+        ActionButtonWidth = sharedPref.getInt("ActionButtonWidth",75);
 
 
 
