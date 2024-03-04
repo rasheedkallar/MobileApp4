@@ -92,6 +92,8 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
     public static Integer ActionButtonWidth = 75;
 
+    public static Integer AppMode = 1;
+
     public static class SettingsPopupForm extends PopupForm
     {
         public SettingsPopupForm(){
@@ -102,6 +104,11 @@ public abstract class BaseActivity extends AppCompatActivity  {
             controls.add(Control.getEditIntegerControl("ButtonWidth","Button Width").setValue(ButtonWidth));
 
             controls.add(Control.getEditIntegerControl("ActionButtonWidth","Action Button Width").setValue(ActionButtonWidth));
+            controls.add(Control.getEditIntegerControl("AppMode","App Mode").setValue(AppMode));
+
+
+
+
 
             controls.add(Control.getEditTextControl("User","User").setValue(User));
             setArgs(new PopupFormArgs("Settings",controls,"Settings",null));
@@ -124,6 +131,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             Control.EditIntegerControl controlWidth  = getControl("ControlWidth");
             Control.EditIntegerControl buttonWidth = getControl("ButtonWidth");
             Control.EditIntegerControl actionButtonWidth = getControl("ActionButtonWidth");
+            Control.EditIntegerControl appMode = getControl("AppMode");
 
 
 
@@ -133,6 +141,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
             editor.putInt(controlWidth.getName(),controlWidth.getValue());
             editor.putInt(buttonWidth.getName(),buttonWidth.getValue());
             editor.putInt(actionButtonWidth.getName(),actionButtonWidth.getValue());
+            editor.putInt(appMode.getName(),appMode.getValue());
+
+
 
             editor.apply();
 
@@ -142,6 +153,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
             ControlWidth = controlWidth.getValue();
             ButtonWidth = buttonWidth.getValue();
             ActionButtonWidth = actionButtonWidth.getValue();
+            AppMode = appMode.getValue();
+
+
             dismiss();
         }
     }
@@ -151,7 +165,13 @@ public abstract class BaseActivity extends AppCompatActivity  {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-
+        SharedPreferences sharedPref = getSharedPreferences("Settings",Context.MODE_PRIVATE);
+        IpAddress = sharedPref.getString("IpAddress",null);
+        User = sharedPref.getString("User",null);
+        Port = sharedPref.getInt("Port",80);
+        ControlWidth = sharedPref.getInt("ControlWidth",470);
+        ActionButtonWidth = sharedPref.getInt("ActionButtonWidth",75);
+        AppMode = sharedPref.getInt("AppMode",1);
 
 
 
@@ -161,12 +181,16 @@ public abstract class BaseActivity extends AppCompatActivity  {
         super.onCreate(savedInstanceState);
 
         Intent intent;
-        if (1== 1) { // some condition to check
-            intent = new Intent(this, PriceChecker.class); // the activity to launch if logged in
-            startActivity(intent);
-            finish();
-            return;
-
+        if (AppMode== 2) {
+            if(this.getClass().isAssignableFrom(PriceChecker.class)){
+                return;
+            }
+            else{
+                intent = new Intent(this, PriceChecker.class); // the activity to launch if logged in
+                startActivity(intent);
+                finish();
+                return;
+            }
         }
 
 
@@ -270,12 +294,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
                 Controls.get(i).addView(Container);
             }
         }
-        SharedPreferences sharedPref = getSharedPreferences("Settings",Context.MODE_PRIVATE);
-        IpAddress = sharedPref.getString("IpAddress",null);
-        User = sharedPref.getString("User",null);
-        Port = sharedPref.getInt("Port",80);
-        ControlWidth = sharedPref.getInt("ControlWidth",470);
-        ActionButtonWidth = sharedPref.getInt("ActionButtonWidth",75);
+
 
 
 
