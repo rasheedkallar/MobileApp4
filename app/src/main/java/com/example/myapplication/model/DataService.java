@@ -32,7 +32,7 @@ public class DataService {
     //private static String serverIp = "10.207.176.91"; //office
 
     //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
-    //private static String serverIp = "10.207.176.91"; //office CORP
+    private static String serverIp = "10.207.176.109"; //office CORP
     //private static String serverIp = "10.205.50.22"; //office ADT HUB
 
 
@@ -41,7 +41,7 @@ public class DataService {
 
     //private static String serverIp = "abunaser01/"; //shop
 
-    private static String serverIp = "192.168.0.126"; //home
+    //private static String serverIp = "192.168.0.126"; //home
     //private static String serverIp = "192.168.0.139"; //homeWifi
     //192.168.0.126
     private static String  serverPort = "80";
@@ -51,8 +51,8 @@ public class DataService {
         String port = serverPort;
         if(BaseActivity.IpAddress != null && BaseActivity.IpAddress.length() != 0)ip = BaseActivity.IpAddress;
         if(BaseActivity.Port != null && BaseActivity.Port != 0)port = BaseActivity.Port.toString();
-        if(port.equals("80"))return  "http://" + ip + "/api/";
-        else return  "http://" + ip + ":" + port + "/api/";
+        if(port.equals("80"))return  "http://" + ip ;
+        else return  "http://" + ip + ":" + port ;
     }
 
 
@@ -322,7 +322,7 @@ public class DataService {
 
     public  void get(String url, AsyncHttpResponseHandler response){
 
-        String finalUrl= getRootUrl() + url;  //office
+        String finalUrl= getRootUrl()  + "/api/" + url;  //office
         AsyncHttpClient ahc = new AsyncHttpClient();
 
         ahc.setResponseTimeout(50000);
@@ -336,7 +336,7 @@ public class DataService {
     public  void put(String url, RequestParams params, AsyncHttpResponseHandler response){
         System.out.println(url);
         System.out.println(params);
-        String finalUrl= getRootUrl() + url;  //office
+        String finalUrl= getRootUrl() + "/api/" + url;  //office
         new AsyncHttpClient().put(finalUrl,params, response);
     }
 
@@ -365,7 +365,7 @@ public class DataService {
         }
         System.out.println(params);
 
-        String finalUrl= getRootUrl() + "EntityApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+        String finalUrl= getRootUrl() + "/api/" + "EntityApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
 
         AsyncHttpClient  cl = new AsyncHttpClient();
         //cl.setTimeout(10000);
@@ -396,7 +396,7 @@ public class DataService {
     public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         System.out.println(params);
-        String finalUrl= getRootUrl() + url;  //office
+        String finalUrl= getRootUrl() + "/api/" + url;  //office
 
         AsyncHttpClient ahc  = new AsyncHttpClient();
         ahc.setResponseTimeout(50000);
