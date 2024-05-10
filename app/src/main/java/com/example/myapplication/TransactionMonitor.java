@@ -114,7 +114,7 @@ public  class TransactionMonitor extends BaseActivity {
                 controls.add(Control.getEditTextControl("AccLedger.Name","Ledger").setColumnWeight(8));
                 //controls.add(Control.getDateTimeControl("Changed","Changed").setColumnWeight(6));
                 //controls.add(Control.getEditTextControl("Changer","Usr").setFormula("{0}.Changer.SubString(0,2)").setColumnWeight(2));
-                controls.add(Control.getEditTextControl("Naration","Narration").setColumnWeight(9));
+                controls.add(Control.getEditTextControl("Narration","Narration").setColumnWeight(9));
                 controls.add(Control.getHiddenControl("Deleted","Narration"));
                 controls.add(Control.getEditDecimalControl("Amount","Amount").setDecimalFormat("0.00Dr;0.00Cr").setFormula("{0}.Debit - {0}.Credit").setColumnWeight(6));
                 return controls;

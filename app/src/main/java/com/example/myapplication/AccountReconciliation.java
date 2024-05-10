@@ -41,7 +41,7 @@ public  class AccountReconciliation extends BaseActivity {
 
 
 
-    private static String Select = "AccTransactionLines.Where(!Deleted && ReconDate == null && AccTransaction.Status == \"Final\").OrderByDescending(AccTransaction.TranDate).Select(it1 => new {it1.Id, it1.AccTransaction.TranNumber + \" \" + it1.RefNumber + \" \"  +  it1.Naration as Naration, it1.Debit - it1.Credit as Amount, new {it1.AccTransaction.Id,it1.AccTransaction.TranDate} as AccTransaction})";
+    private static String Select = "AccTransactionLines.Where(!Deleted && ReconDate == null && AccTransaction.Status == \"Final\").OrderByDescending(AccTransaction.TranDate).Select(it1 => new {it1.Id, it1.AccTransaction.TranNumber + \" \" + it1.RefNumber + \" \"  +  it1.Narration as Narration, it1.Debit - it1.Credit as Amount, new {it1.AccTransaction.Id,it1.AccTransaction.TranDate} as AccTransaction})";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -158,7 +158,7 @@ public  class AccountReconciliation extends BaseActivity {
             if(action == null)return controls;
             if(action.equals(Control.ACTION_REFRESH)){
                 controls.add(Control.getDateTimeControl("AccTransaction.TranDate","Date").setColumnWeight(6));
-                controls.add(Control.getEditTextControl("Naration","Narration").setColumnWeight(8));
+                controls.add(Control.getEditTextControl("Narration","Narration").setColumnWeight(8));
                 controls.add(Control.getEditDecimalControl("Amount","Amount").setFormula("{0}.Debit - {0}.Credit").setColumnWeight(4));
                 return controls;
             }

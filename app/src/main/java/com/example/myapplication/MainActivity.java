@@ -19,13 +19,17 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.TableRow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.PathParser;
 import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 
 import com.example.myapplication.model.Control;
+import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupDate;
 import com.example.myapplication.model.PopupHtml;
@@ -33,45 +37,66 @@ import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.PopupSearch;
 import com.example.myapplication.model.VectorDrawableCreator;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Optional;
 import java.util.function.Function;
 
 
 public class MainActivity extends BaseActivity {
-    //public static class ConfigForm
-
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-
-
-
-
-        setContentView(R.layout.activity_main);
-
-
-        LinearLayout ll =  findViewById(R.id.container);
-
-        Control.EditTextControl etc = Control.getEditTextControl("test","test");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    public MainActivity(){
+        Controls.add(new MainActivity.MonitorStatusControl());
+    }
+    public static class MonitorStatusControl extends Control.DetailedControl {
+        public MonitorStatusControl() {
+            super("v_MonitorStatus", "Monitor Preview");
+            setEnableScroll(true);
+            getButtons().clear();
+            addButton(Control.ACTION_REFRESH);
+        }
+        @Override
+        protected String getOrderBy(String action) {
+            return "FinalStatus == \"Active\"?2:1,Code,Id";
+        }
+        @Override
+        protected ArrayList<Control.ControlBase> getControls(String action) {
+            ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
+            if(action == null)return controls;
+            if(action.equals(Control.ACTION_REFRESH)){
+                controls.add(Control.getEditTextControl("Code","Name").setColumnWeight(5));
+                controls.add(Control.getDateTimeControl("ExpiryDate","Expiry Date").setColumnWeight(3));
+                controls.add(Control.getEditTextControl("FinalStatus","Status").setColumnWeight(2));
+                return controls;
+            }
+            else{
+                return null;
+            }
+        }
+        @Override
+        protected void rowAdded(ArrayList<Control.ControlBase> controls,JSONObject data) {
+            super.rowAdded(controls,data);
+            Optional<Control.ControlBase> control = controls.stream().filter(i-> i.getName().equals("FinalStatus")).findFirst();
+            if(control.isPresent() && control.get().getListTextView() != null){
+                TextView tv = control.get().getListTextView();
+                int colour = Color.parseColor("#80FFEB3B");
+                try{
+                    if(data.getString("FinalStatus").equals("Active")){
+                        colour = Color.parseColor("#8048BE09");
+                    }
+                    else {
+                        colour = Color.parseColor("#80EE1506");
+                    }
+                }
+                catch (JSONException e){
+                    System.out.println(e.getMessage());
+                }
+                tv.setBackgroundColor(colour);
+            }
+        }
     }
 }
