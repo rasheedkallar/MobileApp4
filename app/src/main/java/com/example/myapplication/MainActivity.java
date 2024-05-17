@@ -19,6 +19,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -54,15 +55,25 @@ public class MainActivity extends BaseActivity {
     }
     public static class MonitorStatusControl extends Control.DetailedControl {
         public MonitorStatusControl() {
-            super("v_MonitorStatus", "Monitor Preview");
+            super("sp_UpdateMonitorStatus", "Monitor Preview");
             setEnableScroll(true);
             getButtons().clear();
             addButton(Control.ACTION_REFRESH);
         }
         @Override
-        protected String getOrderBy(String action) {
-            return "FinalStatus == \"Active\"?2:1,Code,Id";
+        public void  refreshGrid(TableLayout table){
+            new DataService().postForExecuteList("sp_UpdateMonitorStatus", new JSONObject(), new Function<JSONArray, Void>() {
+                @Override
+                public Void apply(JSONArray jsonArray) {
+
+                    refreshDetailedView(jsonArray);
+                    return null;
+                }
+            }, getRootActivity());
         }
+
+
+
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();

@@ -143,6 +143,7 @@ public class Control {
             setButtons(buttons);
         }
 
+
         private ArrayList<ControlBase> EditControls= null;
 
 
@@ -407,7 +408,10 @@ public class Control {
 
 
         }
+        public Object getAggregateValue(Control.ControlBase control,JSONObject obj){
 
+           return  control.getValue();
+        }
 
         @Override
         public void refreshDetailedView(JSONArray data) {
@@ -429,6 +433,8 @@ public class Control {
                     HashMap<String,AggregateValue> Aggregate = new HashMap<>();
                     for (int i = 0; i < AggregateControls.size(); i++) {
                         if(AggregateControls.get(i).getAggregate() != null && AggregateControls.get(i).getAggregate().length() !=0 && !Aggregate.containsKey(AggregateControls.get(i).getName())){
+
+
                             Aggregate.put(AggregateControls.get(i).getName(),new AggregateValue(AggregateControls.get(i).getAggregate()));
                         }
                     }
@@ -458,7 +464,12 @@ public class Control {
 
                         for (com.example.myapplication.model.Control.ControlBase control : dtControls) {
                             control.addListDetails(item, obj);
-                            if(Aggregate.containsKey(control.getName()))Aggregate.get(control.getName()).putValue(control.getValue());
+                            if(Aggregate.containsKey(control.getName())) {
+                                Object aggValue = getAggregateValue(control,obj);
+                                if(aggValue != null) {
+                                    Aggregate.get(control.getName()).putValue(aggValue);
+                                }
+                            }
                         }
                         rowAdded(dtControls,obj);
                         if (getValue() != null && Long.parseLong(obj.get(getIdFieldName()).toString()) == getValue()) {
@@ -1185,25 +1196,24 @@ public class Control {
                 return  (Date)value;
             }
             else{
-                HashMap<String,Integer> formats = new HashMap<String,Integer>();
-                formats.put("yyyy-MM-dd'T'HH:mm:ss.SSS",23);
-                formats.put("yyyy-MM-dd'T'HH:mm:ss.SS",22);
-                formats.put("yyyy-MM-dd'T'HH:mm:ss.S",21);
-                formats.put("dd/MM/yy HH:mm:ss.S",21);
-                formats.put("yyyy-MM-dd'T'HH:mm:ss",19);
-                formats.put("dd/MM/yy HH:mm:ss",17);
-                formats.put("yyyy-MM-dd'T'HH:mm",16);
-                formats.put("dd/MM/yy HH:mm",14);
-                formats.put("yyyy-MM-dd",10);
-                formats.put("dd/MM/yy",8);
-
                 Date date = null;
                 String input = value.toString().trim();
-
-                
-
-
-
+                HashMap<String,Integer> formats = new HashMap<String,Integer>();
+                if(input.contains("T")){
+                    formats.put("yyyy-MM-dd'T'HH:mm:ss.SSS",23);
+                    formats.put("yyyy-MM-dd'T'HH:mm:ss.SS",22);
+                    formats.put("yyyy-MM-dd'T'HH:mm:ss.S",21);
+                    formats.put("yyyy-MM-dd'T'HH:mm:ss",19);
+                    formats.put("yyyy-MM-dd'T'HH:mm",16);
+                }
+                else
+                {
+                    formats.put("dd/MM/yy HH:mm:ss.S",21);
+                    formats.put("dd/MM/yy HH:mm:ss",17);
+                    formats.put("dd/MM/yy HH:mm",14);
+                    formats.put("yyyy-MM-dd",10);
+                    formats.put("dd/MM/yy",8);
+                }
                 for (String format: formats.keySet()) {
                     if(input.length() == formats.get(format).intValue()){
                         DateFormat dateFormat = new SimpleDateFormat(format);

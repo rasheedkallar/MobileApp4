@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Lifecycle;
 
 import android.content.Context;
 import android.content.Intent;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
 import java.util.function.Function;
 
 public class PriceChecker extends BaseActivity {
@@ -48,6 +50,9 @@ public class PriceChecker extends BaseActivity {
     private TextView Rate ;
 
     private ClearTimer Timer;
+
+    private  MonitorTimer TimerCheckup;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +78,10 @@ public class PriceChecker extends BaseActivity {
 
         Timer = new ClearTimer(this);
         Timer.start();
+
+        TimerCheckup = new MonitorTimer(this);
+        TimerCheckup.start();
+
     }
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -123,6 +132,65 @@ public class PriceChecker extends BaseActivity {
         return super.onKeyDown(keyCode, event);
     }
 
+    private class MonitorTimer extends CountDownTimer {
+
+        public MonitorTimer( PriceChecker activity) {
+            super(1000 * 60 *  60 * 24 * 60, 1000 * 60 *  10 );
+
+            Activity = activity;
+        }
+
+
+        PriceChecker Activity;
+
+        @Override
+        public void onTick(long l) {
+
+            JSONObject param = new JSONObject();
+            try {
+                LocalDateTime now = LocalDateTime.now();
+                param.put("monitorType","Price Checker");
+                if( Activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)){
+                    param.put("staus","Active");
+                }
+                else{
+                    param.put("staus","Error");
+                }
+
+
+
+                param.put("expiryDate",now.plusMinutes(10));
+                new DataService().postForExecuteList("sp_UpdateMonitorStatus", param, new Function<JSONArray, Void>() {
+                    @Override
+                    public Void apply(JSONArray jsonArray) {
+                        System.out.println(jsonArray.toString());
+
+                        return null;
+                    }
+                }, Activity);
+            }
+            catch (JSONException e) {
+                System.out.println(e.getMessage());
+            }
+            catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+
+
+
+
+            System.out.println("Monitor Tick");
+        }
+
+        @Override
+        public void onFinish() {
+
+            this.start();
+
+            System.out.println("Monitor finish");
+        }
+    }
+
 
     private class ClearTimer extends CountDownTimer
     {
@@ -148,6 +216,7 @@ public class PriceChecker extends BaseActivity {
         @Override
         public void onTick(long duration) {
             //System.out.println("Timer tick");
+            System.out.println("Timer Tick");
         }
     }
 
