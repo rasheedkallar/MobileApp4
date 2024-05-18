@@ -70,6 +70,7 @@ public class Control {
 
     public static String ACTION_STOCK= "Stock";
     public static String ACTION_CHECKED= "Checked";
+    public static String ACTION_SAVE= "Save";
 
 
 
@@ -329,6 +330,7 @@ public class Control {
                 if(DetailedControlBase.class.isAssignableFrom(controls.get(i).getClass())){
                     DetailedControlBase ctrl = (DetailedControlBase)controls.get(i);
                     ctrl.setParentId(getValue());
+                    ctrl.setPath(getFullPath());
                 }
             }
             FieldList fields = new FieldList(0);
@@ -350,7 +352,39 @@ public class Control {
             for (com.example.myapplication.model.Control.ControlBase control : dtControls) {
                 control.addForSelectQuery(fields);
             }
-            list.addForSelectQuery(getName(),getName(), getName() + ".Select(it" + (list.Index + 1) + "=>" + fields.getSelectString() + ")");
+            String name = "it" + list.Index + "." + getName();
+
+            if(getPath() != null && getPath().length() != 0){
+                if(getWhere(ACTION_REFRESH) != null && getWhere(ACTION_REFRESH).length() != 0){
+                    name = name + ".Where(it" + (list.Index + 1) + "=>" +  getWhere(ACTION_REFRESH) + ")";
+                }
+                if(getOrderBy(ACTION_REFRESH) != null && getOrderBy(ACTION_REFRESH).length() != 0){
+                    String[] orderBys = getOrderBy(ACTION_REFRESH).trim().split(",");
+                    for (int i = 0; i < orderBys.length; i++) {
+                        String orderBy = orderBys[i].trim();
+                        boolean desc = false;
+                        if(orderBy.toUpperCase().endsWith(" DESC")){
+                            desc = true;
+                            orderBy = orderBy.substring(0,orderBy.length() - 5);
+                        }
+                        else if(orderBy.toUpperCase().endsWith(" DESCENDING")){
+                            desc = true;
+                            orderBy = orderBy.substring(0,orderBy.length() - 11);
+                        }
+                        if(i == 0 && desc)name = name + ".OrderByDescending(it" + (list.Index + 1) + "=>" +  orderBy + ")";
+                        else if(i == 0)name = name + ".OrderBy(it" + (list.Index + 1) + "=>" +  orderBy + ")";
+                        else if(desc)name = name + ".ThenByDescending(it" + (list.Index + 1) + "=>" +  orderBy + ")";
+                        else name = name + ".ThenBy(it" + (list.Index + 1) + "=>" +  orderBy + ")";
+
+                    }
+
+
+                    //name = name + ".Where(it" + (list.Index + 1) + "=>" +  getOrderBy(ACTION_REFRESH) + ")";
+                }
+            }
+
+
+            list.addForSelectQuery(getName(),getName(), name + ".Select(it" + (list.Index + 1) + "=>" + fields.getSelectString() + ")");
         }
 
         private transient JSONArray GridData = null;
@@ -540,22 +574,33 @@ public class Control {
         }
         public void refreshGrid(TableLayout table){
             Table = table;
-            ArrayList<ControlBase> controls = getControls(ACTION_REFRESH);
-            String id_field_name = getIdFieldName();
-            if(controls != null && controls.size() != 0){
-                RequestParams rp = new RequestParams();
-                String where = getWhere(ACTION_REFRESH);
-                if(where != null && where.length() == 0)where = null;
-
-                DataService.ListParams lp = new DataService.ListParams();
-                lp.Select =getSelect(ACTION_REFRESH);
-                lp.Where = where;
-                lp.OrderBy = getOrderBy(ACTION_REFRESH);
-                lp.Take = getTake();
-                new DataService().postForList(getFullPathNew(),lp, jsonArray -> {
-                    refreshDetailedView(jsonArray);
+            if(getPath() != null && getPath().length() !=0){
+                FieldList fields = new FieldList(0);
+                fields.Fields.put("Id","it0.Id");
+                addForSelectQuery(fields);
+                new DataService().postForSelect(getPath(),"it0 => " + fields.getSelectString(), jsonObject -> {
+                    readValueJSONObject(jsonObject,getName());
                     return null;
                 },table.getContext());
+            }
+            else{
+                ArrayList<ControlBase> controls = getControls(ACTION_REFRESH);
+                String id_field_name = getIdFieldName();
+                if(controls != null && controls.size() != 0){
+                    RequestParams rp = new RequestParams();
+                    String where = getWhere(ACTION_REFRESH);
+                    if(where != null && where.length() == 0)where = null;
+
+                    DataService.ListParams lp = new DataService.ListParams();
+                    lp.Select =getSelect(ACTION_REFRESH);
+                    lp.Where = where;
+                    lp.OrderBy = getOrderBy(ACTION_REFRESH);
+                    lp.Take = getTake();
+                    new DataService().postForList(getFullPathNew(),lp, jsonArray -> {
+                        refreshDetailedView(jsonArray);
+                        return null;
+                    },table.getContext());
+                }
             }
         }
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls){
@@ -593,11 +638,29 @@ public class Control {
             }
             else if(action.getName().equals(Control.ACTION_EDIT)){
 
+                EditControls = getControls(action.getName());
+                FieldList fields = new FieldList(0);
+                fields.Fields.put("Id","it0.Id");
+                for (int i = 0; i < EditControls.size(); i++) {
+                    EditControls.get(i).setPath(getFullPath());
+                    if(DetailedControlBase.class.isAssignableFrom(EditControls.get(i).getClass())){
+                        DetailedControlBase ctrl = (DetailedControlBase)EditControls.get(i);
+                        ctrl.setParentId(getValue());
+                    }
+                    EditControls.get(i).addForSelectQuery(fields);
+                }
+                new DataService().postForSelect(getFullPath(),"it0 => " + fields.getSelectString(), jsonObject -> {
+                    for (int i = 0; i < EditControls.size(); i++) {
+                        EditControls.get(i).readValueJSONObject(jsonObject,EditControls.get(i).getName());
+                    }
+                    new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getFullPath(),getValue())).show( getRootActivity().getSupportFragmentManager(),null);
+                    return null;
+                }, getRootActivity());
+
+
+                /*
                 new DataService().postForSelect(getFullPath(),getSelect(ACTION_EDIT), jsonObject -> {
-                    //System.out.println(jsonObject.toString());
                     EditControls = getControls(action.getName());
-                    //String path = getPath()  == null || getPath().length() == 0 ? getName()  : getPath() + "." + getName();
-                    //path = path + "[" + getSelectedId() + "]";
                     for (int i = 0; i < EditControls.size(); i++) {
                         EditControls.get(i).setPath(getFullPath());
                     }
@@ -607,15 +670,14 @@ public class Control {
                             ctrl.setParentId(getValue());
                         }
                     }
-                    //if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
-                    //    EditControls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
-                   //}
                     for (int i = 0; i < EditControls.size(); i++) {
                         EditControls.get(i).readValueJSONObject(jsonObject,EditControls.get(i).getName());
                     }
                     new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getFullPath(),getValue())).show( getRootActivity().getSupportFragmentManager(),null);
                     return null;
                 }, getRootActivity());
+
+                 */
             }
             else if(action.getName().equals(Control.ACTION_DELETE)){
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", new Function<Void, Boolean>() {
@@ -2829,6 +2891,11 @@ public class Control {
                 else if (Name.equals( Control.ACTION_CHECKED)) {
                     paths = getPaths(new String[]{"M3,10h11v2h-11z","M3,6h11v2h-11z","M3,14h7v2h-7z","M20.59,11.93l-4.25,4.24l-2.12,-2.12l-1.41,1.41l3.53,3.54l5.66,-5.66z"} ,enabled);
                 }
+                else if (Name.equals( Control.ACTION_SAVE)) {
+                    paths = getPaths(new String[]{"M17,3L5,3c-1.11,0 -2,0.9 -2,2v14c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2L21,7l-4,-4zM12,19c-1.66,0 -3,-1.34 -3,-3s1.34,-3 3,-3 3,1.34 3,3 -1.34,3 -3,3zM15,9L5,9L5,5h10v4z"} ,enabled);
+                }
+
+                //
 
    /*
 
