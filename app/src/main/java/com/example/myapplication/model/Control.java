@@ -2579,6 +2579,7 @@ public class Control {
             ListTextView.setGravity(Gravity.CENTER_VERTICAL);
             ListTextView.setTextAlignment(TextAlignment);
             ListTextView.setText(getFormatValue(getValue()));
+            ListTextView.setTag(getName());
             row.addView(ListTextView);
         }
 
