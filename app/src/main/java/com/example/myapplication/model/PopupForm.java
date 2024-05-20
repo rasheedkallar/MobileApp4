@@ -153,7 +153,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             if(Control.DetailedControl.class.isAssignableFrom(control.getClass())){
                 Control.DetailedControl dc = (Control.DetailedControl)control;
                 if(dc.getFullPathNew().equals(getFullPathNew())){
-                    boolean rv = dc.doAfterSaved(id,defaultClose);
+                    boolean rv = dc.doAfterSaved(id,defaultClose,getArgs());
                     if(rv != defaultClose)returnVal = rv;
                 }
             }
@@ -169,7 +169,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
                     if(Control.DetailedControl.class.isAssignableFrom(control.getClass())){
                         Control.DetailedControl dc = (Control.DetailedControl)control;
                         if(dc.getFullPathNew().equals(getFullPathNew())){
-                            boolean rv = dc.doAfterSaved(id,defaultClose);
+                            boolean rv = dc.doAfterSaved(id,defaultClose,getArgs());
                             if(rv != defaultClose)returnVal = rv;
                         }
                     }

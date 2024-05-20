@@ -173,7 +173,7 @@ public class Control {
             if(FilterControls == null)FilterControls= getControls(Control.ACTION_FILTER);
             return FilterControls;
         }
-        public boolean doAfterSaved(Long id,boolean defaultClose){
+        public boolean doAfterSaved(Long id, boolean defaultClose, PopupForm.PopupFormArgs args){
             setValue(id);
             refreshGrid(Table);
             return defaultClose;
@@ -621,13 +621,9 @@ public class Control {
 
             if(action.getName().equals(Control.ACTION_ADD)){
                 EditControls = getControls(action.getName());
-                //String path = getPath()  == null || getPath().length() == 0 ? getName() + "[]" : getPath() + "." + getName() + "[]";
                 for (int i = 0; i < EditControls.size(); i++) {
                     EditControls.get(i).setPath(getFullPath());
                 }
-                //if(getForeignFieldName() != null && getForeignFieldName().length() != 0 && getParentId() != null && getParentId() != 0L){
-                //    EditControls.add(Control.getHiddenControl(getForeignFieldName(),getParentId()));
-                //}
                 ArrayList<LookupControlBase> popupInputs = (ArrayList<LookupControlBase>)EditControls.stream()
                     .filter(o -> o instanceof LookupControlBase)
                     .map(o -> (LookupControlBase)o)
