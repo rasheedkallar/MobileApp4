@@ -616,6 +616,13 @@ public class Control {
                 });
             }
         }
+        public void loadEditData(ArrayList<ControlBase> controls,JSONObject data){
+            for (int i = 0; i < controls.size(); i++) {
+                controls.get(i).readValueJSONObject(data,controls.get(i).getName());
+            }
+        }
+
+
         @Override
         public void onButtonClick(ActionButton action){
 
@@ -646,9 +653,7 @@ public class Control {
                     EditControls.get(i).addForSelectQuery(fields);
                 }
                 new DataService().postForSelect(getFullPath(),"it0 => " + fields.getSelectString(), jsonObject -> {
-                    for (int i = 0; i < EditControls.size(); i++) {
-                        EditControls.get(i).readValueJSONObject(jsonObject,EditControls.get(i).getName());
-                    }
+                    loadEditData(EditControls,jsonObject);
                     new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getFullPath(),getValue())).show( getRootActivity().getSupportFragmentManager(),null);
                     return null;
                 }, getRootActivity());
