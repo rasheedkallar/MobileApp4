@@ -105,7 +105,7 @@ public class Item {
 
 
 
-    private static ArrayList<String> getUnits(){
+    public static ArrayList<String> getUnits(){
         ArrayList<String> units = new ArrayList<>();
         units.add("PCS");
         units.add("BAG");

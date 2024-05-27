@@ -621,7 +621,9 @@ public class Control {
                 controls.get(i).readValueJSONObject(data,controls.get(i).getName());
             }
         }
-
+        public String getDataPath(String action){
+            return  getFullPath();
+        }
 
         @Override
         public void onButtonClick(ActionButton action){
@@ -629,7 +631,7 @@ public class Control {
             if(action.getName().equals(Control.ACTION_ADD)){
                 EditControls = getControls(action.getName());
                 for (int i = 0; i < EditControls.size(); i++) {
-                    EditControls.get(i).setPath(getFullPath());
+                    EditControls.get(i).setPath(getDataPath(Control.ACTION_ADD));
                 }
                 ArrayList<LookupControlBase> popupInputs = (ArrayList<LookupControlBase>)EditControls.stream()
                     .filter(o -> o instanceof LookupControlBase)
@@ -645,16 +647,16 @@ public class Control {
                 FieldList fields = new FieldList(0);
                 fields.Fields.put("Id","it0.Id");
                 for (int i = 0; i < EditControls.size(); i++) {
-                    EditControls.get(i).setPath(getFullPath());
+                    EditControls.get(i).setPath(getDataPath(Control.ACTION_EDIT));
                     if(DetailedControlBase.class.isAssignableFrom(EditControls.get(i).getClass())){
                         DetailedControlBase ctrl = (DetailedControlBase)EditControls.get(i);
                         ctrl.setParentId(getValue());
                     }
                     EditControls.get(i).addForSelectQuery(fields);
                 }
-                new DataService().postForSelect(getFullPath(),"it0 => " + fields.getSelectString(), jsonObject -> {
+                new DataService().postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
                     loadEditData(EditControls,jsonObject);
-                    new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getFullPath(),getValue())).show( getRootActivity().getSupportFragmentManager(),null);
+                    new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getDataPath(Control.ACTION_EDIT),getValue())).show( getRootActivity().getSupportFragmentManager(),null);
                     return null;
                 }, getRootActivity());
 
@@ -684,7 +686,7 @@ public class Control {
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", new Function<Void, Boolean>() {
                     @Override
                     public Boolean apply(Void unused) {
-                        new DataService().postForDelete(getFullPath(), b -> {
+                        new DataService().postForDelete(getDataPath(Control.ACTION_DELETE), b -> {
                             setValue(null);
                             refreshGrid(Table);
                             return null;
@@ -1449,9 +1451,9 @@ public class Control {
             super(name, caption, displayField);
 
         }
-        public void addNewRecord(ArrayList<ControlBase> controls,String actionPath){
-            addNewRecord(getFullPath(),controls,actionPath);
-        }
+        //public void addNewRecord(ArrayList<ControlBase> controls,String actionPath){
+        //    addNewRecord(getFullPath(),controls,actionPath);
+        //}
 
 
 
