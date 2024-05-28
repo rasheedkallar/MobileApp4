@@ -656,7 +656,9 @@ public class Control {
                 }
                 new DataService().postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
                     loadEditData(EditControls,jsonObject);
-                    new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getDataPath(Control.ACTION_EDIT),getValue())).show( getRootActivity().getSupportFragmentManager(),null);
+                    PopupForm from = new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getDataPath(Control.ACTION_EDIT),getValue()));
+                    from.getArgs().setActionPath(getFullPath());
+                    from.show( getRootActivity().getSupportFragmentManager(),null);
                     return null;
                 }, getRootActivity());
 
@@ -1132,11 +1134,7 @@ public class Control {
         }
 
         private Long ParentId;
-        public void changeVisibility(boolean visible){
-            if(visible && RootLayout != null)RootLayout.setVisibility(View.VISIBLE);
-            else if(RootLayout != null) RootLayout.setVisibility(View.GONE);
 
-        }
 
 
         public T setParentId(Long id) {
@@ -2377,6 +2375,7 @@ public class Control {
             RootLayout.setOrientation(LinearLayout.VERTICAL);
 
             RootLayout.setEnabled(getEnabled());
+            RootLayout.setVisibility(getVisible()?View.VISIBLE : View.GONE);
             container.addView(RootLayout);
             //container.setBackground(getEditorBackground());
             addContentView(RootLayout);
@@ -2394,6 +2393,27 @@ public class Control {
             }
             return (T)this;
         }
+
+        private boolean Visible = true;
+        public boolean getVisible(){
+            return Visible;
+        }
+        public T setVisible(boolean visible) {
+            Visible = visible;
+            if(RootLayout != null)RootLayout.setVisibility(visible?View.VISIBLE : View.GONE);
+            return (T)this;
+        }
+
+
+
+        //public void changeVisibility(boolean visible){
+        //    if(visible && RootLayout != null)RootLayout.setVisibility(View.VISIBLE);
+        //    else if(RootLayout != null) RootLayout.setVisibility(View.GONE);
+        //
+        //}
+
+
+
         protected abstract void addContentView(ViewGroup container);
         private ArrayList<ActionButton> Buttons = new ArrayList<ActionButton>();
         public ArrayList<ActionButton> getButtons() {

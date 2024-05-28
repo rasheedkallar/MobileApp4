@@ -88,7 +88,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
     public static String User;
     public static Integer Port = 80;
     public static Integer ControlWidth = 470;
-    public static Integer ButtonWidth = 223;
+    public static Integer ButtonWidth = 206;
 
     public static Integer ActionButtonWidth = 75;
 

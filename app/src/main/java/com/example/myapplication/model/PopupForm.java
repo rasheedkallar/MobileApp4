@@ -143,7 +143,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
                 if(Control.DetailedControlBase.class.isAssignableFrom(getArgs().getControls().get(j).getClass())){
                     Control.DetailedControlBase dc = (Control.DetailedControlBase)getArgs().getControls().get(j);
                     dc.setParentId(id);
-                    dc.changeVisibility(true);
+                    dc.setVisible(true);
                 }
             }
         }
@@ -215,7 +215,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             for (int j = 0; j < getArgs().getControls().size(); j++) {
                 if(Control.DetailedControlBase.class.isAssignableFrom(getArgs().getControls().get(j).getClass())){
                     Control.DetailedControlBase dc = (Control.DetailedControlBase)getArgs().getControls().get(j);
-                    dc.changeVisibility(false);
+                    dc.setVisible(false);
                 }
             }
         }
