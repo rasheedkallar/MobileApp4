@@ -519,7 +519,6 @@ public class Control {
                 ShowAdd(popupInputs,EditControls);
             }
             else if(action.getName().equals(Control.ACTION_EDIT)){
-
                 EditControls = getControls(action.getName());
                 FieldList fields = new FieldList(0);
                 fields.Fields.put("Id","it0.Id");
@@ -637,12 +636,11 @@ public class Control {
             }
             else if(button.Name.equals(Control.ACTION_VIEW)) {
                 PopupImage.create("Image View", getValue()).show(getRootActivity().getSupportFragmentManager(),null);
-             }
+            }
         }
         protected transient FlexboxLayout main_layout;
         @Override
         public void addValueView(ViewGroup container) {
-
             main_layout = new FlexboxLayout(container.getContext());
             TableLayout.LayoutParams fblP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             main_layout.setLayoutParams(fblP);
@@ -686,8 +684,6 @@ public class Control {
                     }
                 }
             });
-
-            //imageView.setTag(id);
             main_layout.addView(imageView);
             return imageView;
         }
@@ -707,7 +703,6 @@ public class Control {
                 }
             });
         }
-
         @Override
         public void refreshDetailedView(JSONArray data) {
         }
@@ -731,7 +726,6 @@ public class Control {
         }
         @Override
         public String getFullPath(){
-
             if(getName() == null)return null;
             if(getName().equals("."))return getPath();
             String path;
@@ -800,7 +794,6 @@ public class Control {
         private transient RelativeLayout rl = null;
         @Override
         protected void addContentView(ViewGroup container) {
-
             if(getButtons() != null && getButtons().size() >0){
                 rl = new RelativeLayout(container.getContext());
                 LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(), RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -831,7 +824,6 @@ public class Control {
                 }
                 rl.addView(ActionLayout);
             }
-
             CaptionTextView = new TextView(container.getContext());
             RelativeLayout.LayoutParams CaptionTextViewP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             CaptionTextView.setPadding(10, 0, 5, 10);
@@ -895,7 +887,6 @@ public class Control {
             }
             return (T)this;
         }
-
         private boolean  EnableScroll = false;
         public boolean getEnableScroll() {
             return EnableScroll;
@@ -939,7 +930,6 @@ public class Control {
         }
         @Override
         protected void onBrowse(ActionButton button) {
-
             BaseActivity activity = (BaseActivity)button.getButton().getContext();
             PopupDate.create(getCaption(),getValue(),(value)->{
                 setValue(value);
@@ -948,7 +938,6 @@ public class Control {
         }
     }
     public static class DateControl extends DateControlBase<DateControl>{
-
         @Override
         public String getFormat() {
             return "dd/MM/yy";
@@ -965,14 +954,12 @@ public class Control {
             }).show(activity.getSupportFragmentManager(),null);
         }
     }
-
     public static abstract class DateControlBase<T extends DateControlBase<T>> extends EditTextControlBase<T,Date>{
         public abstract  String getFormat();
         public DateControlBase( String name, String caption) {
             super( name, caption);
             setControlSize(CONTROL_SIZE_SINGLE);
             getButtons().add(new ActionButton("Search"));
-            //setColumnWidth(195);
         }
         @Override
         protected void onButtonClick(ActionButton button) {
@@ -984,7 +971,6 @@ public class Control {
         public Date getValue() {
             return super.getValue();
         }
-
         @Override
         public EditTextControlBase<T, Date> setValue(Date value) {
             return super.setValue(value);
@@ -1087,7 +1073,6 @@ public class Control {
             if(control.isPresent())return (A)control.get();
             else return null;
         }
-
         private String KeywordsField;
         public String getKeywordsField() {
             return KeywordsField;
@@ -1113,16 +1098,12 @@ public class Control {
             SearchKey = searchKey;
             return this;
         }
-
         public SearchControlBase setControls(List<Control.ControlBase> controls) {
             Controls = controls;
             return this;
         }
         protected abstract void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack);
-
-
         protected transient PopupSearch Popup;
-
         protected boolean itemSelected(TableRow row, JSONObject data, DataService.Lookup lookup)
         {
             setValue(lookup);
@@ -1139,19 +1120,16 @@ public class Control {
                 });
             }
         }
-
         protected PopupSearch.PopupSearchListener createListener(){
             return new PopupSearch.PopupSearchListener() {
                 @Override
                 public boolean onItemSelected(TableRow row, JSONObject data, DataService.Lookup lookup) {
                     return itemSelected(row,data,lookup);
                 }
-
                 @Override
                 public void onTextChange(EditText editor, int keyCode) {
                     textChange(editor,keyCode);
                 }
-
                 @Override
                 public boolean onPressOk() {
                     setValue(null);
@@ -1172,7 +1150,6 @@ public class Control {
     public static class LookupForeignControl extends LookupForeignControlBase<LookupForeignControl> {
         public LookupForeignControl(String name, String caption,String displayField) {
             super(name, caption, displayField);
-
         }
         private String Where;
         public String getWhere() {
@@ -1722,7 +1699,6 @@ public class Control {
             EditTextInput.setSelectAllOnFocus(getSelectAllOnFocus());
             EditTextInput.setEnabled(getEnabled());
             if(initialFocus)EditTextInput.requestFocus();
-
             if(getDigits() != null && getDigits().length() != 0){
                 EditTextInput.setKeyListener(DigitsKeyListener.getInstance(getDigits()));
             }
@@ -1754,7 +1730,6 @@ public class Control {
                 }
                 @Override
                 public void afterTextChanged(Editable editable) {
-
                 }
             });
             if(getValue() != null)EditTextInput.setText(getFormatValue(getValue()));
@@ -1984,7 +1959,6 @@ public class Control {
             return addButton(name,null);
         }
         public T addButton(String name,Function<View, Boolean> onClick) {
-
             Control.ActionButton button = new ActionButton(name);
             button.setOnClick(onClick);
             getButtons().add(button);

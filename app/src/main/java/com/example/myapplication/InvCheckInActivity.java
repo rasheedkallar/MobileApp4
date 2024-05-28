@@ -109,7 +109,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 super.textChange(editor,  keyCode) ;
             }
         }
-
         @Override
         public void valueChange(DataService.Lookup oldValue, DataService.Lookup newValue) {
             super.valueChange(oldValue,newValue);
@@ -194,7 +193,6 @@ public  class InvCheckInActivity extends BaseActivity {
             super.selectRow(row, header, tableLayout);
             getActionButton(Control.ACTION_BARCODE).setEnabled(true);
         }
-
         @Override
         public boolean doAfterSaved(Long id, boolean defaultClose, PopupForm.PopupFormArgs args) {
             boolean saved = super.doAfterSaved(id, defaultClose, args);
@@ -202,10 +200,8 @@ public  class InvCheckInActivity extends BaseActivity {
             currentRate.save();
             return saved;
         }
-
         public String AddDescription;
         public String AddBarcode;
-
         private boolean clickAdd = true;
         @Override
         public void onButtonClick(Control.ActionButton action) {
@@ -230,7 +226,6 @@ public  class InvCheckInActivity extends BaseActivity {
         private InvCheckInPriceDetailedControl priceListControl = null;
         private Control.EditDecimalControl amountControl = null;
         private Control.EditDecimalControl qtyControl = null;
-
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
@@ -238,7 +233,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                 if(action != Control.ACTION_REFRESH) {
                     priceListControl = new InvCheckInPriceDetailedControl();
-
                     ItemSearchControl isc = new ItemSearchControl();
                     isc.setPopupIndex(clickAdd?-1:0);
                     isc.setValueChangedListener((lookup, lookup2) -> {
@@ -255,7 +249,6 @@ public  class InvCheckInActivity extends BaseActivity {
                     controls.add(isc);
                     controls.add(Control.getEditTextControl("Description","Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(false).setValue(AddDescription));
                 }
-
                 qtyControl = Control.getEditDecimalControl("Qty","Qty");
                 qtyControl.setDecimalPlaces(3).setColumnWeight(3);
                 controls.add(qtyControl);
@@ -273,7 +266,6 @@ public  class InvCheckInActivity extends BaseActivity {
                         return null;
                     }
                 });
-
                 if(action == Control.ACTION_ADD || action == Control.ACTION_EDIT) {
                     amountControl.setValueChangedListener(new Function2<Double, Double, Void>() {
                         @Override
@@ -283,7 +275,6 @@ public  class InvCheckInActivity extends BaseActivity {
                             return null;
                         }
                     });
-
                     qtyControl.setValueChangedListener(new Function2<Double, Double, Void>() {
                         @Override
                         public Void invoke(Double aDouble, Double aDouble2) {
@@ -293,13 +284,11 @@ public  class InvCheckInActivity extends BaseActivity {
                         }
                     });
                 }
-
                 controls.add(amountControl);
                 if(action == Control.ACTION_REFRESH) {
                     controls.add(Control.getEditTextControl("FullDescription","Description").setColumnWeight(8).setFormula(ItemSearchControl.ItemFormula));
                 }
                 else{
-
                     controls.add(priceListControl);
                     controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine").setIsRequired(false));
                 }
@@ -329,7 +318,6 @@ public  class InvCheckInActivity extends BaseActivity {
                     super.refreshGrid(table);
                 }
             }
-
             @Override
             public void addForSelectQuery(FieldList list) {
                 FieldList fields = new FieldList(0);
@@ -343,9 +331,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(ItemUnitId != 0)itemUnitIdQuery = String.valueOf(ItemUnitId);
                 list.addForSelectQuery("InvItemUnits","InvItemUnits","@0.InvItemUnits.Where(it1=> it1.Id = " + itemUnitIdQuery + ").SelectMany(it1=> " + query + ")");
             }
-
             private  long ItemUnitId = 0;
-
             private  Double _Qty = 0.0;
             private DecimalFormat df = new DecimalFormat( "0.00");
             @Override
@@ -354,7 +340,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 super.refreshDetailedView(data);
                 updatePurchaseRate();
             }
-
             public void updatePurchaseRate() {
                 Double purchaseRate = null;
                 if(getTable() != null){
@@ -541,7 +526,7 @@ public  class InvCheckInActivity extends BaseActivity {
                     }
                     if(action == Control.ACTION_EDIT)controls.add(Control.getLookupForeignControl("InvItem","Item","Description").setVisible(false));
                     if(action == Control.ACTION_EDIT)controls.add(Control.getEditTextControl("InvItem.Description","Item").setControlSize(Control.CONTROL_SIZE_DOUBLE));
-                    controls.add(Control.getEditTextPickerControl("Code", "Unit", Item.getUnits(), null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS).setValue("PCS"));
+                    controls.add(Control.getEditTextPickerControl("Code", "Unit", Item.getUnits(), null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
                     controls.add(Control.getEditDecimalControl("Fraction", "Fraction").setDecimalPlaces(3).setValue(1.0));
                     controls.add(Control.getEditDecimalControl("SalesRate","Rate1").setColumnWidth(200).setIsRequired(false));
                     controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
