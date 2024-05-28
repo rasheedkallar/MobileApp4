@@ -72,10 +72,6 @@ public  class InvCheckInActivity extends BaseActivity {
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_INBOX).setEnabled(false));
         }
-
-
-
-
         @Override
         protected void textChange(EditText editor, int keyCode) {
             if(keyCode == 10){
@@ -231,9 +227,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 super.onButtonClick(action);
             }
         }
-
-
-
         private InvCheckInPriceDetailedControl priceListControl = null;
         private Control.EditDecimalControl amountControl = null;
         private Control.EditDecimalControl qtyControl = null;
@@ -250,11 +243,8 @@ public  class InvCheckInActivity extends BaseActivity {
                     isc.setPopupIndex(clickAdd?-1:0);
                     isc.setValueChangedListener((lookup, lookup2) -> {
                         if (priceListControl != null) {
-                            //Double currentAmount = null;
-                            //if(amountControl != null)currentAmount = amountControl.getValue();
                             priceListControl.ItemUnitId = lookup2.getId();
                             priceListControl.setPath(null);
-
                             if (priceListControl.getTable() != null) {
                                 priceListControl.setVisible(true);
                                 priceListControl.refreshGrid();
@@ -268,9 +258,6 @@ public  class InvCheckInActivity extends BaseActivity {
 
                 qtyControl = Control.getEditDecimalControl("Qty","Qty");
                 qtyControl.setDecimalPlaces(3).setColumnWeight(3);
-
-
-
                 controls.add(qtyControl);
                 amountControl = Control.getEditDecimalControl("Amount","Amt +VAT");
                 amountControl.setAggregate(Control.AGGREGATE_SUM);
@@ -322,22 +309,11 @@ public  class InvCheckInActivity extends BaseActivity {
                 return null;
             }
         }
-
-
-
-
-
         public static class InvCheckInPriceDetailedControl extends Control.DetailedControl {
-
-            //private long ItemUnitId = 0;
-            //private Double CurrentPurchaseRate= null;
-
-
             private static String ItemUnitFormula = "{0}.ItemNumber.ToString() + \" \" + {0}.Code + \" \" + {0}.Fraction.ToString()";
             public InvCheckInPriceDetailedControl() {
                 super("InvItemUnits", "Price List");
             }
-
             @Override
             public void refreshGrid(TableLayout table) {
                 if(ItemUnitId != 0L){
@@ -357,11 +333,8 @@ public  class InvCheckInActivity extends BaseActivity {
             @Override
             public void addForSelectQuery(FieldList list) {
                 FieldList fields = new FieldList(0);
-                //fields.Fields.put("Id","it1.Id");
                 fields.Index = 1;
                 super.addForSelectQuery(fields);
-
-                //it1.InvItemUnits
                 String query = fields.getSelectString();
                 query = query.substring(query.indexOf('(') + 1,query.lastIndexOf(')'));
                 query =  query.replace("it1.InvItemUnits","it1.InvItem.InvItemUnits");
@@ -383,9 +356,7 @@ public  class InvCheckInActivity extends BaseActivity {
             }
 
             public void updatePurchaseRate() {
-
                 Double purchaseRate = null;
-
                 if(getTable() != null){
                     for (int i = 0; i < getTable().getChildCount(); i++) {
                         TableRow row = (TableRow) getTable().getChildAt(i);
@@ -424,26 +395,21 @@ public  class InvCheckInActivity extends BaseActivity {
             public static void  updateFinalPercentage(TableRow row){
                 try{
                     JSONObject data = (JSONObject)row.getTag();
-
-
                     TextView CurrentRateView = row.findViewWithTag("CurrentRate");
                     Double currentRate = null;
                     try{
                         currentRate = Double.parseDouble(CurrentRateView.getText().toString());
                     }catch (Exception e){
-
                     }
                     if(currentRate == null){
                         currentRate = data.getDouble("LastRate");
                     }
-
                     Double salesRate = null;
                     TextView salesRateView =  row.findViewWithTag("SalesRate");
                     try{
                         salesRate = Double.parseDouble(salesRateView.getText().toString());
                     }
                     catch (Exception e){
-
                     }
                     TextView marginPerFinalView =  row.findViewWithTag("MarginPerFinal");
                     int c =Color.WHITE;
@@ -457,17 +423,10 @@ public  class InvCheckInActivity extends BaseActivity {
                         marginPerFinalView.setText("");
                     }
                     marginPerFinalView.setBackgroundColor(c);
-
-
                 }
                 catch (Exception e){
-                    //ListText.setBackgroundColor(ColorUtils.blendARGB(Color.RED, Color.TRANSPARENT,0.1F));
                 }
-
             }
-
-
-
             private Double _PurchaseQty;
             public void updatePurchaseQty(Double purchaseQty) {
                 if((_PurchaseQty == null && purchaseQty != null) || (_PurchaseQty != null && purchaseQty == null) || !_PurchaseQty.equals(purchaseQty)){
@@ -482,7 +441,6 @@ public  class InvCheckInActivity extends BaseActivity {
                     updatePurchaseRate();
                 }
             }
-
             @Override
             public String getDataPath(String action) {
                 if( action.equals(Control.ACTION_ADD) || action.equals(Control.ACTION_EDIT) || action.equals(Control.ACTION_DELETE)){
@@ -496,7 +454,6 @@ public  class InvCheckInActivity extends BaseActivity {
             private int reqCount = -1;
             public void save(){
                 reqCount = 0;
-
                 for (int i = 0; i < getTable().getChildCount(); i++) {
                     TableRow row = (TableRow)getTable().getChildAt(i);
                     EditText tv = (EditText)row.findViewWithTag("SalesRate");
@@ -511,9 +468,7 @@ public  class InvCheckInActivity extends BaseActivity {
                                 oldValue = obj.getDouble("SalesRate");
                             }
                             catch (Exception e){
-
                             }
-
                             if(currentValue == null || !currentValue.equals(oldValue)){
                                 JSONObject args = new JSONObject();
                                 args.put("SalesRate",currentValue);
@@ -541,14 +496,12 @@ public  class InvCheckInActivity extends BaseActivity {
                     else{
                         System.out.println(i);
                     }
-
                 }
                 if(reqCount ==0){
                     reqCount = -1;
                     refreshGrid();
                 }
             }
-
             DataService.Lookup ItemLookup = null;
             @Override
             public void onButtonClick(Control.ActionButton action) {
@@ -563,7 +516,6 @@ public  class InvCheckInActivity extends BaseActivity {
                     super.onButtonClick(action);
                 }
             }
-
             @Override
             protected String getOrderBy(String action) {
                 return  "Fraction,Code==\"PCS\"?1:2";
@@ -595,7 +547,6 @@ public  class InvCheckInActivity extends BaseActivity {
                     controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
                     if(action == Control.ACTION_EDIT)controls.add(Control.getLookupForeignControl("InvItem.InvItemGroup", "Item Group",  "Code"));
                     if(action == Control.ACTION_EDIT)controls.add(Control.getLookupForeignControl("InvItem.InvItemTax", "Item Tax",  "Code"));
-
                 }
                 return controls;
             }
@@ -604,18 +555,13 @@ public  class InvCheckInActivity extends BaseActivity {
                 public SalesRateDecimalControl() {
                     super("SalesRate", "S Rate");
                 }
-
                 private EditText ListText;
-
                 private JSONObject Data;
-
-
                 @Override
                 public void addListDetails(TableRow row) {
                     Data = (JSONObject) row.getTag();
                     ListText = new EditText(row.getContext());
                     ListText.setPadding(0,0,0,0);
-
                     ListText.setTag(getName());
                     ListText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
                     ListText.setKeyListener(DigitsKeyListener.getInstance(getDigits()));
@@ -625,21 +571,17 @@ public  class InvCheckInActivity extends BaseActivity {
                     ListText.setGravity(Gravity.CENTER_VERTICAL);
                     ListText.setTextAlignment(getTextAlignment());
                     ListText.setText(getFormatValue(getValue()));
-                    //ListText.setBackground(null);
                     ListText.setSelectAllOnFocus(getSelectAllOnFocus());
                     ListText.addTextChangedListener(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
                         }
                         @Override
                         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
                         }
                         @Override
                         public void afterTextChanged(Editable editable) {
                             updateFinalPercentage(row);
-
                         }
                     });
                     row.addView(ListText);
@@ -654,8 +596,6 @@ public  class InvCheckInActivity extends BaseActivity {
             getButtons().add(new Control.ActionButton(Control.ACTION_STATUS).setEnabled(false));
             getButtons().remove(getActionButton(Control.ACTION_DELETE));
         }
-
-
         @Override
         protected String getWhere(String action){
             return "Status == \"Draft\" or (CheckInTime >= " +  FilterControls.get(0).getQueryValue() + " and CheckInTime < " +  FilterControls.get(1).getQueryValue() + ")" ;
@@ -726,7 +666,6 @@ public  class InvCheckInActivity extends BaseActivity {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action == null)return controls;
             if(action.equals(Control.ACTION_FILTER)){
-
                 controls.add(Control.getDateControl("from","From").setValue(Utility.AddDay(new Date(),-10)));
                 controls.add(Control.getDateControl("to","To").setValue(Utility.AddDay(new Date(),1)));
                 return controls;
@@ -757,5 +696,4 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         }
     }
-
 }
