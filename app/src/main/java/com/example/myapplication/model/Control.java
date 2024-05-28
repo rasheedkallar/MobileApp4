@@ -59,51 +59,35 @@ public class Control {
     public static String ACTION_CAMERA = "Camera";
     public static String ACTION_GALLERY = "Gallery";
     public static String ACTION_FILTER = "Filter";
-
-
     public static String ACTION_STATUS= "Status";
-
     public static String ACTION_VIEW= "View";
     public static String ACTION_BARCODE= "Barcode";
-
     public static String ACTION_PERCENT= "Percent";
-
     public static String ACTION_STOCK= "Stock";
     public static String ACTION_CHECKED= "Checked";
     public static String ACTION_SAVE= "Save";
-
-
-
     public static int CONTROL_SIZE_DOUBLE = -20;
     public static int CONTROL_SIZE_SINGLE = -10;
-
     public static String AGGREGATE_SUM = "Sum";
     public static String AGGREGATE_AVERAGE = "Average";
     public static String AGGREGATE_COUNT = "Count";
     public static String AGGREGATE_MAX = "Max";
     public static String AGGREGATE_MIN = "Min";
-
-
     public static HiddenControl getHiddenControl( String name, Serializable value){
         return new HiddenControl(name,value);
     }
     public static ImageControl getImageControl( String name, String caption,String entityName){
         return new ImageControl(name,caption,entityName);
     }
-
     public static LookupListControl getLookupListControl( String name, String caption, String displayField,List<DataService.Lookup> lookups){
         return new LookupListControl(name,caption,displayField,lookups);
     }
-
     public static LookupForeignControl getLookupForeignControl( String name, String caption,String displayField){
         return new LookupForeignControl(name,caption,displayField);
     }
-
-
     public static EditTextControl getEditTextControl( String name, String caption){
         return new EditTextControl(name,caption);
     }
-
     public static DateTimeControl getDateTimeControl( String name, String caption){
         return new DateTimeControl(name,caption);
     }
@@ -113,26 +97,12 @@ public class Control {
     public static EditDecimalControl getEditDecimalControl( String name, String caption){
         return new EditDecimalControl(name,caption);
     }
-
     public static EditIntegerControl getEditIntegerControl( String name, String caption){
         return new EditIntegerControl(name,caption);
     }
-
     public static EditTextPickerControl getEditTextPickerControl( String name, String caption,ArrayList<String> options,String defaultValue){
         return new EditTextPickerControl(name,caption,options,defaultValue);
     }
-
-
-
-
-
-
-
-
-    //public static SearchControl getSearchControl( String name, String caption,List<Control.ControlBase> controls,String entityName,String displayFieldName){
-    //    return new SearchControl(name,caption,controls,entityName,displayFieldName);
-    //}
-
     public static abstract class DetailedControl extends DetailedControlBase<DetailedControl> {
         public DetailedControl(String name,String caption) {
             super(name, caption);
@@ -143,30 +113,21 @@ public class Control {
             buttons.add(new ActionButton(Control.ACTION_REFRESH));
             setButtons(buttons);
         }
-
-
         private ArrayList<ControlBase> EditControls= null;
-
-
-
         public <A extends Control.ControlBase> A getControl(String name){
             if(EditControls == null)return null;
             Optional<Control.ControlBase> control = EditControls.stream().filter(i-> i.getName().equals(name)).findFirst();
             if(control.isPresent())return (A)control.get();
             else return null;
         }
-
         protected transient TableLayout Table;
-
         public TableLayout getTable() {
             return Table;
         }
-
         public DetailedControl setTable(TableLayout table) {
             Table = table;
             return  this;
         }
-
         protected transient FlexboxLayout filter_layout;
         protected transient List<ControlBase> FilterControls = null;
         public List<ControlBase> getFilterControls() {
@@ -178,13 +139,8 @@ public class Control {
             refreshGrid(Table);
             return defaultClose;
         }
-
-
-
-
         @Override
         public void addValueView(ViewGroup container) {
-
             filter_layout = new FlexboxLayout(container.getContext());
             TableLayout.LayoutParams fblP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             filter_layout.setLayoutParams(fblP);
@@ -194,23 +150,19 @@ public class Control {
             Table.setShrinkAllColumns(true);
             Table.setStretchAllColumns(true);
             addHeaderRow(Table,getControls(ACTION_REFRESH));
-
             TableLayout.LayoutParams tlLp = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             Table.setLayoutParams(tlLp);
             container.addView(Table);
-
             List<ControlBase> controls = getFilterControls();
             if(controls != null){
                 for (int i = 0; i < controls.size(); i++) {
                     controls.get(i).addView(filter_layout);
                 }
             }
-
             if(getPath() == null && getName() != null && getName().length() != 0 && GridData == null)
                 refreshGrid(Table);
             else if(GridData != null)refreshDetailedView(GridData);
         }
-
         protected  void onRowSelected(TableRow row){
             JSONObject obj = (JSONObject)row.getTag();
             try
@@ -225,25 +177,16 @@ public class Control {
             selectRow(row,header_row,Table);
         }
         private transient TableRow SelectedRow;
-
         public TableRow getSelectedRow() {
             return SelectedRow;
         }
-
         protected void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
             SelectedRow = row;
             if(getActionButton(Control.ACTION_EDIT) != null) getActionButton(Control.ACTION_EDIT).setEnabled(true);
             if(getActionButton(Control.ACTION_DELETE) != null)getActionButton(Control.ACTION_DELETE).setEnabled(true);
-
             int RowIndex = -1;
-
             for (int i = 0; i < tableLayout.getChildCount(); i++) {
-
-
-
                 TableRow otherRow = (TableRow)tableLayout.getChildAt(i);
-
-
                 if(otherRow.getTag() != null) {
                     RowIndex  ++;
 
@@ -251,29 +194,18 @@ public class Control {
                         GradientDrawable orderStyle;
 
                         if (RowIndex % 2 == 0) {
-                            orderStyle = new GradientDrawable(
-                                    GradientDrawable.Orientation.TOP_BOTTOM,
-                                    new int[]{Color.BLACK, Color.parseColor("#9FDBD6"), Color.parseColor("#9FDBD6"), Color.BLACK});
-
-
+                            orderStyle = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{Color.BLACK, Color.parseColor("#9FDBD6"), Color.parseColor("#9FDBD6"), Color.BLACK});
                         } else {
-
-                            orderStyle = new GradientDrawable(
-                                    GradientDrawable.Orientation.TOP_BOTTOM,
-                                    new int[]{Color.BLACK, Color.parseColor("#FDF8CB"), Color.parseColor("#FDF8CB"), Color.BLACK});
-
+                            orderStyle = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{Color.BLACK, Color.parseColor("#FDF8CB"), Color.parseColor("#FDF8CB"), Color.BLACK});
                         }
                         orderStyle.setCornerRadius(0f);
                         otherRow.setBackground(orderStyle);
                         otherRow.setPadding(0,20,0,20);
-
-                        //item
                     }
                     else
                     {
                         otherRow.setBackground(null);
                         otherRow.setPadding(0,0,0,0);
-
                         if (RowIndex % 2 == 0)
                             otherRow.setBackgroundColor(Color.parseColor("#9FDBD6"));
                         else
@@ -283,44 +215,25 @@ public class Control {
             }
         }
         private transient TableRow header_row;
-
         private void addHeaderRow(TableLayout table,ArrayList<ControlBase> controls){
             header_row = new TableRow(table.getContext());
-
             header_row.setBackground(getHeaderBackground());
             header_row.setGravity(Gravity.CENTER_VERTICAL);
             table.addView(header_row);
             TableLayout.LayoutParams headerP = new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             header_row.setLayoutParams(headerP);
-            //header_row.setTag(null);
-            //header_row.setBackgroundColor(Color.parseColor("#008477"));
-            //header_row.setPadding(5, 5, 5, 5);
             for (com.example.myapplication.model.Control.ControlBase control : controls) {
                 control.addListHeader(header_row);
             }
         }
-
         protected void rowAdded(ArrayList<ControlBase> controls,JSONObject data){
-
         }
-
-
-
-
-
         protected String getWhere(String action){
             return  null;
-
-
-
-
-
         }
         protected int getTake(){
             return 0;
         }
-
-
         protected String getOrderBy(String action){
             return "Id Desc";
         }
@@ -340,12 +253,8 @@ public class Control {
             }
             return "it0 => " + fields.getSelectString();
         }
-
-
-
         @Override
         public void addForSelectQuery(FieldList list) {
-
             ArrayList<ControlBase> dtControls = getControls(ACTION_REFRESH);
             FieldList fields = new FieldList(list.Index + 1);
             fields.Fields.put("Id", "it" + (list.Index + 1) + ".Id");
@@ -353,7 +262,6 @@ public class Control {
                 control.addForSelectQuery(fields);
             }
             String name = "it" + list.Index + "." + getName();
-
             if(getPath() != null && getPath().length() != 0){
                 if(getWhere(ACTION_REFRESH) != null && getWhere(ACTION_REFRESH).length() != 0){
                     name = name + ".Where(it" + (list.Index + 1) + "=>" +  getWhere(ACTION_REFRESH) + ")";
@@ -375,21 +283,12 @@ public class Control {
                         else if(i == 0)name = name + ".OrderBy(it" + (list.Index + 1) + "=>" +  orderBy + ")";
                         else if(desc)name = name + ".ThenByDescending(it" + (list.Index + 1) + "=>" +  orderBy + ")";
                         else name = name + ".ThenBy(it" + (list.Index + 1) + "=>" +  orderBy + ")";
-
                     }
-
-
-                    //name = name + ".Where(it" + (list.Index + 1) + "=>" +  getOrderBy(ACTION_REFRESH) + ")";
                 }
             }
-
-
             list.addForSelectQuery(getName(),getName(), name + ".Select(it" + (list.Index + 1) + "=>" + fields.getSelectString() + ")");
         }
-
         private transient JSONArray GridData = null;
-
-
         public static class AggregateValue{
             public AggregateValue(String aggregate){
                 Aggregate = aggregate;
@@ -438,15 +337,10 @@ public class Control {
                     return  NumberValue;
                 }
             }
-
-
-
         }
         public Object getAggregateValue(Control.ControlBase control,JSONObject obj){
-
            return  control.getValue();
         }
-
         @Override
         public void refreshDetailedView(JSONArray data) {
             if(Table == null)GridData = data;
@@ -454,27 +348,21 @@ public class Control {
                 ArrayList<ControlBase> controls = getControls(ACTION_REFRESH);
                 String id_field_name = getIdFieldName();
                 try {
-
                     if (getValues() == null) setValues(new ArrayList<Long>());
                     getValues().clear();
                     Table.removeAllViews();
-
                     addHeaderRow(Table, controls);
                     boolean selectionFound = false;
                     final TableLayout parentTable = Table;
-
                     ArrayList<ControlBase> AggregateControls = getControls(ACTION_REFRESH);
                     HashMap<String,AggregateValue> Aggregate = new HashMap<>();
                     for (int i = 0; i < AggregateControls.size(); i++) {
                         if(AggregateControls.get(i).getAggregate() != null && AggregateControls.get(i).getAggregate().length() !=0 && !Aggregate.containsKey(AggregateControls.get(i).getName())){
-
-
                             Aggregate.put(AggregateControls.get(i).getName(),new AggregateValue(AggregateControls.get(i).getAggregate()));
                         }
                     }
                     for (int i = 0; i < data.length(); i++) {
                         JSONObject obj = (JSONObject) data.get(i);
-
                         if(obj.has(getIdFieldName()))
                             getValues().add(Long.parseLong(obj.get(getIdFieldName()).toString()));
                         else
@@ -495,7 +383,6 @@ public class Control {
                             }
                         });
                         ArrayList<ControlBase> dtControls = getControls(ACTION_REFRESH);
-
                         for (com.example.myapplication.model.Control.ControlBase control : dtControls) {
                             control.addListDetails(item, obj);
                             if(Aggregate.containsKey(control.getName())) {
@@ -518,12 +405,10 @@ public class Control {
                                 selectionFound = false;
                             }
                         }
-
                     }
                     if(Aggregate.size() >0){
 
                         TableRow.LayoutParams itemP = new TableRow.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-
                         GradientDrawable orderStyle = new GradientDrawable(
                                 GradientDrawable.Orientation.TOP_BOTTOM,
                                 new int[]{Color.parseColor("#182B36"), Color.parseColor("#6FC1F6"), Color.parseColor("#6FC1F6"), Color.parseColor("#182B36")});
@@ -532,9 +417,7 @@ public class Control {
                         item1.setGravity(Gravity.CENTER_VERTICAL);
                         item1.setBackground(orderStyle);
                         item1.setPadding(0,20,0,20);
-
                         Table.addView(item1,1);
-
                         TableRow item2 = new TableRow(Table.getContext());
                         item2.setLayoutParams(itemP);
                         item2.setGravity(Gravity.CENTER_VERTICAL);
@@ -565,10 +448,6 @@ public class Control {
                 }
             }
         }
-
-
-
-
         public void refreshGrid() {
             refreshGrid(getTable());
         }
@@ -624,10 +503,8 @@ public class Control {
         public String getDataPath(String action){
             return  getFullPath();
         }
-
         @Override
         public void onButtonClick(ActionButton action){
-
             if(action.getName().equals(Control.ACTION_ADD)){
                 EditControls = getControls(action.getName());
                 for (int i = 0; i < EditControls.size(); i++) {
@@ -661,28 +538,6 @@ public class Control {
                     from.show( getRootActivity().getSupportFragmentManager(),null);
                     return null;
                 }, getRootActivity());
-
-
-                /*
-                new DataService().postForSelect(getFullPath(),getSelect(ACTION_EDIT), jsonObject -> {
-                    EditControls = getControls(action.getName());
-                    for (int i = 0; i < EditControls.size(); i++) {
-                        EditControls.get(i).setPath(getFullPath());
-                    }
-                    for (int i = 0; i < EditControls.size(); i++) {
-                        if(DetailedControlBase.class.isAssignableFrom(EditControls.get(i).getClass())){
-                            DetailedControlBase ctrl = (DetailedControlBase)EditControls.get(i);
-                            ctrl.setParentId(getValue());
-                        }
-                    }
-                    for (int i = 0; i < EditControls.size(); i++) {
-                        EditControls.get(i).readValueJSONObject(jsonObject,EditControls.get(i).getName());
-                    }
-                    new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getFullPath(),getValue())).show( getRootActivity().getSupportFragmentManager(),null);
-                    return null;
-                }, getRootActivity());
-
-                 */
             }
             else if(action.getName().equals(Control.ACTION_DELETE)){
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", new Function<Void, Boolean>() {
@@ -715,42 +570,31 @@ public class Control {
             buttons.add(new ActionButton(Control.ACTION_GALLERY));
             buttons.add(new ActionButton(Control.ACTION_VIEW).setEnabled(false));
             buttons.add(new ActionButton(Control.ACTION_DELETE).setEnabled(false));
-
             setButtons(buttons);
-
         }
-
         private String EntityName;
-
         public String getEntityName() {
             return EntityName;
         }
-
         public ImageControl setEntityName(String entityName) {
             EntityName = entityName;
             return this;
         }
-
         public void onCapturedImage(int action, Bitmap image,Long id){
             addImage(id);
             getActionButton(Control.ACTION_DELETE).setEnabled(false);
             getActionButton(Control.ACTION_VIEW).setEnabled(false);
-
-            //delete_button.setEnabled(false);
             for (int i = 0; i < main_layout.getChildCount(); i++) {
                 ImageView iv = (ImageView)main_layout.getChildAt(i);
                 Long vId = (Long)iv.getTag();
                 if(id.equals(vId)) {
                     setValue(id);
                     iv.setBackgroundColor(Color.BLACK);
-                    //iv.setBackgroundColor(Color.parseColor("#225C6E"));
                     getActionButton(Control.ACTION_DELETE).setEnabled(true);
                     getActionButton(Control.ACTION_VIEW).setEnabled(true);
                 }
                 else{
                     iv.setBackground(ContextCompat.getDrawable(main_layout.getContext(), R.drawable.button));
-
-
                 }
             }
         }
@@ -759,7 +603,6 @@ public class Control {
             String formula = "@0.RefFiles.Where(img=>img.RefId == " + getParentId() + " && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Select(img => new{img.Id,img.FileName})";
             list.addForSelectQuery(getName(),getName(), formula);
         }
-
         @Override
         public void onButtonClick(ActionButton button) {
             if(button.Name.equals(Control.ACTION_DELETE)){
@@ -796,9 +639,6 @@ public class Control {
                 PopupImage.create("Image View", getValue()).show(getRootActivity().getSupportFragmentManager(),null);
              }
         }
-
-
-
         protected transient FlexboxLayout main_layout;
         @Override
         public void addValueView(ViewGroup container) {
@@ -812,26 +652,19 @@ public class Control {
                 addImage(getValues().get(i));
             }
         }
-
-
-
         private ImageView GetImageView(long id){
             ImageView imageView = new ImageView(main_layout.getContext());
             FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(BaseActivity.ButtonWidth, BaseActivity.ButtonWidth);
-            //lllP.setP(2,2,2,2);
             imageView.setLayoutParams(lllP);
             imageView.setTag(id);
             imageView.setPadding(2,2,2,2);
             if(getValue() != null && id == getValue()){
-                //imageView.setBackgroundColor(Color.parseColor("#225C6E"));
                 imageView.setBackgroundColor(Color.BLACK);
                 getActionButton(Control.ACTION_DELETE).setEnabled(true);
                 getActionButton(Control.ACTION_VIEW).setEnabled(true);
             }
             else{
                 imageView.setBackground(ContextCompat.getDrawable(main_layout.getContext(), R.drawable.button));
-
-
             }
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -843,15 +676,12 @@ public class Control {
                         ImageView iv = (ImageView)main_layout.getChildAt(i);
                         if(view == iv) {
                             setValue(id);
-                            //iv.setBackgroundColor(Color.parseColor("#225C6E"));
                             iv.setBackgroundColor(Color.BLACK);
                             getActionButton(Control.ACTION_DELETE).setEnabled(true);
                             getActionButton(Control.ACTION_VIEW).setEnabled(true);
                         }
                         else{
                             iv.setBackground(ContextCompat.getDrawable(main_layout.getContext(), R.drawable.button));
-
-
                         }
                     }
                 }
@@ -871,53 +701,40 @@ public class Control {
                 public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
                     imageView.setImageBitmap(bmp);
-
-                    //System.out.println(main_layout.getChildCount());
                 }
                 @Override
                 public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
-
                 }
             });
         }
 
         @Override
         public void refreshDetailedView(JSONArray data) {
-
         }
     }
     public static abstract class DetailedControlBase<T extends ControlBase<T,Long>> extends ControlBase<T, Long> {
-
         public static final int HEADER_CONTAINER_ID = 1001;
         public static final int VALUE_CONTAINER_ID = 1002;
         public static final int ACTION_CONTAINER_ID = 1003;
-
         protected GradientDrawable getHeaderBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.TOP_BOTTOM,
                     new int[] {Color.parseColor("#04263C"),Color.parseColor("#0D78BF"),Color.parseColor("#0D78BF"),Color.parseColor("#04263C")});
             orderStyle.setCornerRadius(0f);
             return orderStyle;
-
-
         }
-
         @Override
         protected Long convertValue(Object value) {
             if(value == null || value == JSONObject.NULL)return null;
             else if(value.getClass().equals(Long.class))return(Long)value;
             else return null;
         }
-
-
         @Override
         public String getFullPath(){
 
             if(getName() == null)return null;
             if(getName().equals("."))return getPath();
-
             String path;
-
             if(getPath() == null || getPath().length() == 0)path = "";
             else path =  getPath() + ".";
             if(getValue() == null || getValue() == 0L){
@@ -927,7 +744,6 @@ public class Control {
             }
             return path;
         }
-
         public String getFullPathNew(){
             String path = getFullPath();
             if(path == null)return null;
@@ -935,47 +751,34 @@ public class Control {
             else if(path.endsWith("]"))return path.substring(0,path.lastIndexOf("[")) + "[]";
             else return path + "[]";
         }
-
         @Override
         protected Drawable getEditorBackground() {
             return null;
         }
-
         private ArrayList<Long> Values = new ArrayList<>();
-
-
-
         public T setValues(ArrayList<Long> values) {
             Values = values;
             return (T)this;
         }
-
         public ArrayList<Long> getValues() {
             return Values;
         }
-
         private boolean initialFocus = false;
         @Override
         protected void requestFocus() {
             if(getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
             else initialFocus = true;
         }
-
-
         public DetailedControlBase(String name,String caption){
             super(name,caption);
-
-
             setControlSize(RelativeLayout.LayoutParams.MATCH_PARENT);
         }
-
         @Override
         public T setCaption(String caption) {
             super.setCaption(caption);
             if(CaptionTextView != null)CaptionTextView.setText(caption);
             return (T)this;
         }
-
         @Override
         public boolean validate() {
             boolean valid = true;
@@ -993,10 +796,7 @@ public class Control {
             return valid;
         }
         protected transient  TextView CaptionTextView;
-
-
         protected transient  LinearLayout ActionLayout;
-
         private transient RelativeLayout rl = null;
         @Override
         protected void addContentView(ViewGroup container) {
@@ -1034,14 +834,11 @@ public class Control {
 
             CaptionTextView = new TextView(container.getContext());
             RelativeLayout.LayoutParams CaptionTextViewP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-
-
             CaptionTextView.setPadding(10, 0, 5, 10);
             CaptionTextView.setLayoutParams(CaptionTextViewP);
             CaptionTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP,22);
             CaptionTextView.setText(getCaption());
             CaptionTextView.setTextColor(ContextCompat.getColor(container.getContext(), R.color.white));
-
             CaptionTextView.setId(HEADER_CONTAINER_ID);
             if(getButtons() != null && getButtons().size() >0) {
                 CaptionTextViewP.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
@@ -1075,14 +872,7 @@ public class Control {
             addValueView(llValue);
             if(initialFocus && getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
         }
-
-        //@Override
-        //public void updateSaveParameters(RequestParams params) {
-        //    params.put(getForeignFieldName(),getParentId());
-        //}
-
         public abstract void refreshDetailedView(JSONArray data);
-
         @Override
         public T readValueObject(Object value) {
             if (value != null && JSONArray.class.isAssignableFrom(value.getClass())) {
@@ -1107,36 +897,26 @@ public class Control {
         }
 
         private boolean  EnableScroll = false;
-
         public boolean getEnableScroll() {
             return EnableScroll;
         }
-
         public T setEnableScroll(boolean enableScroll) {
             EnableScroll = enableScroll;
             return (T)this;
         }
         @Override
         public  T updateValueToJSONObject(JSONObject data) {
-
             return (T)this;
         }
-
         private String IdFieldName = "Id";
-
         public String getIdFieldName() {
             return IdFieldName;
         }
-
         public T setIdFieldName(String idFieldName) {
             IdFieldName = idFieldName;
             return (T)this;
         }
-
         private Long ParentId;
-
-
-
         public T setParentId(Long id) {
 
             ParentId = id;
@@ -1145,19 +925,10 @@ public class Control {
         public Long getParentId() {
             return ParentId;
         }
-
-
-
-
         @Override
         public void valueChange(Long oldValue, Long newValue) {
-
         }
     }
-
-
-
-
     public static class DateTimeControl extends DateControlBase<DateTimeControl>{
         @Override
         public String getFormat() {
@@ -1166,7 +937,6 @@ public class Control {
         public DateTimeControl( String name, String caption) {
             super( name, caption);
         }
-
         @Override
         protected void onBrowse(ActionButton button) {
 
@@ -1186,25 +956,6 @@ public class Control {
         public DateControl( String name, String caption) {
             super( name, caption);
         }
-
-        /*
-
-        @Override
-        public DateControl setValue(Date value) {
-            Date today = value;
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            try{
-                today = sdf.parse(sdf.format(today));
-            }
-            catch (Exception e){
-
-            }
-            super.setValue(today);
-            return this ;
-        }
-
-         */
-
         @Override
         protected void onBrowse(ActionButton button) {
             BaseActivity activity = (BaseActivity)button.getButton().getContext();
@@ -1216,10 +967,7 @@ public class Control {
     }
 
     public static abstract class DateControlBase<T extends DateControlBase<T>> extends EditTextControlBase<T,Date>{
-
         public abstract  String getFormat();
-
-
         public DateControlBase( String name, String caption) {
             super( name, caption);
             setControlSize(CONTROL_SIZE_SINGLE);
@@ -1231,7 +979,6 @@ public class Control {
             if(button.getName().equals("Search")){
                 onBrowse(button);
             }
-
         }
         @Override
         public Date getValue() {
@@ -1242,14 +989,7 @@ public class Control {
         public EditTextControlBase<T, Date> setValue(Date value) {
             return super.setValue(value);
         }
-
-
-
         protected abstract void onBrowse(ActionButton button);
-
-
-
-
         @Override
         protected Date convertValue(Object value) {
             if(value==null || value ==JSONObject.NULL){
@@ -1293,7 +1033,6 @@ public class Control {
             }
             return null;
         }
-
         @Override
         protected boolean IsInputValid(String value) {
             if(value == null || value.length() == 0)return true;
@@ -1308,8 +1047,6 @@ public class Control {
                 return false;
             }
         }
-
-
         @Override
         public String getFormatValue(Date value) {
             if(value==null)return null;
@@ -1317,7 +1054,6 @@ public class Control {
             DateFormat format = new SimpleDateFormat(getFormat());
             return format.format(value);
         }
-
         @Override
         public T updateValueToJSONObject(JSONObject data) {
 
@@ -1329,9 +1065,6 @@ public class Control {
             return (T)this;
         }
     }
-
-
-
     public static abstract class SearchControlBase extends LookupForeignControlBase<SearchControlBase>{
         public SearchControlBase(String name, String caption,List<Control.ControlBase> controls,String displayField) {
             super(name, caption,displayField);
@@ -1342,9 +1075,6 @@ public class Control {
             setKeywordsField("keyWords");
             setSearchKey(32);
         }
-
-
-
         private transient TextView LookupTextView;
         private List<Control.ControlBase> Controls;
         public List<Control.ControlBase> getControls() {
@@ -1429,8 +1159,6 @@ public class Control {
                 }
             };
         }
-
-
         @Override
         protected void onPopupList() {
             Popup = PopupSearch.create(getCaption(), getControls(), getDisplayField());
@@ -1441,22 +1169,11 @@ public class Control {
             Popup.show(getRootActivity().getSupportFragmentManager(),null);
         }
     }
-
-
-
     public static class LookupForeignControl extends LookupForeignControlBase<LookupForeignControl> {
         public LookupForeignControl(String name, String caption,String displayField) {
             super(name, caption, displayField);
 
         }
-        //public void addNewRecord(ArrayList<ControlBase> controls,String actionPath){
-        //    addNewRecord(getFullPath(),controls,actionPath);
-        //}
-
-
-
-
-
         private String Where;
         public String getWhere() {
             return Where;
@@ -1476,9 +1193,6 @@ public class Control {
         protected ArrayList<ControlBase> getAddControls(){
             return  new ArrayList<>();
         }
-
-
-
         @Override
         protected void onPopupList() {
             String select = "it0 => new {it0.Id, it0." + getDisplayField() + " as Name}";
@@ -1496,29 +1210,11 @@ public class Control {
                 return null;
             }, getRootActivity());
         }
-
     }
-
-
     public static abstract class LookupForeignControlBase<T extends LookupForeignControlBase<T>> extends LookupControlBase<T> {
         public LookupForeignControlBase(String name, String caption,String displayField) {
             super(name, caption, displayField);
-            //setEntityName(entityName);
         }
-
-        /*
-
-        private String EntityName;
-        public String getEntityName() {
-            return EntityName;
-        }
-        public T setEntityName(String entityName) {
-            EntityName = entityName;
-            return (T)this;
-        }
-
-         */
-
         @Override
         public T readValueObject(Object value) {
             if(value != null  && Long.class.isAssignableFrom(value.getClass())) {
@@ -1545,10 +1241,6 @@ public class Control {
             return (T)this;
         }
     }
-
-
-
-
     public static class LookupListControl extends LookupControlBase<LookupListControl> {
         public LookupListControl(String name, String caption, String displayField, List<DataService.Lookup> lookups) {
             super(name, caption, displayField);
@@ -1582,17 +1274,10 @@ public class Control {
             return  super.convertValue(value);
         }
     }
-
-
-
-
-
     public static abstract class LookupControlBase<T extends LookupControlBase<T>> extends FieldControlBase<T,DataService.Lookup>{
 
         public static int POPUP_INDEX_HIDE = -1;
         public static int POPUP_INDEX_AUTO = 0;
-
-
         protected transient TextView txtValue;
         public LookupControlBase(String name, String caption,String displayField) {
             super(name, caption);
@@ -1602,23 +1287,18 @@ public class Control {
             setPopupIndex(POPUP_INDEX_AUTO);
         }
         protected abstract void onPopupList();
-
-
         private transient Function<DataService.Lookup,Void> Notify = null;
         public void onPopupList(BaseActivity activity,Function<DataService.Lookup,Void> notify){
             setRootActivity(activity);
             Notify = notify;
             onPopupList();
         }
-
         @Override
         protected void onButtonClick(ActionButton button) {
             if(button.Name.equals(Control.ACTION_SEARCH)){
                 onPopupList();
             }
         }
-
-
         public void addNewRecord(String path,ArrayList<ControlBase> controls,String actionPath){
             for (int i = 0; i < controls.size(); i++) {
                 controls.get(i).setPath(path);
@@ -1632,7 +1312,6 @@ public class Control {
                     .collect(Collectors.toList());
             ShowAdd(popupInputs,controls,path,actionPath);
         }
-
         protected String getSelect(ArrayList<ControlBase> controls){
             FieldList fields = new FieldList(0);
             fields.Fields.put("Id","it0.Id");
@@ -1641,7 +1320,6 @@ public class Control {
             }
             return "it0 => " + fields.getSelectString();
         }
-
         public void editRecord(String path,ArrayList<ControlBase> controls,String actionPath){
             new DataService().postForSelect(path,getSelect(controls), jsonObject -> {
                 try {
@@ -1679,12 +1357,10 @@ public class Control {
                 });
             }
         }
-
         @Override
         public DataService.Lookup getValue() {
             return super.getValue();
         }
-
         @Override
         public T setValue(DataService.Lookup value) {
             super.setValue(value);
@@ -1694,7 +1370,6 @@ public class Control {
             }
             return (T)this;
         }
-
         private boolean initialFocus = false;
         @Override
         protected void requestFocus() {
@@ -1714,7 +1389,6 @@ public class Control {
                 updateValueToJSONObject(data,getName() + ".Id",getValue().getId());
             return (T) this;
         }
-
         @Override
         protected void addValueView(ViewGroup container) {
             txtValue = new TextView(container.getContext());
@@ -1791,7 +1465,6 @@ public class Control {
         }
         @Override
         protected void onButtonClick(ActionButton button) {
-
         }
 
         @Override
@@ -1799,20 +1472,15 @@ public class Control {
             if(value == null || value == JSONObject.NULL)return null;
             else return value.toString();
         }
-
         @Override
         protected boolean IsInputValid(String value) {
             return true;
         }
-
         @Override
         public String getFormatValue(String value) {
             return value;
         }
     }
-
-
-
     public static class EditTextPickerControl extends EditTextControlBase<EditTextPickerControl,String> {
 
         public EditTextPickerControl(String name, String caption,ArrayList<String> options,String defaultValue) {
@@ -1823,27 +1491,21 @@ public class Control {
         }
 
         public String DefaultValue;
-
         public String getDefaultValue() {
             return DefaultValue;
         }
-
         public EditTextPickerControl setDefaultValue(String defaultValue) {
             DefaultValue = defaultValue;
             return this;
         }
-
         ArrayList<String> Options;
-
         public ArrayList<String> getOptions() {
             return Options;
         }
-
         public EditTextPickerControl setOptions(ArrayList<String> options) {
             Options = options;
             return this;
         }
-
         @Override
         protected void onButtonClick(ActionButton button) {
             if(button.getName() == Control.ACTION_SEARCH){
@@ -1858,13 +1520,11 @@ public class Control {
 
             }
         }
-
         @Override
         protected String convertValue(Object value) {
             if(value == null || value.equals(JSONObject.NULL))return null;
             else return value.toString();
         }
-
         @Override
         protected boolean IsInputValid(String value) {
             return true;
@@ -1905,8 +1565,6 @@ public class Control {
                 return false;
             }
         }
-
-
         private String DecimalFormat = null;
         public String getDecimalFormat() {
             return DecimalFormat;
@@ -1915,7 +1573,6 @@ public class Control {
             DecimalFormat = decimalFormat;
             return this;
         }
-
         @Override
         public String getFormatValue(Double value) {
             if(value == null)return null;
@@ -1938,8 +1595,6 @@ public class Control {
             }
         }
     }
-
-
     public static class EditIntegerControl extends EditTextControlBase<EditIntegerControl,Integer> {
 
         public EditIntegerControl(String name, String caption) {
@@ -1951,8 +1606,6 @@ public class Control {
         @Override
         protected void onButtonClick(ActionButton button) {
         }
-
-
         @Override
         public Integer convertValue(Object value) {
             if(value == null || value == JSONObject.NULL || value.toString().length() == 0)return  null;
@@ -1978,9 +1631,6 @@ public class Control {
             }
         }
     }
-
-
-
     public static class HiddenControl extends FieldControlBase<HiddenControl,Serializable>{
         public HiddenControl(String name, Serializable value) {
             super(name, null);
@@ -2021,27 +1671,18 @@ public class Control {
         }
     }
     public static abstract class EditTextControlBase<T extends EditTextControlBase<T,U>,U extends Serializable> extends FieldControlBase<EditTextControlBase<T,U>,U>{
-
         private String Digits = null;
-
         public T setDigits(String digits) {
             Digits = digits;
             if(EditTextInput != null){
                 EditTextInput.setKeyListener(DigitsKeyListener.getInstance(getDigits()));
             }
-
-
             return (T)this;
         }
-
         public String getDigits() {
             return Digits;
         }
-
-
-
         private int InputType = 1;
-
         public T setInputType(int inputType) {
             InputType = inputType;
             if(EditTextInput != null){
@@ -2049,13 +1690,9 @@ public class Control {
             }
             return (T)this;
         }
-
         public int getInputType() {
             return InputType;
         }
-
-
-
         public EditTextControlBase(String name, String caption){
             super( name, caption);
         }
@@ -2084,15 +1721,6 @@ public class Control {
             if(EditTextInput != null)EditTextInput.requestFocus();
             else initialFocus = true;
         }
-
-
-
-
-
-        //editText.setSelectAllOnFocus(true);
-
-
-
         private boolean InputValid = true;
         @Override
         public boolean validate() {
@@ -2100,15 +1728,12 @@ public class Control {
             if(!InputValid)valid = false;
             return valid;
         }
-
         @Override
         public T setEnabled(boolean enabled) {
             super.setEnabled(enabled);
             if(EditTextInput != null)EditTextInput.setEnabled(enabled);
             return (T)this;
         }
-
-
         @Override
         public void addValueView(ViewGroup container) {
             EditTextInput = new EditText(container.getContext());
@@ -2169,10 +1794,6 @@ public class Control {
             }
         }
     }
-
-
-
-
     public static abstract   class FieldControlBase<T extends FieldControlBase<T,U>,U extends Serializable> extends ControlBase<T,U> {
         public static final int HEADER_CONTAINER_ID = 1001;
         public static final int VALUE_CONTAINER_ID = 1002;
@@ -2180,9 +1801,7 @@ public class Control {
         public FieldControlBase(String name, String caption) {
             super(name, caption);
         }
-
         protected transient  TextView CaptionTextView;
-
         @Override
         public boolean validate() {
             boolean valid = super.validate();
@@ -2190,7 +1809,6 @@ public class Control {
             else if(CaptionTextView!=null)CaptionTextView.setBackground(getHeaderErrorBackground());
             return valid;
         }
-
         @Override
         protected void addContentView(ViewGroup container)
         {
@@ -2208,16 +1826,12 @@ public class Control {
                 container.addView(CaptionTextView);
             }
             RelativeLayout rl = null;
-
             if(getButtons() != null && getButtons().size() >0){
 
                 rl = new RelativeLayout(container.getContext());
                 LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
                 rl.setLayoutParams(rlP);
                 container.addView(rl);
-
-
-
                 LinearLayout llAction = new LinearLayout(container.getContext());
                 RelativeLayout.LayoutParams llActionP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
                 llActionP.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
@@ -2233,9 +1847,6 @@ public class Control {
                         @Override
                         public Void apply(Button btn) {
                             onButtonClick(button);
-
-
-
                             return null;
                         }
                     });
@@ -2260,7 +1871,6 @@ public class Control {
             addValueView(llValue);
         }
     }
-
     public static abstract   class ControlBase<T extends ControlBase<T,U>,U extends Serializable>  implements Serializable {
 
         protected abstract void onButtonClick(ActionButton button);
@@ -2338,7 +1948,6 @@ public class Control {
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
-//#E3E0E0
         protected Drawable getSelectionBackground(){
             GradientDrawable orderStyle = new GradientDrawable(
                     GradientDrawable.Orientation.TOP_BOTTOM,
@@ -2353,17 +1962,10 @@ public class Control {
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
-
-
-
         public ControlBase(String name,String caption){
             Caption = caption;
             Name = name;
-
-
         }
-
-
         protected transient LinearLayout RootLayout;
         public void addView(ViewGroup container){
             if(getRootActivity() == null)setRootActivity((BaseActivity) container.getContext());
@@ -2377,7 +1979,6 @@ public class Control {
             RootLayout.setEnabled(getEnabled());
             RootLayout.setVisibility(getVisible()?View.VISIBLE : View.GONE);
             container.addView(RootLayout);
-            //container.setBackground(getEditorBackground());
             addContentView(RootLayout);
         }
 
@@ -2403,17 +2004,6 @@ public class Control {
             if(RootLayout != null)RootLayout.setVisibility(visible?View.VISIBLE : View.GONE);
             return (T)this;
         }
-
-
-
-        //public void changeVisibility(boolean visible){
-        //    if(visible && RootLayout != null)RootLayout.setVisibility(View.VISIBLE);
-        //    else if(RootLayout != null) RootLayout.setVisibility(View.GONE);
-        //
-        //}
-
-
-
         protected abstract void addContentView(ViewGroup container);
         private ArrayList<ActionButton> Buttons = new ArrayList<ActionButton>();
         public ArrayList<ActionButton> getButtons() {
@@ -2451,8 +2041,6 @@ public class Control {
             getButtons().add(button);
             return  (T)this;
         }
-
-
         private String Name;
         public String getName(){
             return  Name;
@@ -2461,7 +2049,6 @@ public class Control {
             Name = name;
             return (T)this;
         }
-
         private String Path;
         public String getPath(){
             return  Path;
@@ -2470,14 +2057,10 @@ public class Control {
             if(getPath() == null || getPath().length() == 0)return getName();
             else return getPath() + "." + getName();
         }
-
-
         public T setPath(String path) {
             Path = path;
             return (T)this;
         }
-
-
         private String Aggregate = null;
         public String getAggregate(){
             return  Aggregate;
@@ -2486,9 +2069,6 @@ public class Control {
             Aggregate = caption;
             return (T)this;
         }
-
-
-
         private String Caption = null;
         public String getCaption(){
             return  Caption;
@@ -2525,32 +2105,25 @@ public class Control {
             }
             return (T)this;
         }
-
         private float ColumnWeight = 1;
 
         public T setColumnWeight(float columnWeight) {
             ColumnWeight = columnWeight;
             return (T)this;
         }
-
         public float getColumnWeight() {
             return ColumnWeight;
         }
-
         private  int ColumnWidth = 0;
-
         public T setColumnWidth(int columnWidth) {
             ColumnWidth = columnWidth;
             return (T)this;
         }
-
         public int getColumnWidth() {
             return ColumnWidth;
         }
-
         public void addListHeader(TableRow row){
             TextView hc = new TextView(row.getContext());
-
             hc.setPadding(10, 10, 10, 10);
             TableRow.LayoutParams hcP = new TableRow.LayoutParams(ColumnWidth,TableRow.LayoutParams.WRAP_CONTENT,ColumnWeight);
             hc.setLayoutParams(hcP);
@@ -2558,7 +2131,6 @@ public class Control {
             hc.setText(getCaption());
             hc.setTextAlignment(TextAlignment);
             hc.setGravity(Gravity.CENTER_VERTICAL);
-            //hc.setBackground(getHeaderBackground());
             row.addView(hc);
         }
         private int TextAlignment = View.TEXT_ALIGNMENT_INHERIT;
@@ -2569,31 +2141,21 @@ public class Control {
         public int getTextAlignment() {
             return TextAlignment;
         }
-
         protected transient TextView ListTextView;
-
         public TextView getListTextView() {
             return ListTextView;
         }
-
-        //private void readValue(JSONObject obj,String field){
-
-        //}
-
         public Control.ActionButton getButton(String name){
            if(getButtons() == null)return null;
             Optional<Control.ActionButton> button = getButtons().stream().filter(i-> i.getName().equals(name)).findFirst();
             if(button.isPresent())return button.get();
             else return null;
         }
-
-
         public void addListDetails(TableRow row, JSONObject data){
             setValue(null);
             readValueJSONObject(data,getName());
             addListDetails(row);
         }
-
         public void addListDetails(TableRow row){
             ListTextView = new TextView(row.getContext());
             TableRow.LayoutParams hcP = new TableRow.LayoutParams(ColumnWidth, TableRow.LayoutParams.MATCH_PARENT,ColumnWeight);
@@ -2605,29 +2167,15 @@ public class Control {
             ListTextView.setTag(getName());
             row.addView(ListTextView);
         }
-
-        //protected boolean specialCharacterFound(String  word){
-        //    Pattern p = Pattern.compile("[^a-z0-9_]", Pattern.CASE_INSENSITIVE);
-        //    Matcher m = p.matcher(word);
-        ///    return m.find();
-        //}
-
         protected static class FieldList implements  Serializable{
             public FieldList(int index){
                 Index  = index;
             }
-
             public String Root = null;
             public int Index;
-
-
-
             public HashMap<String,String> Fields = new HashMap<>();
             public HashMap<String,FieldList> ForeignFields = new HashMap<>();
-
             public String getSelectString(){
-
-
                 List<String> fields = new ArrayList<>();
                 for (String key: Fields.keySet()) {
                     fields.add(Fields.get(key));
@@ -2635,14 +2183,9 @@ public class Control {
                 for (String key : ForeignFields.keySet()) {
                     fields.add(Root + " == null ? null :" + ForeignFields.get(key).getSelectString() + " as " + key);
                 }
-
                 return "new {" + String.join(", ", fields) + "}" ;
             }
-
             public Serializable Value = null;
-
-
-
             public void addForSelectQuery(String name,String fullName,String formula){
                 int dotIndex = name.indexOf('.');
                 if(dotIndex<0 && !Fields.containsKey(name))
@@ -2671,24 +2214,18 @@ public class Control {
                     fl.addForSelectQuery(name.substring(dotIndex + 1),fullName,formula);
                 }
             }
-
         }
-
-
         public void addForSelectQuery(FieldList list) {
             list.addForSelectQuery(getName(),getName(),getFormula());
         }
-
         public abstract void valueChange(U oldValue, U newValue);
         private transient boolean viewCreated =false;
         protected abstract void addValueView(ViewGroup container);
-
         private transient Function2<U,U,Void> valueChangedListener;
         public T setValueChangedListener(Function2<U, U, Void> valueChangedListener) {
             this.valueChangedListener = valueChangedListener;
             return (T)this;
         }
-
         protected abstract void requestFocus();
         public  String getUrlParam(){
             Object value = getValue();
@@ -2715,8 +2252,6 @@ public class Control {
                 return  value.toString();
             }
         }
-
-
         public T readValueObject(Object value){
             setValue(convertValue(value));
             return (T)this;
@@ -2745,12 +2280,8 @@ public class Control {
             }
             catch (JSONException e){
                 System.out.println(e.getMessage());
-
             }
-
         }
-
-
         public  T readValueJSONObject(JSONObject data, String field){
             int dotIndex = field.indexOf('.');
             try{
@@ -2766,17 +2297,13 @@ public class Control {
             }
             catch (JSONException e){
                 System.out.println(e.getMessage());
-
             }
-
             return  (T)this;
         }
         public boolean validate(){
             if(getValue()==null && getIsRequired()) return  false;
             else return true;
         }
-
-
     }
     public static class ActionButton implements Serializable {
         public ActionButton(String name)
@@ -2784,19 +2311,14 @@ public class Control {
             setName(name);
 
         }
-
-
         protected transient Function<View,Boolean> onClick;
-
         public ActionButton setOnClick(Function<View, Boolean> onClick) {
             this.onClick = onClick;
             return this;
         }
-
         public Function<View, Boolean> getOnClick() {
             return onClick;
         }
-
         private String Name;
         public String getName() {
             return Name;
@@ -2867,11 +2389,7 @@ public class Control {
             }
             return pathArray;
         }
-
         private void setFormat(Button button, boolean enabled){
-
-
-
             ArrayList<VectorDrawableCreator.PathData> paths = new ArrayList<>();
             if(Name != null) {
                 if (Name.equals(Control.ACTION_ADD))
@@ -2918,26 +2436,6 @@ public class Control {
                 else if (Name.equals( Control.ACTION_SAVE)) {
                     paths = getPaths(new String[]{"M17,3L5,3c-1.11,0 -2,0.9 -2,2v14c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2L21,7l-4,-4zM12,19c-1.66,0 -3,-1.34 -3,-3s1.34,-3 3,-3 3,1.34 3,3 -1.34,3 -3,3zM15,9L5,9L5,5h10v4z"} ,enabled);
                 }
-
-                //
-
-   /*
-
-   <vector android:autoMirrored="true" android:height="24dp"
-    android:tint="#AA2626" android:viewportHeight="24"
-    android:viewportWidth="24" android:width="24dp" xmlns:android="http://schemas.android.com/apk/res/android">
-    <path android:fillColor="@android:color/white" android:pathData="M3,10h11v2h-11z"/>
-    <path android:fillColor="@android:color/white" android:pathData="M3,6h11v2h-11z"/>
-    <path android:fillColor="@android:color/white" android:pathData="M3,14h7v2h-7z"/>
-    <path android:fillColor="@android:color/white" android:pathData="M20.59,11.93l-4.25,4.24l-2.12,-2.12l-1.41,1.41l3.53,3.54l5.66,-5.66z"/>
-</vector>
-
-
-      */
-
-
-
-
             }
             Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,24,24,paths);
             button.setBackground(d);
@@ -2962,5 +2460,4 @@ public class Control {
             container.addView(button);
         }
     }
-
 }
