@@ -1303,7 +1303,6 @@ public class Control {
             for (int i = 0; i < controls.size(); i++) {
                 controls.get(i).setPath(path);
             }
-
             ArrayList<LookupControlBase> popupInputs = (ArrayList<LookupControlBase>)controls.stream()
                     .filter(o -> o instanceof LookupControlBase)
                     .map(o -> (LookupControlBase)o)
@@ -1340,13 +1339,12 @@ public class Control {
             }, getRootActivity());
         }
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls,String path,String actionPath){
-
             if(popupInputs == null || popupInputs.size() == 0){
                 new PopupForm()
                         .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,path,0L).setActionPath(actionPath))
                         .show( getRootActivity().getSupportFragmentManager(),null);
-
-            }else{
+            }
+            else{
                 popupInputs.get(0).onPopupList(getRootActivity(),new Function<DataService.Lookup, Void>() {
                     @Override
                     public Void apply(DataService.Lookup lookup) {
@@ -1400,7 +1398,6 @@ public class Control {
             container.addView(txtValue);
             if(initialFocus && getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
         }
-
         @Override
         public void valueChange(DataService.Lookup oldValue, DataService.Lookup newValue) {
             if(txtValue != null)txtValue.setText(getFormatValue(getValue()));
@@ -1421,7 +1418,6 @@ public class Control {
                     }
                 }catch (JSONException e){
                     System.out.println(e.getMessage());
-
                 }
             }
             return null;
@@ -1431,7 +1427,6 @@ public class Control {
             if(value == null)return null;
             else return value.getName();
         }
-
         @Override
         protected boolean valueEqual(DataService.Lookup value1, DataService.Lookup value2) {
             boolean equal = super.valueEqual(value1, value2);
@@ -1446,7 +1441,6 @@ public class Control {
             DisplayField = displayField;
             return (T)this;
         }
-
         private int PopupIndex;
         public int getPopupIndex() {
             return PopupIndex;
@@ -1455,18 +1449,14 @@ public class Control {
             PopupIndex = popupIndex;
             return (T)this;
         }
-
     }
-
     public static class EditTextControl extends EditTextControlBase<EditTextControl,String> {
-
         public EditTextControl(String name, String caption) {
             super(name, caption);
         }
         @Override
         protected void onButtonClick(ActionButton button) {
         }
-
         @Override
         public String convertValue(Object value) {
             if(value == null || value == JSONObject.NULL)return null;
@@ -1482,14 +1472,12 @@ public class Control {
         }
     }
     public static class EditTextPickerControl extends EditTextControlBase<EditTextPickerControl,String> {
-
         public EditTextPickerControl(String name, String caption,ArrayList<String> options,String defaultValue) {
             super(name, caption);
             Options = options;
             DefaultValue = defaultValue;
             getButtons().add(new ActionButton(Control.ACTION_SEARCH));
         }
-
         public String DefaultValue;
         public String getDefaultValue() {
             return DefaultValue;
@@ -1530,7 +1518,6 @@ public class Control {
             return true;
         }
     }
-
     public static class EditDecimalControl extends EditTextControlBase<EditDecimalControl,Double> {
         private Integer DecimalPlaces = 2;
         public EditDecimalControl(String name, String caption) {
@@ -1596,7 +1583,6 @@ public class Control {
         }
     }
     public static class EditIntegerControl extends EditTextControlBase<EditIntegerControl,Integer> {
-
         public EditIntegerControl(String name, String caption) {
             super(name, caption);
             setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
@@ -1636,12 +1622,9 @@ public class Control {
             super(name, null);
             setValue(value);
         }
-
         @Override
         protected void requestFocus() {
-
         }
-
         @Override
         protected void onButtonClick(ActionButton button) {
         }
@@ -1654,17 +1637,12 @@ public class Control {
         @Override
         protected void addValueView(ViewGroup container) {
         }
-
         @Override
         public void addListDetails(TableRow row, JSONObject data) {
-
         }
-
         @Override
         public void addListHeader(TableRow row) {
-
         }
-
         @Override
         protected Serializable convertValue(Object value) {
             if(value == null || value == JSONObject.NULL) return  null; else return  (Serializable)value;
@@ -1706,7 +1684,6 @@ public class Control {
             return (T)this;
         }
         private boolean SelectAllOnFocus = true;
-
         public T setSelectAllOnFocus(boolean selectAllOnFocus) {
             SelectAllOnFocus = selectAllOnFocus;
             return (T)this;
@@ -1714,7 +1691,6 @@ public class Control {
         public boolean getSelectAllOnFocus(){
             return SelectAllOnFocus;
         }
-
         private boolean initialFocus = false;
         @Override
         protected void requestFocus() {
@@ -1753,7 +1729,6 @@ public class Control {
             EditTextInput.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
                 }
                 @Override
                 public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -1827,7 +1802,6 @@ public class Control {
             }
             RelativeLayout rl = null;
             if(getButtons() != null && getButtons().size() >0){
-
                 rl = new RelativeLayout(container.getContext());
                 LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
                 rl.setLayoutParams(rlP);
@@ -1858,7 +1832,6 @@ public class Control {
             RelativeLayout.LayoutParams llValueP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             llValue.setLayoutParams(llValueP);
             llValue.setId(VALUE_CONTAINER_ID);
-
             if(getButtons() != null && getButtons().size() >0){
                 rl.addView(llValue);
                 llValueP.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
@@ -1872,7 +1845,6 @@ public class Control {
         }
     }
     public static abstract   class ControlBase<T extends ControlBase<T,U>,U extends Serializable>  implements Serializable {
-
         protected abstract void onButtonClick(ActionButton button);
         private int ControlSize = Control.CONTROL_SIZE_SINGLE;
         public int getControlSize(){
@@ -1886,23 +1858,18 @@ public class Control {
             return Action;
         }
         private int Action;
-
         public T setAction(int action) {
             Action = action;
             return (T)this;
         }
-
         private String Formula;
-
         public String getFormula() {
             return Formula;
         }
-
         public T setFormula(String formula) {
             Formula = formula;
             return (T)this;
         }
-
         public int getWidth(){
             int singleSize = BaseActivity.ControlWidth;
             if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
@@ -1920,31 +1887,17 @@ public class Control {
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
-
         protected Drawable getEditorBackground(){
             GradientDrawable orderStyle;
-
             if(getIsRequired() && getEnabled()){
-                orderStyle = new GradientDrawable(
-                        GradientDrawable.Orientation.LEFT_RIGHT,
-                        new int[] {Color.parseColor("#FDF8CB"),Color.parseColor("#FDF8CB"),Color.parseColor("#FDF8CB"),Color.GRAY});
-
-
-                //#FDF8CB
+                orderStyle = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[] {Color.parseColor("#FDF8CB"),Color.parseColor("#FDF8CB"),Color.parseColor("#FDF8CB"),Color.GRAY});
             }
             else if(getEnabled()){
-                orderStyle = new GradientDrawable(
-                        GradientDrawable.Orientation.LEFT_RIGHT,
-                        new int[] {Color.WHITE,Color.WHITE,Color.WHITE,Color.GRAY});
-
-            }else{
-                orderStyle = new GradientDrawable(
-                        GradientDrawable.Orientation.LEFT_RIGHT,
-                        new int[] {Color.GRAY,Color.GRAY,Color.GRAY,Color.GRAY});
-
+                orderStyle = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[] {Color.WHITE,Color.WHITE,Color.WHITE,Color.GRAY});
             }
-
-
+            else{
+                orderStyle = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[] {Color.GRAY,Color.GRAY,Color.GRAY,Color.GRAY});
+            }
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
@@ -1981,7 +1934,6 @@ public class Control {
             container.addView(RootLayout);
             addContentView(RootLayout);
         }
-
         private boolean Enabled = true;
         public boolean getEnabled(){
             return Enabled;
@@ -1994,7 +1946,6 @@ public class Control {
             }
             return (T)this;
         }
-
         private boolean Visible = true;
         public boolean getVisible(){
             return Visible;
@@ -2029,9 +1980,7 @@ public class Control {
             IsRequired = required;
             return  (T)this;
         }
-
         public T addButton(String name) {
-
             return addButton(name,null);
         }
         public T addButton(String name,Function<View, Boolean> onClick) {
@@ -2106,7 +2055,6 @@ public class Control {
             return (T)this;
         }
         private float ColumnWeight = 1;
-
         public T setColumnWeight(float columnWeight) {
             ColumnWeight = columnWeight;
             return (T)this;
@@ -2309,7 +2257,6 @@ public class Control {
         public ActionButton(String name)
         {
             setName(name);
-
         }
         protected transient Function<View,Boolean> onClick;
         public ActionButton setOnClick(Function<View, Boolean> onClick) {
@@ -2442,7 +2389,6 @@ public class Control {
             button.setEnabled(enabled);
         }
         public void addView(ViewGroup container, Function<Button,Void> buttonClick){
-
             button = new Button(container.getContext());
             button.setPadding(50,50,50,50);
             button.setOnClickListener(new View.OnClickListener() {
