@@ -57,7 +57,7 @@ public class InspectUnitActivity extends BaseActivity {
 
         @Override
         protected String getWhere(String action) {
-            return "IsDeleted = false and InvTransaction.TranType = \"Purchase\" and InvTransaction.TranStatus = \"Final\" and InvItemUnit.ItemId=" + ItemId;
+            return "IsDeleted = false and AccTransaction.RefLookup.Attr1 = \"Purchase\" and AccTransaction.Status = \"Final\" and InvItemUnit.ItemId=" + ItemId;
         }
 
         @Override
@@ -67,7 +67,7 @@ public class InspectUnitActivity extends BaseActivity {
 
         @Override
         protected String getOrderBy(String action) {
-            return "InvTransaction.TranDate desc, Id desc";
+            return "AccTransaction.TranDate desc, Id desc";
         }
 
         @Override
@@ -75,8 +75,8 @@ public class InspectUnitActivity extends BaseActivity {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action == null)return controls;
             if(action.equals(Control.ACTION_REFRESH)){
-                controls.add(Control.getDateControl("InvTransaction.TranDate","Date").setColumnWeight(3));
-                controls.add(Control.getEditTextControl("InvTransaction.BusSupplier.Name","Supplier").setColumnWeight(6));
+                controls.add(Control.getDateControl("AccTransaction.TranDate","Date").setColumnWeight(3));
+                controls.add(Control.getEditTextControl("AccTransaction.BusSupplier.Name","Supplier").setColumnWeight(6));
                 controls.add(Control.getEditDecimalControl("Qty","Qty").setFormula("{0}.Qty * {0}.Fraction").setColumnWeight(3));
                 controls.add(Control.getEditDecimalControl("Rate","Rate").setFormula("({0}.Rate + ISNULL({0}.TaxRate,0)) / {0}.Fraction").setColumnWeight(2));
 
