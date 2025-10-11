@@ -41,7 +41,7 @@ public class InspectUnitActivity extends BaseActivity {
     //protected transient EditText SearchEditText;
     protected transient LinearLayout RootLayout;
     protected transient ScrollView Scroll;
-    protected static String Select = "it0=> new {it0.InvItemUnits.OrderByDescending(Id).Select(it1=> new {it1.Id, it1.ItemNumber.ToString() + \" \" + it1.Code +  it1.Fraction.ToString() as Description,it1.SalesRate,it1.SalesRate1, it1.InvItem.PurchaseRate * it1.Fraction as Cost, it0.Stock/it1.Fraction as Stock }) as InvItemUnits,it0.Id,it0.Description + \"(\" + it0.InvItemGroup.Code + \")\" as Description}";
+    protected static String Select = "it0=> new {it0.InvItemUnits.OrderByDescending(Id).Select(it1=> new {it1.Id, it1.ItemNumber + \" \" + it1.Code +  it1.Fraction as Description,it1.SalesRate,it1.SalesRate1, it1.InvItem.PurchaseRate * it1.Fraction as Cost, it0.Stock/it1.Fraction as Stock }) as InvItemUnits,it0.Id,it0.Description + \"(\" + it0.InvItemGroup.Code + \")\" as Description}";
 
 
 

@@ -149,7 +149,7 @@ public class Item {
         @Override
         public void AddControls(LinearLayout container) {
             //Long invCheckInLineId = getArgs().getInvCheckInLineId();
-            String s ="it0 => new{it0.Id,it0.Description,it0.InvItemUnits.OrderBy(Fraction).Select(it1 => new {it1.Id,it1.ItemNumber.ToString() + \" \" + it1.Code + \" \" + it1.Fraction.ToString() as Unit,it1.InvItemBarcodes.OrderByDescending(Id).Select(it2 => new{it2.Id,it2.Code}) as InvItemBarcodes}) as InvItemUnits}";
+            String s ="it0 => new{it0.Id,it0.Description,it0.InvItemUnits.OrderBy(Fraction).Select(it1 => new {it1.Id,it1.ItemNumber + \" \" + it1.Code + \" \" + it1.Fraction as Unit,it1.InvItemBarcodes.OrderByDescending(Id).Select(it2 => new{it2.Id,it2.Code}) as InvItemBarcodes}) as InvItemUnits}";
             new DataService().postForSelect(getArgs().getPath(), s, jsonObject -> {
                 try{
                     Title.setText(jsonObject.getString("Description"));
@@ -260,7 +260,7 @@ public class Item {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action.equals(Control.ACTION_FILTER))return controls;
             if(action.equals(Control.ACTION_REFRESH)){
-                controls.add(Control.getEditTextControl("Description","Description").setFormula("{0}.ItemNumber.ToString() + \" \" + {0}.Code +  {0}.Fraction.ToString()").setColumnWidth(400));
+                controls.add(Control.getEditTextControl("Description","Description").setFormula("{0}.ItemNumber + \" \" + {0}.Code +  {0}.Fraction").setColumnWidth(400));
             }
             else{
                 Control.LookupForeignControl item =Control.getLookupForeignControl("InvItem","Unit","Description");

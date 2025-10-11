@@ -59,7 +59,7 @@ public  class InvCheckInActivity extends BaseActivity {
         Controls.add(new InvCheckInDetailedControl());
     }
     public static  class ItemSearchControl extends Control.SearchControlBase {
-        private static String ItemFormula = "{0}.InvItemUnit == null ? null : {0}.InvItemUnit.ItemNumber.ToString() + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction.ToString() + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
+        private static String ItemFormula = "{0}.InvItemUnit == null ? null : {0}.InvItemUnit.ItemNumber + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
         public ItemSearchControl() {
             super("InvItemUnit", "Item",null ,"FullDescription");
             setFormula(ItemFormula);
@@ -151,8 +151,8 @@ public  class InvCheckInActivity extends BaseActivity {
             else if(button.getName() == Control.ACTION_INBOX){
                 new DataService().postForList(DataService.Lookup.class,
                     "InvItemUnits[" + getValue().getId() + "].InvItem.InvItemUnits[]",
-                    "new {Id, Code + \" \" + Fraction.ToString() as Name}",
-                    "", "Code + \" \" + Fraction.ToString()",
+                    "new {Id, Code + \" \" + Fraction as Name}",
+                    "", "Code + \" \" + Fraction",
                 lookups -> {
                     PopupLookup pl = PopupLookup.create(getCaption(),lookups,0L,(unit)->{
                         if(unit == null){
@@ -299,7 +299,7 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         }
         public static class InvCheckInPriceDetailedControl extends Control.DetailedControl {
-            private static String ItemUnitFormula = "{0}.ItemNumber.ToString() + \" \" + {0}.Code + \" \" + {0}.Fraction.ToString()";
+            private static String ItemUnitFormula = "{0}.ItemNumber + \" \" + {0}.Code + \" \" + {0}.Fraction";
             public InvCheckInPriceDetailedControl() {
                 super("InvItemUnits", "Price List");
             }
