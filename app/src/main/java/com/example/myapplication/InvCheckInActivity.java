@@ -660,9 +660,10 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getDateTimeControl("CheckInTime","Date").setColumnWeight(4));
                 controls.add(Control.getEditTextControl("RefNum","Ref#").setColumnWeight(3));
                 controls.add(Control.getEditTextControl("BusEmployee.Code","Em").setColumnWeight(2));
-                controls.add(Control.getLookupForeignControl("BusSupplier","Supplier","Name").setColumnWeight(9));
+                controls.add(Control.getLookupForeignControl("BusParty","Supplier","Name").setColumnWeight(9));
                 controls.add(Control.getHiddenControl( "Status", null));
                 return controls;
+
             }
             else if(action.equals(Control.ACTION_ADD ) || action.equals(Control.ACTION_EDIT)){
                 controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
@@ -670,7 +671,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(action.equals(Control.ACTION_ADD)){
                     controls.add(Control.getHiddenControl( "Status", "Draft"));
                  }
-                controls.add(Control.getLookupForeignControl( "BusSupplier", "Supplier","Name"));
+                controls.add(Control.getLookupForeignControl( "BusParty", "Supplier","Name"));
                 controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","ShortName"));
                 controls.add(new InvCheckInLineDetailedControl());
                 controls.add(Control.getImageControl( "Images", "Invoice Images","InvCheckIn").setIsRequired(false));
@@ -678,6 +679,7 @@ public  class InvCheckInActivity extends BaseActivity {
             }
             else{
                 return null;
+
             }
         }
     }

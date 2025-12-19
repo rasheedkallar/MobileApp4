@@ -73,7 +73,6 @@ public class MainActivity extends BaseActivity {
         }
 
 
-
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();

@@ -76,7 +76,7 @@ public class InspectUnitActivity extends BaseActivity {
             if(action == null)return controls;
             if(action.equals(Control.ACTION_REFRESH)){
                 controls.add(Control.getDateControl("AccTransaction.TranDate","Date").setColumnWeight(3));
-                controls.add(Control.getEditTextControl("AccTransaction.BusSupplier.Name","Supplier").setColumnWeight(6));
+                controls.add(Control.getEditTextControl("AccTransaction.BusParty.Name","Supplier").setColumnWeight(6));
                 controls.add(Control.getEditDecimalControl("Qty","Qty").setFormula("{0}.Qty * {0}.Fraction").setColumnWeight(3));
                 controls.add(Control.getEditDecimalControl("Rate","Rate").setFormula("({0}.Rate + ISNULL({0}.TaxRate,0)) / {0}.Fraction").setColumnWeight(2));
 
