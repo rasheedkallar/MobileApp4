@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.media.Image;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -365,7 +366,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
         // Camera permission is granted, you can proceed with camera-related operations
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+        //if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
             try {
                 image_file = createImageFile();
             } catch (IOException ex) {
@@ -385,7 +386,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
 
             }
-        }
+        //}
     }
     private    void  ImagePick(){
         Intent pickImageIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -426,13 +427,19 @@ public abstract class BaseActivity extends AppCompatActivity  {
         image_action = action;
         image_entityName  = entityName;
         image_fileGroup = fileGroup;
-        if(image_action <0){
+        if(image_action < 0){
             image_entity_id = entityId;
-            int galleryPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-            if (galleryPermission == PackageManager.PERMISSION_GRANTED) {
+            String permission;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                permission = Manifest.permission.READ_MEDIA_IMAGES;
+            } else {
+                permission = Manifest.permission.READ_EXTERNAL_STORAGE;
+            }
+
+            if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
                 ImagePick();
             } else {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, GALLERY_PERMISSION_REQUEST_CODE);
+                ActivityCompat.requestPermissions(this, new String[]{permission}, GALLERY_PERMISSION_REQUEST_CODE);
             }
         }
         else{

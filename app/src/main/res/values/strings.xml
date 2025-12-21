@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Abu Naser Supermarket</string>
+    <string name="app_name">Bytes Mobile</string>
     <string name="title_activity_date_time_picker">DateTimePicker</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
