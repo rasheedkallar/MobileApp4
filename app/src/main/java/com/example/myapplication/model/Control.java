@@ -1387,11 +1387,43 @@ public class Control {
                 try{
                     JSONObject vjo = (JSONObject) value;
                     if(vjo.has("Id")){
+
+                        String display = "[UNKNOWN]";
+                        String displayField = getDisplayField();
+
+                        if (displayField != null && !displayField.isEmpty()) {
+                            Object nestedValue = vjo;
+                            String[] fields = displayField.split("\\.");
+
+                            for (String field : fields) {
+                                if (nestedValue instanceof JSONObject) {
+                                    nestedValue = ((JSONObject) nestedValue).opt(field);
+                                } else {
+                                    nestedValue = null;
+                                    break;
+                                }
+                            }
+
+                            if (nestedValue != null && nestedValue != JSONObject.NULL) {
+                                display = nestedValue.toString();
+                            }
+                        }
+
+                        long id = Long.parseLong(vjo.get("Id").toString());
+                        return new DataService.Lookup(id, display);
+
+
+
+
+                        /*
+
                         String display = "[UNKNOWN]";
                         if(vjo.has(getDisplayField())){
                             display = vjo.get(getDisplayField()).toString();
                         }
                         return new DataService.Lookup(Long.parseLong(vjo.get("Id").toString()),display);
+
+                         */
                     }
                 }catch (JSONException e){
                     System.out.println(e.getMessage());
@@ -2103,7 +2135,8 @@ public class Control {
                     fields.add(Fields.get(key));
                 }
                 for (String key : ForeignFields.keySet()) {
-                    fields.add(Root + " == null ? null :" + ForeignFields.get(key).getSelectString() + " as " + key);
+                    FieldList ff = ForeignFields.get(key);
+                    fields.add( ff.Root + " == null ? null :" + ff.getSelectString() + " as " + key);
                 }
                 return "new {" + String.join(", ", fields) + "}" ;
             }
@@ -2123,11 +2156,12 @@ public class Control {
                     }
                 else if (dotIndex>0) {
                     String forObj = name.substring(0,dotIndex);
-                    Root = "it" + Index  + "." + fullName.substring(0,fullName.length() - name.length() + dotIndex);
                     FieldList fl;
+
                     if(!ForeignFields.containsKey(forObj)) {
                         fl = new FieldList(Index);
-                        fl.Fields.put("Id",Root + ".Id");
+                        fl.Root = "it" + Index  + "." + fullName.substring(0,fullName.length() - name.length() + dotIndex);
+                        fl.Fields.put("Id",fl.Root + ".Id");
                         ForeignFields.put(forObj, fl);
                     }
                     else{

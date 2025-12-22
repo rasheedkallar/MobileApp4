@@ -671,8 +671,10 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(action.equals(Control.ACTION_ADD)){
                     controls.add(Control.getHiddenControl( "Status", "Draft"));
                  }
+
                 controls.add(Control.getLookupForeignControl( "BusParty", "Supplier","Name"));
-                controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","ShortName"));
+                controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","BusParty.Name"));
+
                 controls.add(new InvCheckInLineDetailedControl());
                 controls.add(Control.getImageControl( "Images", "Invoice Images","InvCheckIn").setIsRequired(false));
                 return controls;
