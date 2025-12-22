@@ -663,25 +663,21 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getLookupForeignControl("BusParty","Supplier","Name").setColumnWeight(9));
                 controls.add(Control.getHiddenControl( "Status", null));
                 return controls;
-
             }
             else if(action.equals(Control.ACTION_ADD ) || action.equals(Control.ACTION_EDIT)){
+                controls.add(new InvCheckInLineDetailedControl());
+                controls.add(Control.getImageControl( "Images", "Invoice Images","InvCheckIn").setIsRequired(false));
                 controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
                 controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
                 if(action.equals(Control.ACTION_ADD)){
                     controls.add(Control.getHiddenControl( "Status", "Draft"));
-                 }
-
+                }
                 controls.add(Control.getLookupForeignControl( "BusParty", "Supplier","Name"));
                 controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","BusParty.Name"));
-
-                controls.add(new InvCheckInLineDetailedControl());
-                controls.add(Control.getImageControl( "Images", "Invoice Images","InvCheckIn").setIsRequired(false));
                 return controls;
             }
             else{
                 return null;
-
             }
         }
     }

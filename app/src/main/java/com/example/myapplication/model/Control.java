@@ -65,6 +65,8 @@ public class Control {
     public static String ACTION_PERCENT= "Percent";
     public static String ACTION_STOCK= "Stock";
     public static String ACTION_CHECKED= "Checked";
+
+    public static String ACTION_PRINT = "Print";
     public static String ACTION_SAVE= "Save";
     public static int CONTROL_SIZE_DOUBLE = -20;
     public static int CONTROL_SIZE_SINGLE = -10;
@@ -2388,9 +2390,12 @@ public class Control {
                 else if (Name.equals( Control.ACTION_CHECKED)) {
                     paths = getPaths(new String[]{"M3,10h11v2h-11z","M3,6h11v2h-11z","M3,14h7v2h-7z","M20.59,11.93l-4.25,4.24l-2.12,-2.12l-1.41,1.41l3.53,3.54l5.66,-5.66z"} ,enabled);
                 }
-                else if (Name.equals( Control.ACTION_SAVE)) {
-                    paths = getPaths(new String[]{"M17,3L5,3c-1.11,0 -2,0.9 -2,2v14c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2L21,7l-4,-4zM12,19c-1.66,0 -3,-1.34 -3,-3s1.34,-3 3,-3 3,1.34 3,3 -1.34,3 -3,3zM15,9L5,9L5,5h10v4z"} ,enabled);
+                else if (Name.equals( Control.ACTION_PRINT)) {
+                    paths = getPaths(new String[]{"M19,8L5,8c-1.66,0 -3,1.34 -3,3v6h4v4h12v-4h4v-6c0,-1.66 -1.34,-3 -3,-3zM16,19L8,19v-5h8v5zM19,12c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1 1,0.45 1,1 -0.45,1 -1,1zM18,3L6,3v4h12L18,3z"} ,enabled);
                 }
+
+                //M19,8L5,8c-1.66,0 -3,1.34 -3,3v6h4v4h12v-4h4v-6c0,-1.66 -1.34,-3 -3,-3zM16,19L8,19v-5h8v5zM19,12c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1 1,0.45 1,1 -0.45,1 -1,1zM18,3L6,3v4h12L18,3z
+
             }
             Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,24,24,paths);
             button.setBackground(d);

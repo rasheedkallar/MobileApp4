@@ -3,6 +3,7 @@ package com.example.myapplication.Activity;
 
 import android.text.InputType;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.example.myapplication.BaseActivity;
 import com.example.myapplication.model.Control;
@@ -11,6 +12,8 @@ import com.example.myapplication.model.PopupBase;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupInput;
+import com.google.gson.reflect.TypeToken;
+import com.loopj.android.http.AsyncHttpResponseHandler;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import cz.msebera.android.httpclient.Header;
 
 public class Item {
 
@@ -238,6 +243,7 @@ public class Item {
         public InvItemUnitDetails(DataService.Lookup item) {
             super("InvItemUnits", "Units");
             getButtons().add(3,new Control.ActionButton(Control.ACTION_BARCODE));
+            getButtons().add(4,new Control.ActionButton(Control.ACTION_PRINT));
             Item =item;
         }
 
@@ -249,6 +255,13 @@ public class Item {
                 Item.PopupItemBarcode pib = new Item.PopupItemBarcode();
                 pib.setArgs(new Item.PopupItemBarcode.PopupItemBarcodeArgs("Barcode",getPath()).setEnableScroll(true));
                 pib.show(((BaseActivity)action.getButton().getContext()).getSupportFragmentManager(),null);
+            }
+            else if(action.getName().equals(Control.ACTION_PRINT)){
+
+                new DataService().getString("InvItem/GetShelfEdgePrint?unitId=" + this.getValue(), s -> {
+                    PopupHtml.create("Message",s).show(getRootActivity().getSupportFragmentManager(),null);
+                    return null;
+                }, action.getButton().getContext());
             }
             else {
                 super.onButtonClick(action);
