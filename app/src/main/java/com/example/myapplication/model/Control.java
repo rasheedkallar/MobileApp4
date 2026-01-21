@@ -47,6 +47,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import kotlin.jvm.functions.Function2;
+import kotlin.text.UStringsKt;
 
 public class Control {
     public static String ACTION_SEARCH = "Search";
@@ -65,8 +66,8 @@ public class Control {
     public static String ACTION_PERCENT= "Percent";
     public static String ACTION_STOCK= "Stock";
     public static String ACTION_CHECKED= "Checked";
-
     public static String ACTION_PRINT = "Print";
+    public static String ACTION_BACK = "Back";
     public static String ACTION_SAVE= "Save";
     public static int CONTROL_SIZE_DOUBLE = -20;
     public static int CONTROL_SIZE_SINGLE = -10;
@@ -502,6 +503,27 @@ public class Control {
                 controls.get(i).readValueJSONObject(data,controls.get(i).getName());
             }
         }
+        public  void  loadEditData( ArrayList<ControlBase> controls){
+            //setValue(id);
+            setPath(getName() + "[" + getValue() + "]");
+            FieldList fields = new FieldList(0);
+            fields.Fields.put("Id","it0.Id");
+            for (int i = 0; i < controls.size(); i++) {
+
+                if(DetailedControlBase.class.isAssignableFrom(EditControls.get(i).getClass())){
+                    DetailedControlBase ctrl = (DetailedControlBase)controls.get(i);
+                    ctrl.setParentId(getValue());
+                    ctrl.setPath(getName() + "[" + getValue() + "]");
+                }
+                EditControls.get(i).addForSelectQuery(fields);
+            }
+            new DataService().postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
+                loadEditData(EditControls,jsonObject);
+                return null;
+            }, getRootActivity());
+        }
+
+
         public String getDataPath(String action){
             return  getFullPath();
         }
@@ -2393,9 +2415,9 @@ public class Control {
                 else if (Name.equals( Control.ACTION_PRINT)) {
                     paths = getPaths(new String[]{"M19,8L5,8c-1.66,0 -3,1.34 -3,3v6h4v4h12v-4h4v-6c0,-1.66 -1.34,-3 -3,-3zM16,19L8,19v-5h8v5zM19,12c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1 1,0.45 1,1 -0.45,1 -1,1zM18,3L6,3v4h12L18,3z"} ,enabled);
                 }
-
-                //M19,8L5,8c-1.66,0 -3,1.34 -3,3v6h4v4h12v-4h4v-6c0,-1.66 -1.34,-3 -3,-3zM16,19L8,19v-5h8v5zM19,12c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1 1,0.45 1,1 -0.45,1 -1,1zM18,3L6,3v4h12L18,3z
-
+                else if (Name.equals( Control.ACTION_BACK)) {
+                    paths = getPaths(new String[]{"M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z"} ,enabled);
+                }
             }
             Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,24,24,paths);
             button.setBackground(d);
