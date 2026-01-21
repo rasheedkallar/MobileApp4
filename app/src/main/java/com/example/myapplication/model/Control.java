@@ -44,6 +44,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import kotlin.jvm.functions.Function2;
@@ -78,6 +79,9 @@ public class Control {
     public static String AGGREGATE_MIN = "Min";
     public static HiddenControl getHiddenControl( String name, Serializable value){
         return new HiddenControl(name,value);
+    }
+    public static HiddenControl getHiddenControl(String name){
+        return new HiddenControl(name,name);
     }
     public static ImageControl getImageControl( String name, String caption,String entityName){
         return new ImageControl(name,caption,entityName);
@@ -266,9 +270,34 @@ public class Control {
             }
             String name = "it" + list.Index + "." + getName();
             if(getPath() != null && getPath().length() != 0){
-                if(getWhere(ACTION_REFRESH) != null && getWhere(ACTION_REFRESH).length() != 0){
-                    name = name + ".Where(it" + (list.Index + 1) + "=>" +  getWhere(ACTION_REFRESH) + ")";
+
+                String where = getWhere(ACTION_REFRESH);
+                if(getVirtualDelete()){
+                    if(where != null && !where.isEmpty()){
+                        if(where.contains("it" + (list.Index + 1) + ".")){
+                            where = "!it" + (list.Index + 1) + ".Deleted && (" + where + ")";
+                        }
+                        else
+                        {
+                            where = "!Deleted && (" + where + ")";
+                        }
+                    }
+                    else{
+                        where = "!Deleted";
+                    }
                 }
+                if(where != null && !where.isEmpty()){
+                    if(where.contains("it" + (list.Index + 1) + ".") && !where.replace(" ","").startsWith("it" + (list.Index + 1) + "=>")){
+                        where = "it" + (list.Index + 1) + " => " + where ;
+                    }
+                    name = name + ".Where(" + where + ")";
+
+                }
+
+
+                //if(getWhere(ACTION_REFRESH) != null && getWhere(ACTION_REFRESH).length() != 0){
+                //    name = name + ".Where(it" + (list.Index + 1) + "=>" +  getWhere(ACTION_REFRESH) + ")";
+                //}
                 if(getOrderBy(ACTION_REFRESH) != null && getOrderBy(ACTION_REFRESH).length() != 0){
                     String[] orderBys = getOrderBy(ACTION_REFRESH).trim().split(",");
                     for (int i = 0; i < orderBys.length; i++) {
@@ -570,8 +599,8 @@ public class Control {
                             setValue(null);
                             refreshGrid(Table);
                             return null;
-                        },  s -> {
-                            PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                        }, s -> {
+                            PopupHtml.create("Save Error", s).show(getRootActivity().getSupportFragmentManager(), null);
                             return null;
                         });
                         return true;
@@ -748,6 +777,18 @@ public class Control {
             else if(value.getClass().equals(Long.class))return(Long)value;
             else return null;
         }
+
+        private boolean virtualDelete = false;
+        public boolean getVirtualDelete() {
+            return virtualDelete;
+        }
+        @SuppressWarnings("unchecked")
+        public T setVirtualDelete(boolean virTualDelete) {
+            virtualDelete = virTualDelete;
+            return (T)this;
+        }
+
+
         @Override
         public String getFullPath(){
             if(getName() == null)return null;
@@ -816,9 +857,13 @@ public class Control {
         protected transient  TextView CaptionTextView;
         protected transient  LinearLayout ActionLayout;
         private transient RelativeLayout rl = null;
+
+
+
         @Override
         protected void addContentView(ViewGroup container) {
             if(getButtons() != null && getButtons().size() >0){
+
                 rl = new RelativeLayout(container.getContext());
                 LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(), RelativeLayout.LayoutParams.WRAP_CONTENT);
                 rl.setBackground(getHeaderBackground());
@@ -829,7 +874,7 @@ public class Control {
                 RelativeLayout.LayoutParams llActionP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
                 llActionP.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
                 llActionP.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-                ActionLayout.setPadding(0,0,0,5);
+                ActionLayout.setPadding(0, 0, 0, 5);
                 ActionLayout.setLayoutParams(llActionP);
                 ActionLayout.setId(ACTION_CONTAINER_ID);
 
@@ -1383,7 +1428,7 @@ public class Control {
         @Override
         public T  updateValueToJSONObject(JSONObject data) {
             if(getValue() == null)
-                updateValueToJSONObject(data,getName() + ".Id",null);
+                updateValueToJSONObject(data,getName() ,null);
             else
                 updateValueToJSONObject(data,getName() + ".Id",getValue().getId());
             return (T) this;
@@ -1672,7 +1717,20 @@ public class Control {
         }
         @Override
         public void addListDetails(TableRow row, JSONObject data) {
+
+
+
         }
+        @Override
+        public void addListDetails(TableRow row) {
+
+
+
+        }
+
+        //@Override
+        //public void addForSelectQuery(TableRow row) {
+        //}
         @Override
         public void addListHeader(TableRow row) {
         }
@@ -1863,11 +1921,17 @@ public class Control {
             RelativeLayout.LayoutParams llValueP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             llValue.setLayoutParams(llValueP);
             llValue.setId(VALUE_CONTAINER_ID);
-            if(getButtons() != null && getButtons().size() >0){
-                rl.addView(llValue);
-                llValueP.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                llValueP.addRule(RelativeLayout.LEFT_OF,ACTION_CONTAINER_ID);
-                llValueP.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+            if(rl != null){
+                if(getButtonHeader() ){
+                    container.addView(llValue);
+                    rl.setBackgroundColor(Color.parseColor("#008477"));
+                }
+                else {
+                    rl.addView(llValue);
+                    llValueP.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+                    llValueP.addRule(RelativeLayout.LEFT_OF, ACTION_CONTAINER_ID);
+                    llValueP.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+                }
             }
             else{
                 container.addView(llValue);
@@ -1991,6 +2055,16 @@ public class Control {
         public ArrayList<ActionButton> getButtons() {
             return Buttons;
         }
+        private  boolean buttonHeader= false;
+        public boolean getButtonHeader() {
+            return buttonHeader;
+        }
+        public boolean setButtonHeader(boolean buttonHeader) {
+            this.buttonHeader = buttonHeader;
+            return true;
+        }
+
+
         public T setButtons(ArrayList<ActionButton> buttons) {
             Buttons = buttons;
             return  (T)this;
@@ -2245,17 +2319,18 @@ public class Control {
             int dotIndex = field.indexOf('.');
             try{
                 if(dotIndex<0) {
-                    data.put(field,value);
+                    if(value == null)data.put(field, JSONObject.NULL);
+                    else data.put(field,value);
                 }
                 else if(dotIndex >0){
                     String fi = field.substring(0,dotIndex);
-                    JSONObject subobj;
-                    if(data.has(fi))subobj = (JSONObject) data.get(fi);
+                    JSONObject nestedObject;
+                    if(data.has(fi))nestedObject = (JSONObject) data.get(fi);
                     else{
-                        subobj = new JSONObject();
-                        data.put(fi,subobj);
+                        nestedObject = new JSONObject();
+                        data.put(fi,nestedObject);
                     }
-                    updateValueToJSONObject(subobj,field.substring(dotIndex +1),value);
+                    updateValueToJSONObject(nestedObject,field.substring(dotIndex +1),value);
                 }
             }
             catch (JSONException e){

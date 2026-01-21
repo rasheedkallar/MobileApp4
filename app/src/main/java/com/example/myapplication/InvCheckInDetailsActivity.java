@@ -38,14 +38,17 @@ import kotlin.jvm.functions.Function2;
 
 public  class InvCheckInDetailsActivity extends BaseActivity {
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
+    public static long  checkInId =0;
+
     public InvCheckInDetailsActivity(){
         //Controls.add(EditItem);
         Controls.add(itemControl);
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        long checkInId = getIntent().getLongExtra("Id", 0); // Get the passed ID
+        checkInId = getIntent().getLongExtra("Id", 0); // Get the passed ID
         itemControl.setPath("InvCheckIns[" + checkInId + "]");
+        itemControl.setVirtualDelete(true);
         itemControl.setParentId(checkInId);
         super.onCreate(savedInstanceState);
         itemControl.refreshGrid();
@@ -55,10 +58,11 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
     }
     public static  class ItemSearchControl extends Control.SearchControlBase {
-        private static String ItemFormula = "{0}.InvItemUnit == null ? null : {0}.InvItemUnit.ItemNumber + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
+        private static final String ItemFormula = "{0}.InvItemUnit == null ? {0}.Description : {0}.InvItemUnit.ItemNumber + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
         public ItemSearchControl() {
             super("InvItemUnit", "Item",null ,"FullDescription");
             setFormula(ItemFormula);
+            setButtonHeader(true);
             ArrayList<Control.ControlBase> searchControls = new ArrayList<Control.ControlBase>();
             searchControls.add(Control.getEditTextControl("Unit","Unit").setColumnWeight(3));
             searchControls.add(Control.getEditDecimalControl("Fraction","Frac").setDecimalPlaces(3).setColumnWeight(4));
@@ -189,24 +193,22 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         @Override
         protected void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
             super.selectRow(row, header, tableLayout);
-            getActionButton(Control.ACTION_BARCODE).setEnabled(true);
+            JSONObject data = (JSONObject)row.getTag();
+            try {
+                getActionButton(Control.ACTION_BARCODE).setEnabled(data.getBoolean("ItemFound"));
+            } catch (JSONException e) {
+                getActionButton(Control.ACTION_BARCODE).setEnabled(false);
+            }
             getActionButton(Control.ACTION_CAMERA).setEnabled(true);
         }
-        @Override
-        public boolean doAfterSaved(Long id, boolean defaultClose, PopupForm.PopupFormArgs args) {
-            boolean saved = super.doAfterSaved(id, defaultClose, args);
-            InvCheckInPriceDetailedControl currentRate = ( InvCheckInPriceDetailedControl)args.getControls().stream().filter(i-> i.getName().equals("InvItemUnits")).findFirst().get();
-            currentRate.save();
-            return saved;
-        }
         public String AddDescription;
-        public String AddBarcode;
+        public String AddBarcode = null;
         private boolean clickAdd = true;
         private  String editMode = "Default";
         @Override
         public void onButtonClick(Control.ActionButton action) {
-            AddDescription = null;
-            AddBarcode  = null;
+            //AddDescription = null;
+            //AddBarcode  = null;
             clickAdd = true;
             editMode = "Default";
 
@@ -221,6 +223,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
             else if(action.getName().equals(Control.ACTION_BACK)){
                 Intent intent = new Intent(getRootActivity(),InvCheckInActivity.class);
+                intent.putExtra("Id", checkInId);
                 getRootActivity().startActivity(intent);
             }
             else if(action.getName().equals(Control.ACTION_CAMERA)){
@@ -231,36 +234,36 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 super.onButtonClick(action);
             }
         }
-        private InvCheckInPriceDetailedControl priceListControl = null;
+        //private InvCheckInPriceDetailedControl priceListControl = null;
         private Control.EditDecimalControl qtyControl = null;
+        private Control.EditTextControlBase descriptionControl = null;
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action.equals(Control.ACTION_ADD) || action.equals(Control.ACTION_EDIT) || action.equals(Control.ACTION_REFRESH)){
-                if(editMode.equals("Camera")){
-                    //controls.add(Control.getHiddenControl("", "Item Images").setIsRequired(false));
+                if(editMode.equals("Camera") && action.equals(Control.ACTION_EDIT)){
                     controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine").setIsRequired(false));
                 }
                 else {
                     ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
-                    if (action != Control.ACTION_REFRESH) {
-                        priceListControl = new InvCheckInPriceDetailedControl();
+                    if (!action.equals(Control.ACTION_REFRESH)) {
+
+
                         ItemSearchControl isc = new ItemSearchControl();
-                        isc.setPopupIndex(clickAdd ? -1 : 0);
+                        isc.setPopupIndex(clickAdd ? -1 : 0).setIsRequired(false);
+                        descriptionControl = Control.getEditTextControl("Description", "Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(true).setValue(AddDescription);
                         isc.setValueChangedListener((lookup, lookup2) -> {
-                            if (priceListControl != null) {
-                                priceListControl.ItemUnitId = lookup2.getId();
-                                priceListControl.setPath(null);
-                                if (priceListControl.getTable() != null) {
-                                    priceListControl.setVisible(true);
-                                    priceListControl.refreshGrid();
-                                }
-                            }
+                            if(lookup2 == null && (lookup != null && descriptionControl.getValue() == lookup.getName()))
+                                descriptionControl.setValue(null);
+                            else if(lookup2 != null && descriptionControl.getValue() == null)
+                                descriptionControl.setValue(lookup2.getName());
                             return null;
                         });
                         controls.add(isc);
-                        controls.add(Control.getEditTextControl("Description", "Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(false).setValue(AddDescription));
+                        controls.add(descriptionControl);
+                        controls.add(Control.getEditTextControl("Barcode", "Barcode").setIsRequired(false).setValue(AddBarcode));
                     }
+
                     qtyControl = Control.getEditDecimalControl("Qty", "Qty");
                     qtyControl.setDecimalPlaces(3).setColumnWeight(3);
                     controls.add(qtyControl);
@@ -278,6 +281,9 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                             return null;
                         }
                     });
+                    /*
+
+
                     if (action == Control.ACTION_ADD || action == Control.ACTION_EDIT) {
                         amountControl.setValueChangedListener(new Function2<Double, Double, Void>() {
                             @Override
@@ -296,12 +302,16 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                             }
                         });
                     }
+                    */
+
                     controls.add(amountControl);
                     if (action.equals(Control.ACTION_REFRESH)) {
+                        controls.add(Control.getHiddenControl("ItemFound").setFormula("{0}.UnitId != null"));
                         controls.add(Control.getEditTextControl("FullDescription", "Description").setColumnWeight(8).setFormula(ItemSearchControl.ItemFormula));
-                    } else {
-                        controls.add(priceListControl);
                     }
+                    //else {
+                    //    controls.add(priceListControl);
+                    //}
                 }
                 return controls;
             }
@@ -309,6 +319,9 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 return null;
             }
         }
+
+        /*
+
         public static class InvCheckInPriceDetailedControl extends Control.DetailedControl {
             private static String ItemUnitFormula = "{0}.ItemNumber + \" \" + {0}.Code + \" \" + {0}.Fraction";
             public InvCheckInPriceDetailedControl() {
@@ -584,5 +597,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 }
             }
         }
+
+
+        */
     }
 }

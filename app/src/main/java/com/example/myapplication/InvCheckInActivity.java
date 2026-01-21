@@ -3,6 +3,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -56,9 +57,20 @@ import kotlin.jvm.functions.Function2;
 import kotlin.jvm.functions.Function3;
 
 public  class InvCheckInActivity extends BaseActivity {
+
+    private final InvCheckInDetailedControl itemControl = new InvCheckInDetailedControl();
+
     public InvCheckInActivity(){
-        Controls.add(new InvCheckInDetailedControl());
+        Controls.add(itemControl);
     }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        long checkInId = getIntent().getLongExtra("Id", 0); // Get the passed ID
+        itemControl.setValue(checkInId);
+        super.onCreate(savedInstanceState);
+    }
+
+
     public static class InvCheckInDetailedControl extends Control.DetailedControl {
         public InvCheckInDetailedControl() {
             super("InvCheckIns", "Stock Receive");
