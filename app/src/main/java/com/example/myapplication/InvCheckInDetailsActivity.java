@@ -1,4 +1,5 @@
 package com.example.myapplication;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -7,7 +8,11 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.DigitsKeyListener;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -37,26 +42,105 @@ import java.util.function.Function;
 import kotlin.jvm.functions.Function2;
 
 public  class InvCheckInDetailsActivity extends BaseActivity {
+
+
+    private final  BarcodeControl barcodeControl =  new BarcodeControl();
+
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
     public static long  checkInId =0;
-
+    public static String header;
     public InvCheckInDetailsActivity(){
         //Controls.add(EditItem);
+        Controls.add(barcodeControl);
         Controls.add(itemControl);
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        header = getIntent().getStringExtra("header");
         checkInId = getIntent().getLongExtra("Id", 0); // Get the passed ID
+        barcodeControl.setCaption(header);
+
         itemControl.setPath("InvCheckIns[" + checkInId + "]");
         itemControl.setVirtualDelete(true);
         itemControl.setParentId(checkInId);
+        itemControl.setEnableScroll(true);
         super.onCreate(savedInstanceState);
         itemControl.refreshGrid();
+        barcodeControl.requestFocus();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         //long checkInId = getIntent().getLongExtra("Id", 0); // Get the passed ID
         //itemControl.setPath("InvCheckIns[" + checkInId + "]");
         //itemControl.setParentId(checkInId);
 
     }
+    public  static  class BarcodeControl extends Control.EditTextControl {
+        public BarcodeControl() {
+            super("Item", "Items");
+            getButtons().add(new Control.ActionButton(Control.ACTION_BARCODE));
+            setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
+            setIsRequired(false);
+        }
+        @Override
+        public void addValueView(ViewGroup container) {
+            super.addValueView(container);
+            EditText editText = getEditTextInput();
+            editText.setSingleLine(true);
+            editText.setInputType(InputType.TYPE_CLASS_TEXT);
+            editText.setImeOptions(EditorInfo.IME_ACTION_NONE);
+            editText.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
+                    String scannedCode = editText.getText().toString().trim();
+                    Toast.makeText(getRootActivity(), "Scanned: " + scannedCode, Toast.LENGTH_SHORT).show();
+                    // Clear for next scan
+                    editText.setText("");
+                    return true; // consume event
+                }
+                return false;
+            });
+            InputMethodManager imm = (InputMethodManager) getRootActivity().getSystemService(INPUT_METHOD_SERVICE);
+            View view = getRootActivity().getCurrentFocus();
+            if (view != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        }
+
+        @Override
+        protected void onButtonClick(Control.ActionButton button) {
+            super.onButtonClick(button);
+            EditText editText = getEditTextInput();
+            if(button.getName().equals(Control.ACTION_BARCODE)){
+                InputMethodManager imm = (InputMethodManager) getRootActivity().getSystemService(INPUT_METHOD_SERVICE);
+                if (imm.isActive(editText)) {
+                    // Hide keyboard
+                    //imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
+                    View view = getRootActivity().getCurrentFocus();
+                    if (view != null) {
+                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                    }
+
+
+                } else {
+                    // Show keyboard
+                    imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+                }
+            }
+        }
+    }
+
+
     public static  class ItemSearchControl extends Control.SearchControlBase {
         private static final String ItemFormula = "{0}.InvItemUnit == null ? {0}.Description : {0}.InvItemUnit.ItemNumber + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
         public ItemSearchControl() {
@@ -247,23 +331,17 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 else {
                     ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                     if (!action.equals(Control.ACTION_REFRESH)) {
-
-
                         ItemSearchControl isc = new ItemSearchControl();
                         isc.setPopupIndex(clickAdd ? -1 : 0).setIsRequired(false);
                         descriptionControl = Control.getEditTextControl("Description", "Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(true).setValue(AddDescription);
                         isc.setValueChangedListener((lookup, lookup2) -> {
-                            if(lookup2 == null && (lookup != null && descriptionControl.getValue() == lookup.getName()))
-                                descriptionControl.setValue(null);
-                            else if(lookup2 != null && descriptionControl.getValue() == null)
-                                descriptionControl.setValue(lookup2.getName());
+                            descriptionControl.setIsRequired(lookup2 == null);
                             return null;
                         });
                         controls.add(isc);
                         controls.add(descriptionControl);
                         controls.add(Control.getEditTextControl("Barcode", "Barcode").setIsRequired(false).setValue(AddBarcode));
                     }
-
                     qtyControl = Control.getEditDecimalControl("Qty", "Qty");
                     qtyControl.setDecimalPlaces(3).setColumnWeight(3);
                     controls.add(qtyControl);

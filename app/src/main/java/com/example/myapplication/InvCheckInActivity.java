@@ -74,6 +74,7 @@ public  class InvCheckInActivity extends BaseActivity {
     public static class InvCheckInDetailedControl extends Control.DetailedControl {
         public InvCheckInDetailedControl() {
             super("InvCheckIns", "Stock Receive");
+            setVirtualDelete(true);
             setEnableScroll(true);
             getButtons().add(new Control.ActionButton(Control.ACTION_STATUS).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
@@ -87,6 +88,9 @@ public  class InvCheckInActivity extends BaseActivity {
         protected String getOrderBy(String action) {
             return "Status == \"Draft\" ? 1 : Status == \"Final\" ? 2 : 3, Id Desc";
         }
+
+
+
         @Override
         protected void rowAdded(ArrayList<Control.ControlBase> controls,JSONObject data) {
             super.rowAdded(controls,data);
@@ -131,7 +135,32 @@ public  class InvCheckInActivity extends BaseActivity {
             }
             else if(action.getName().equals(Control.ACTION_ADD_SUB)){
 
+
+
                 Intent intent = new Intent(getRootActivity(), InvCheckInDetailsActivity.class);
+
+
+                String header = "Items";
+
+                var row = getSelectedRow();
+                if (row != null && row.getTag() instanceof JSONObject) {
+
+                    JSONObject obj = (JSONObject) row.getTag();
+
+                    String refNum = obj.optString("RefNum", "");
+                    String partyName = "";
+
+                    JSONObject busParty = obj.optJSONObject("BusParty");
+                    if (busParty != null) {
+                        partyName = busParty.optString("Name", "");
+                    }
+
+                    if (!refNum.isEmpty() || !partyName.isEmpty()) {
+                        header = refNum + "-" + partyName;
+                    }
+                }
+
+                intent.putExtra("header", header);
                 intent.putExtra("Id", getValue()); // Pass the selected item's ID
                 getRootActivity().startActivity(intent);
 
@@ -181,8 +210,8 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(action.equals(Control.ACTION_ADD)){
                     controls.add(Control.getHiddenControl( "Status", "Draft"));
                 }
-                controls.add(Control.getLookupForeignControl( "BusParty", "Supplier","Name"));
-                controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","BusParty.Name"));
+                controls.add(Control.getLookupForeignControl( "BusParty", "Supplier","Name").setWhere("PartyType == \"SUP\" && Active"));
+                controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","BusParty.Name").setWhere("BusParty.Active"));
                 controls.add(Control.getImageControl("Images", "Invoice Images", "InvCheckIn").setIsRequired(false));
 
                 return controls;

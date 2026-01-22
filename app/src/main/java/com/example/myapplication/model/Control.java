@@ -499,8 +499,47 @@ public class Control {
                 String id_field_name = getIdFieldName();
                 if(controls != null && controls.size() != 0){
                     RequestParams rp = new RequestParams();
+
+
+
                     String where = getWhere(ACTION_REFRESH);
-                    if(where != null && where.length() == 0)where = null;
+                    if(getVirtualDelete()){
+                        if(where != null && !where.isEmpty()){
+                            if(where.contains("it0.")){
+                                where = "!it0.Deleted && (" + where + ")";
+                            }
+                            else
+                            {
+                                where = "!Deleted && (" + where + ")";
+                            }
+                        }
+                        else{
+                            where = "!Deleted";
+                        }
+                    }
+                    if(where != null && !where.isEmpty()){
+                        if(where.contains("it0.") && !where.replace(" ","").startsWith("it0=>")){
+                            where = "it0 => " + where ;
+                        }
+                        //name = name + ".Where(" + where + ")";
+
+                    }
+
+
+                    //if(getWhere(ACTION_REFRESH) != null && getWhere(ACTION_REFRESH).length() != 0){
+                    //    name = name + ".Where(it" + (list.Index + 1) + "=>" +  getWhere(ACTION_REFRESH) + ")";
+                    //}
+
+
+
+
+
+
+
+                    //String where = getWhere(ACTION_REFRESH);
+                    //if(where != null && where.length() == 0)where = null;
+
+
 
                     DataService.ListParams lp = new DataService.ListParams();
                     lp.Select =getSelect(ACTION_REFRESH);
@@ -824,7 +863,7 @@ public class Control {
         }
         private boolean initialFocus = false;
         @Override
-        protected void requestFocus() {
+        public void requestFocus() {
             if(getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
             else initialFocus = true;
         }
@@ -1130,7 +1169,7 @@ public class Control {
             setKeywordsField("keyWords");
             setSearchKey(32);
         }
-        private transient TextView LookupTextView;
+        //private transient TextView LookupTextView;
         private List<Control.ControlBase> Controls;
         public List<Control.ControlBase> getControls() {
             return Controls;
@@ -1416,7 +1455,7 @@ public class Control {
         }
         private boolean initialFocus = false;
         @Override
-        protected void requestFocus() {
+        public void requestFocus() {
             if(getButtons() != null && getButtons().size() > 0 && getButtons().get(0).button != null)getButtons().get(0).button.requestFocus();
             else initialFocus = true;
         }
@@ -1701,7 +1740,7 @@ public class Control {
             setValue(value);
         }
         @Override
-        protected void requestFocus() {
+        public void requestFocus() {
         }
         @Override
         protected void onButtonClick(ActionButton button) {
@@ -1784,7 +1823,7 @@ public class Control {
         }
         private boolean initialFocus = false;
         @Override
-        protected void requestFocus() {
+        public void requestFocus() {
             if(EditTextInput != null)EditTextInput.requestFocus();
             else initialFocus = true;
         }
@@ -1793,6 +1832,7 @@ public class Control {
         public boolean validate() {
             boolean valid = super.validate();
             if(!InputValid)valid = false;
+
             return valid;
         }
         @Override
@@ -1873,6 +1913,14 @@ public class Control {
             else if(CaptionTextView!=null)CaptionTextView.setBackground(getHeaderErrorBackground());
             return valid;
         }
+
+        @Override
+        public T setCaption(String caption) {
+            if(CaptionTextView != null)CaptionTextView.setText(caption);
+
+            return super.setCaption(caption);
+        }
+
         @Override
         protected void addContentView(ViewGroup container)
         {
@@ -2012,6 +2060,7 @@ public class Control {
         }
         public ControlBase(String name,String caption){
             Caption = caption;
+
             Name = name;
         }
         protected transient LinearLayout RootLayout;
@@ -2035,9 +2084,13 @@ public class Control {
         }
         public T setEnabled(boolean enabled) {
             Enabled = enabled;
-            if(RootLayout != null)RootLayout.setEnabled(enabled);
+
             for (int i = 0; i < getButtons().size(); i++) {
                 if(getButtons().get(i).button != null)getButtons().get(i).button.setEnabled(enabled);
+            }
+            if(RootLayout !=null) {
+                RootLayout.setEnabled(enabled);
+                RootLayout.setBackground(getEditorBackground());
             }
             return (T)this;
         }
@@ -2047,7 +2100,10 @@ public class Control {
         }
         public T setVisible(boolean visible) {
             Visible = visible;
-            if(RootLayout != null)RootLayout.setVisibility(visible?View.VISIBLE : View.GONE);
+            if(RootLayout != null) {
+                RootLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
+                RootLayout.setBackground(getEditorBackground());
+            }
             return (T)this;
         }
         protected abstract void addContentView(ViewGroup container);
@@ -2083,6 +2139,7 @@ public class Control {
         }
         public T setIsRequired(boolean required) {
             IsRequired = required;
+            if(RootLayout !=null)RootLayout.setBackground(getEditorBackground());
             return  (T)this;
         }
         public T addButton(String name) {
@@ -2280,7 +2337,7 @@ public class Control {
             this.valueChangedListener = valueChangedListener;
             return (T)this;
         }
-        protected abstract void requestFocus();
+        public abstract void requestFocus();
         public  String getUrlParam(){
             Object value = getValue();
             if (value==null)return  Name + "=" ;

@@ -293,6 +293,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
             for (int i = 0; i < Controls.size(); i++) {
                 Controls.get(i).addView(Container);
+                Controls.get(i).setRootActivity(this);
             }
         }
 
