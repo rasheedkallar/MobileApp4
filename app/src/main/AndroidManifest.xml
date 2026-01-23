@@ -48,7 +48,9 @@
             android:exported="false" />
         <activity
             android:name=".InspectUnitActivity"
-            android:exported="false" />
+            android:screenOrientation="portrait"
+            android:exported="false"
+            tools:ignore="LockedOrientationActivity" />
         <activity
             android:name=".AccountReconciliation"
             android:exported="false" />
@@ -63,7 +65,9 @@
             android:exported="false" />
         <activity
             android:name=".InvCheckInDetailsActivity"
-            android:exported="false" />
+            android:screenOrientation="portrait"
+            android:exported="false"
+            tools:ignore="LockedOrientationActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

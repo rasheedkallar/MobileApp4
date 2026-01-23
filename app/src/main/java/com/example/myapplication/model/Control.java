@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import kotlin.jvm.functions.Function2;
 import kotlin.text.UStringsKt;
@@ -68,6 +69,9 @@ public class Control {
     public static String ACTION_STOCK= "Stock";
     public static String ACTION_CHECKED= "Checked";
     public static String ACTION_PRINT = "Print";
+    public static String ACTION_KEYBOARD = "Keyboard";
+
+
     public static String ACTION_BACK = "Back";
     public static String ACTION_SAVE= "Save";
     public static int CONTROL_SIZE_DOUBLE = -20;
@@ -1303,6 +1307,9 @@ public class Control {
         @Override
         public T readValueObject(Object value) {
             if(value != null  && Long.class.isAssignableFrom(value.getClass())) {
+
+                /*
+
                 String json ="new {Id," + getDisplayField() + " as Name}";
                 if(getFormula() != null && getFormula().length() != 0) {
                     if(getName().equals("."))
@@ -1310,6 +1317,47 @@ public class Control {
                     else
                         json = "it0 => new {it0.Id," + getFormula().replace("{0}." + getName(), "it0") + " as Name}";
                 }
+                */
+
+
+
+                String json = "new {Id," + getDisplayField() + " as Name}";
+                String formula = getFormula();
+
+                if (formula != null && !formula.isEmpty()) {
+                    String name = getName();
+                    String transformed = formula;
+
+                    if (".".equals(name)) {
+                        // Special case: name == ".", so:
+                        // 1) Any "{0}.<token...>"  -> "null"
+                        // 2) Bare "{0}"            -> "it0"
+                        transformed = transformed
+                                .replaceAll("\\Q{0}.\\E[^\\s+\\-*/,:?\\)]+", "null")
+                                .replace("{0}", "it0");
+                    } else {
+                        // 1) Replace "{0}.<name>" prefix with "it0" while keeping any suffix like ".ItemNumber"
+                        //    Example: "{0}.InvItemUnit.ItemNumber" -> "it0.ItemNumber"
+                        transformed = transformed.replaceAll(
+                                "\\Q{0}.\\E" + Pattern.quote(name) + "(?=\\b|\\.)",
+                                "it0"
+                        );
+
+                        // 2) Replace any remaining "{0}.<something>" entirely with "null"
+                        //    Example: "{0}.Description" -> "null"
+                        transformed = transformed.replaceAll(
+                                "\\Q{0}.\\E[^\\s+\\-*/,:?\\)]+",
+                                "null"
+                        );
+                    }
+
+                    json = "it0 => new {it0.Id," + transformed + " as Name}";
+                }
+
+
+
+
+
                 String path = getFullPath() + "[" + value + "]";
                 if(getName().equals("."))path = getPath();
                 new DataService().postForSelect(DataService.Lookup.class,path,json, lookup -> {
@@ -2550,6 +2598,14 @@ public class Control {
                 else if (Name.equals( Control.ACTION_BACK)) {
                     paths = getPaths(new String[]{"M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z"} ,enabled);
                 }
+                else if (Name.equals( Control.ACTION_KEYBOARD)) {
+                    paths = getPaths(new String[]{"M20,6H4c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V8C22,6.9,21.1,6,20,6zM11,17H4v-2h7v2zm9,0h-7v-2h7v2zm0-4H4v-2h16v2zm0-4H4V7h16v2z"} ,enabled);
+                }
+
+
+                //M20,6H4c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V8C22,6.9,21.1,6,20,6zM11,17H4v-2h7v2zm9,0h-7v-2h7v2zm0-4H4v-2h16v2zm0-4H4V7h16v2z
+
+
             }
             Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,24,24,paths);
             button.setBackground(d);

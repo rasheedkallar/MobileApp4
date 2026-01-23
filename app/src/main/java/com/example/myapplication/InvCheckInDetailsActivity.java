@@ -3,6 +3,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -53,6 +54,14 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         //Controls.add(EditItem);
         Controls.add(barcodeControl);
         Controls.add(itemControl);
+
+        barcodeControl.listener = new BarcodeControl.OnBarcodeScannedListener() {
+            @Override
+            public void onBarcodeScanned(String barcode, DataService.Lookup lookup) {
+                itemControl.onBarcodeScanned(barcode, lookup);
+
+            }
+        };
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,76 +75,81 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         itemControl.setEnableScroll(true);
         super.onCreate(savedInstanceState);
         itemControl.refreshGrid();
-        barcodeControl.requestFocus();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        //long checkInId = getIntent().getLongExtra("Id", 0); // Get the passed ID
-        //itemControl.setPath("InvCheckIns[" + checkInId + "]");
-        //itemControl.setParentId(checkInId);
-
     }
     public  static  class BarcodeControl extends Control.EditTextControl {
         public BarcodeControl() {
             super("Item", "Items");
-            getButtons().add(new Control.ActionButton(Control.ACTION_BARCODE));
+            getButtons().add(new Control.ActionButton(Control.ACTION_KEYBOARD));
             setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
             setIsRequired(false);
+        }
+
+        public interface OnBarcodeScannedListener {
+            void onBarcodeScanned(String barcode, DataService.Lookup lookup);
+        }
+        private OnBarcodeScannedListener listener;
+        // Method to set the callback
+        public void setOnBarcodeScannedListener(OnBarcodeScannedListener listener) {
+            this.listener = listener;
         }
         @Override
         public void addValueView(ViewGroup container) {
             super.addValueView(container);
             EditText editText = getEditTextInput();
+            editText.setShowSoftInputOnFocus(false);
             editText.setSingleLine(true);
             editText.setInputType(InputType.TYPE_CLASS_TEXT);
             editText.setImeOptions(EditorInfo.IME_ACTION_NONE);
             editText.setOnKeyListener((v, keyCode, event) -> {
                 if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                    String scannedCode = editText.getText().toString().trim();
-                    Toast.makeText(getRootActivity(), "Scanned: " + scannedCode, Toast.LENGTH_SHORT).show();
-                    // Clear for next scan
-                    editText.setText("");
+                    String barcode = editText.getText().toString().trim();
+                    if(barcode != null && barcode.length() !=0 && barcode.indexOf(' ') <0){
+
+                        new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+                            @Override
+                            public Void apply(JSONObject jsonObject) {
+                                if(jsonObject == null){
+                                    editText.setText(barcode);
+                                    editText.selectAll();
+                                    editText.requestFocus();
+                                    if(listener !=null)listener.onBarcodeScanned(barcode,null);
+                                }
+                                else{
+                                    try {
+
+                                        var lookup = new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()),jsonObject.get("FullDescription").toString());
+                                        if(listener !=null)listener.onBarcodeScanned(barcode,lookup);
+                                        editText.setText(null);
+                                        editText.requestFocus();
+                                    }
+                                    catch (JSONException e)
+                                    {
+                                        System.out.println(e.getMessage());
+                                        Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                                return null;
+                            }
+                        }, editText.getContext());
+                    }
                     return true; // consume event
                 }
                 return false;
             });
-            InputMethodManager imm = (InputMethodManager) getRootActivity().getSystemService(INPUT_METHOD_SERVICE);
-            View view = getRootActivity().getCurrentFocus();
-            if (view != null) {
-                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-            }
+            // Request focus after a short delay to ensure the view is ready.
+            new Handler().postDelayed(editText::requestFocus, 2000);
         }
 
         @Override
         protected void onButtonClick(Control.ActionButton button) {
             super.onButtonClick(button);
             EditText editText = getEditTextInput();
-            if(button.getName().equals(Control.ACTION_BARCODE)){
-                InputMethodManager imm = (InputMethodManager) getRootActivity().getSystemService(INPUT_METHOD_SERVICE);
-                if (imm.isActive(editText)) {
-                    // Hide keyboard
-                    //imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
-                    View view = getRootActivity().getCurrentFocus();
-                    if (view != null) {
-                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-                    }
-
-
-                } else {
-                    // Show keyboard
-                    imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
-                }
+            if(button.getName().equals(Control.ACTION_KEYBOARD)){
+                InputMethodManager imm = (InputMethodManager) getRootActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                // The button's job is to explicitly SHOW the keyboard for manual entry.
+                // The user can hide it with the system back button.
+                editText.requestFocus();
+                imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
             }
         }
     }
@@ -156,6 +170,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_INBOX).setEnabled(false));
         }
+
         @Override
         protected void textChange(EditText editor, int keyCode) {
             if(keyCode == 10){
@@ -216,23 +231,24 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         DataService.Lookup itemLookup = null;
         @Override
         protected void onButtonClick(Control.ActionButton button) {
-            if(button.getName() == Control.ACTION_ADD){
+            if(button.getName().equals(Control.ACTION_ADD)){
+
                 ArrayList<Control.ControlBase> controls = new Item.PopupItemForm("",getFullPath()).getArgs().getControls();
                 addNewRecord(getFullPath(),controls, getFullPath());
             }
-            else if(button.getName() == Control.ACTION_ADD_SUB){
+            else if(button.getName().equals(Control.ACTION_ADD_SUB)){
                 new DataService().postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
                     ArrayList<Control.ControlBase> controls = new ArrayList<>();
-                    controls.add(0,Control.getLookupForeignControl("InvItem","Item","Description").setValue(lookup));
+                    controls.add(0,Control.getLookupForeignControl("InvItem","Item Unit","Description").setValue(lookup));
                     controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
                     controls.add(Control.getEditDecimalControl("Fraction","Fraction").setDecimalPlaces(3));
                     controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setIsRequired(false));
-                    controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
+                    //controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
                     addNewRecord(getFullPath(),controls, getFullPath());
                     return null;
                 }, getRootActivity());
             }
-            else if(button.getName() == Control.ACTION_INBOX){
+            else if(button.getName().equals(Control.ACTION_INBOX)){
                 new DataService().postForList(DataService.Lookup.class,
                         "InvItemUnits[" + getValue().getId() + "].InvItem.InvItemUnits[]",
                         "new {Id, Code + \" \" + Fraction as Name}",
@@ -248,6 +264,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                                 return true;
                             });
                             pl.getArgs().setNullCaption("Add New Unit");
+                            pl.getArgs().setHeader("Change Unit");
                             pl.show(getRootActivity().getSupportFragmentManager(),null);
                             return null;
                         }, getRootActivity());
@@ -274,6 +291,17 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             getButtons().add(3,new Control.ActionButton(Control.ACTION_CAMERA).setEnabled(false));
             getButtons().remove(getButton(Control.ACTION_REFRESH));
         }
+
+
+        public void onBarcodeScanned(String barcode,DataService.Lookup lookup)
+        {
+            AdditemLookup = lookup;
+            AddBarcode = barcode;
+            super.onButtonClick(getButton(Control.ACTION_ADD));
+            AdditemLookup = null;
+            AddBarcode = null;
+        }
+
         @Override
         protected void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
             super.selectRow(row, header, tableLayout);
@@ -287,6 +315,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
         public String AddDescription;
         public String AddBarcode = null;
+
+        public DataService.Lookup AdditemLookup = null;
         private boolean clickAdd = true;
         private  String editMode = "Default";
         @Override
@@ -332,8 +362,10 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                     if (!action.equals(Control.ACTION_REFRESH)) {
                         ItemSearchControl isc = new ItemSearchControl();
+                        isc.setValue(AdditemLookup);
                         isc.setPopupIndex(clickAdd ? -1 : 0).setIsRequired(false);
                         descriptionControl = Control.getEditTextControl("Description", "Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(true).setValue(AddDescription);
+                        if(AdditemLookup !=null)descriptionControl.setIsRequired(false);
                         isc.setValueChangedListener((lookup, lookup2) -> {
                             descriptionControl.setIsRequired(lookup2 == null);
                             return null;
