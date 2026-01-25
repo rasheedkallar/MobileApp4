@@ -58,6 +58,10 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         Controls.add(headerControl);
         BarcodeControl barcodeControl = new BarcodeControl();
         Controls.add(barcodeControl);
+        //balance1Control.changeControlSize(33,Control.CONTROL_SIZE_TYPE_PERCENTAGE);
+        //balance2Control.changeControlSize(34,Control.CONTROL_SIZE_TYPE_PERCENTAGE);
+        //balance3Control.changeControlSize(33,Control.CONTROL_SIZE_TYPE_PERCENTAGE);
+
         Controls.add(balance1Control);
         Controls.add(balance2Control);
         Controls.add(balance3Control);

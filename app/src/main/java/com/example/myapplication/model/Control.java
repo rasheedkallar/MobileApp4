@@ -2120,16 +2120,16 @@ public class Control {
             return ControlSizeType;
         }
         public T setControlSize(int size){
-            ControlSize = size;
-            return  (T)this;
-            //return setControlSize( size,CONTROL_SIZE_TYPE_NORMAL);
+            //ControlSize = size;
+            //return  (T)this;
+            return changeControlSize( size,CONTROL_SIZE_TYPE_NORMAL);
 
         }
-        //public T setControlSize(int size,int type){
-        //    ControlSize = size;
-        //    ControlSizeType = type;
-        //    return  (T)this;
-       // }
+        public T changeControlSize(int size,int type){
+            ControlSize = (int)size;
+            ControlSizeType = type;
+            return  (T)this;
+        }
         public int getAction() {
             return Action;
         }
@@ -2149,16 +2149,16 @@ public class Control {
 
         public int getWidth(ViewGroup container){
 
-            //if(ControlSizeType == Control.CONTROL_SIZE_TYPE_PERCENTAGE){
-            //    int actualWidth = _container.getWidth();
-            //    return actualWidth * ControlSize / 100;
-            //}
-            ///else {
+            if(ControlSizeType == Control.CONTROL_SIZE_TYPE_PERCENTAGE){
+                int actualWidth = _container.getWidth();
+                return actualWidth * ControlSize / 100;
+            }
+            else {
 
                 int singleSize = BaseActivity.ControlWidth;
-                if (ControlSize < -5) return Math.abs(ControlSize) * singleSize / 10;
-                else return ControlSize * 2;
-            //}
+                if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
+                else return ControlSize;
+            }
         }
         public ActionButton getActionButton(String action){
             Optional<ActionButton> button = this.getButtons().stream().filter(i-> i.Name.equals(action)).findFirst();
