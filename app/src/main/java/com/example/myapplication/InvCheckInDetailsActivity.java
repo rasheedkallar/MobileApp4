@@ -2,12 +2,14 @@ package com.example.myapplication;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.DigitsKeyListener;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -43,18 +45,23 @@ import java.util.function.Function;
 import kotlin.jvm.functions.Function2;
 
 public  class InvCheckInDetailsActivity extends BaseActivity {
+    private final  Control.HeaderControl headerControl =  new Control.HeaderControl("Header","Header").setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
+    private final  BalanceControl balance1Control =  new BalanceControl("Total","Total");
+    private final  BalanceControl balance2Control =  new BalanceControl("Added","Added");
+    private final  BalanceControl balance3Control =  new BalanceControl("Balance","Balance");
 
-
-    private final  BarcodeControl barcodeControl =  new BarcodeControl();
 
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
     public static long  checkInId =0;
     public static String header;
     public InvCheckInDetailsActivity(){
-        //Controls.add(EditItem);
+        Controls.add(headerControl);
+        BarcodeControl barcodeControl = new BarcodeControl();
         Controls.add(barcodeControl);
+        Controls.add(balance1Control);
+        Controls.add(balance2Control);
+        Controls.add(balance3Control);
         Controls.add(itemControl);
-
         barcodeControl.listener = new BarcodeControl.OnBarcodeScannedListener() {
             @Override
             public void onBarcodeScanned(String barcode, DataService.Lookup lookup) {
@@ -67,7 +74,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         header = getIntent().getStringExtra("header");
         checkInId = getIntent().getLongExtra("Id", 0); // Get the passed ID
-        barcodeControl.setCaption(header);
+        headerControl.setValue(header);
 
         itemControl.setPath("InvCheckIns[" + checkInId + "]");
         itemControl.setVirtualDelete(true);
@@ -75,10 +82,20 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         itemControl.setEnableScroll(true);
         super.onCreate(savedInstanceState);
         itemControl.refreshGrid();
+
+
     }
+    public  static  class BalanceControl extends Control.EditDecimalControl {
+        public BalanceControl(String name, String caption) {
+            super(name, caption);
+            setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
+            setIsRequired(false);
+        }
+    }
+
     public  static  class BarcodeControl extends Control.EditTextControl {
         public BarcodeControl() {
-            super("Item", "Items");
+            super("Item", null);
             getButtons().add(new Control.ActionButton(Control.ACTION_KEYBOARD));
             setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
             setIsRequired(false);

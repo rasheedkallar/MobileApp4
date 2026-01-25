@@ -45,7 +45,9 @@
 
         <activity
             android:name=".InvCheckInActivity"
-            android:exported="false" />
+            android:screenOrientation="portrait"
+            android:exported="false"
+            tools:ignore="LockedOrientationActivity" />
         <activity
             android:name=".InspectUnitActivity"
             android:screenOrientation="portrait"

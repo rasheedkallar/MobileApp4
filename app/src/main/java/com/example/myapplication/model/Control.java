@@ -43,6 +43,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -76,6 +77,9 @@ public class Control {
     public static String ACTION_SAVE= "Save";
     public static int CONTROL_SIZE_DOUBLE = -20;
     public static int CONTROL_SIZE_SINGLE = -10;
+
+    public static int CONTROL_SIZE_TYPE_NORMAL = 0;
+    public static int CONTROL_SIZE_TYPE_PERCENTAGE = 1;
     public static String AGGREGATE_SUM = "Sum";
     public static String AGGREGATE_AVERAGE = "Average";
     public static String AGGREGATE_COUNT = "Count";
@@ -375,7 +379,7 @@ public class Control {
             }
         }
         public Object getAggregateValue(Control.ControlBase control,JSONObject obj){
-           return  control.getValue();
+            return  control.getValue();
         }
         @Override
         public void refreshDetailedView(JSONArray data) {
@@ -560,8 +564,8 @@ public class Control {
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls){
             if(popupInputs == null || popupInputs.size() == 0){
                 new PopupForm()
-                    .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getFullPathNew(),0L))
-                    .show( getRootActivity().getSupportFragmentManager(),null);
+                        .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getFullPathNew(),0L))
+                        .show( getRootActivity().getSupportFragmentManager(),null);
             }else{
                 popupInputs.get(0).onPopupList(getRootActivity(), (Function<DataService.Lookup, Void>) lookup -> {
                     popupInputs.remove(popupInputs.get(0));
@@ -607,11 +611,11 @@ public class Control {
                     EditControls.get(i).setPath(getDataPath(Control.ACTION_ADD));
                 }
                 ArrayList<LookupControlBase> popupInputs = (ArrayList<LookupControlBase>)EditControls.stream()
-                    .filter(o -> o instanceof LookupControlBase)
-                    .map(o -> (LookupControlBase)o)
-                    .filter(o -> o.getPopupIndex() >= 0 && o.getValue() == null)
-                    .sorted(Comparator.comparing(s -> s.getPopupIndex()))
-                    .collect(Collectors.toList());
+                        .filter(o -> o instanceof LookupControlBase)
+                        .map(o -> (LookupControlBase)o)
+                        .filter(o -> o.getPopupIndex() >= 0 && o.getValue() == null)
+                        .sorted(Comparator.comparing(s -> s.getPopupIndex()))
+                        .collect(Collectors.toList());
                 ShowAdd(popupInputs,EditControls);
             }
             else if(action.getName().equals(Control.ACTION_EDIT)){
@@ -908,7 +912,7 @@ public class Control {
             if(getButtons() != null && getButtons().size() >0){
 
                 rl = new RelativeLayout(container.getContext());
-                LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(), RelativeLayout.LayoutParams.WRAP_CONTENT);
+                LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(container), RelativeLayout.LayoutParams.WRAP_CONTENT);
                 rl.setBackground(getHeaderBackground());
                 rl.setLayoutParams(rlP);
                 container.addView(rl);
@@ -1468,7 +1472,7 @@ public class Control {
                 } catch (JSONException e) {
 
                 }
-               return null;
+                return null;
             }, getRootActivity());
         }
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls,String path,String actionPath){
@@ -1826,6 +1830,68 @@ public class Control {
             if(value == null || value == JSONObject.NULL) return  null; else return  (Serializable)value;
         }
     }
+
+    public  static class HeaderControl  extends FieldControlBase<HeaderControl,String> {
+
+
+        public HeaderControl(String name, String caption) {
+            super(name, caption);
+        }
+
+        @Override
+        public HeaderControl setValue(String value) {
+            if(!Objects.equals(getCaption(), value))
+                super.setCaption(value);
+            return super.setValue(value);
+        }
+
+        @Override
+        public HeaderControl setCaption(String caption) {
+            if(!Objects.equals(getValue(), caption))
+                super.setValue(caption);
+            return super.setCaption(caption);
+        }
+
+
+        @Override
+        protected void onButtonClick(ActionButton button) {
+
+        }
+
+        @Override
+        public void valueChange(String oldValue, String newValue) {
+
+        }
+        @Override
+        protected GradientDrawable getHeaderBackground(){
+            GradientDrawable orderStyle = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[] {Color.parseColor("#04263C"),Color.parseColor("#0D78BF"),Color.parseColor("#0D78BF"),Color.parseColor("#04263C")});
+            orderStyle.setCornerRadius(0f);
+            return orderStyle;
+        }
+        @Override
+        protected void addValueView(ViewGroup container) {
+
+            TextView captionControl = super.getCaptionTextView();
+            captionControl.setTypeface(captionControl.getTypeface(), Typeface.BOLD);
+            captionControl.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20); // e.g., 20sp
+            //headerControl.getEditTextInput().setTextColor(Color.WHITE);
+        }
+
+        @Override
+        public void requestFocus() {
+
+        }
+
+        @Override
+        protected String convertValue(Object value) {
+            return value.toString();
+        }
+    }
+
+
+
     public static abstract class EditTextControlBase<T extends EditTextControlBase<T,U>,U extends Serializable> extends FieldControlBase<EditTextControlBase<T,U>,U>{
         private String Digits = null;
         public T setDigits(String digits) {
@@ -1926,7 +1992,7 @@ public class Control {
                         EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), R.color.black));
                         setValue(result);
                     }else{
-                        EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), com.google.android.material.R.color.design_default_color_error));
+                        EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), Color.RED));
                     }
                     InEditMode =false;
                 }
@@ -1954,6 +2020,11 @@ public class Control {
             super(name, caption);
         }
         protected transient  TextView CaptionTextView;
+
+        public TextView getCaptionTextView() {
+            return CaptionTextView;
+        }
+
         @Override
         public boolean validate() {
             boolean valid = super.validate();
@@ -2038,13 +2109,27 @@ public class Control {
     public static abstract   class ControlBase<T extends ControlBase<T,U>,U extends Serializable>  implements Serializable {
         protected abstract void onButtonClick(ActionButton button);
         private int ControlSize = Control.CONTROL_SIZE_SINGLE;
+        private int ControlSizeType = Control.CONTROL_SIZE_TYPE_NORMAL;
         public int getControlSize(){
             return ControlSize;
+        }
+
+
+
+        public int getControlSizeType(){
+            return ControlSizeType;
         }
         public T setControlSize(int size){
             ControlSize = size;
             return  (T)this;
+            //return setControlSize( size,CONTROL_SIZE_TYPE_NORMAL);
+
         }
+        //public T setControlSize(int size,int type){
+        //    ControlSize = size;
+        //    ControlSizeType = type;
+        //    return  (T)this;
+       // }
         public int getAction() {
             return Action;
         }
@@ -2061,10 +2146,19 @@ public class Control {
             Formula = formula;
             return (T)this;
         }
-        public int getWidth(){
-            int singleSize = BaseActivity.ControlWidth;
-            if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
-            else return ControlSize;
+
+        public int getWidth(ViewGroup container){
+
+            //if(ControlSizeType == Control.CONTROL_SIZE_TYPE_PERCENTAGE){
+            //    int actualWidth = _container.getWidth();
+            //    return actualWidth * ControlSize / 100;
+            //}
+            ///else {
+
+                int singleSize = BaseActivity.ControlWidth;
+                if (ControlSize < -5) return Math.abs(ControlSize) * singleSize / 10;
+                else return ControlSize * 2;
+            //}
         }
         public ActionButton getActionButton(String action){
             Optional<ActionButton> button = this.getButtons().stream().filter(i-> i.Name.equals(action)).findFirst();
@@ -2112,12 +2206,19 @@ public class Control {
             Name = name;
         }
         protected transient LinearLayout RootLayout;
+
+        private ViewGroup _container;
         public void addView(ViewGroup container){
+            //_container = container;
+
             if(getRootActivity() == null)setRootActivity((BaseActivity) container.getContext());
+
+
             RootLayout = new LinearLayout(container.getContext());
+
             RootLayout.setBackground(getEditorBackground());
 
-            RelativeLayout.LayoutParams RootLayoutP = new RelativeLayout.LayoutParams(getWidth(), RelativeLayout.LayoutParams.WRAP_CONTENT);
+            RelativeLayout.LayoutParams RootLayoutP = new RelativeLayout.LayoutParams(getWidth(container), RelativeLayout.LayoutParams.WRAP_CONTENT);
             RootLayout.setLayoutParams(RootLayoutP);
             RootLayout.setOrientation(LinearLayout.VERTICAL);
 
@@ -2303,7 +2404,7 @@ public class Control {
             return ListTextView;
         }
         public Control.ActionButton getButton(String name){
-           if(getButtons() == null)return null;
+            if(getButtons() == null)return null;
             Optional<Control.ActionButton> button = getButtons().stream().filter(i-> i.getName().equals(name)).findFirst();
             if(button.isPresent())return button.get();
             else return null;
@@ -2536,7 +2637,7 @@ public class Control {
         }
 
         private ArrayList<VectorDrawableCreator.PathData> getPaths(String path, boolean enabled){
-           return getPaths(new String[]{path},enabled);
+            return getPaths(new String[]{path},enabled);
         }
         private ArrayList<VectorDrawableCreator.PathData> getPaths(String[] paths, boolean enabled){
             int colour = getButtonColor();
