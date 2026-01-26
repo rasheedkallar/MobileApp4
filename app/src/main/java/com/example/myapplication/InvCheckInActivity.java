@@ -135,21 +135,18 @@ public  class InvCheckInActivity extends BaseActivity {
             }
             else if(action.getName().equals(Control.ACTION_ADD_SUB)){
 
-
-
-                Intent intent = new Intent(getRootActivity(), InvCheckInDetailsActivity.class);
-
-
                 String header = "Items";
-
                 var row = getSelectedRow();
                 if (row != null && row.getTag() instanceof JSONObject) {
-
+                    Intent intent = new Intent(getRootActivity(), InvCheckInDetailsActivity.class);
                     JSONObject obj = (JSONObject) row.getTag();
+                    String data = obj.toString();
 
+                    intent.putExtra("row", data);
+                    getRootActivity().startActivity(intent);
+                    /*
                     String refNum = obj.optString("RefNum", "");
                     String partyName = "";
-
                     JSONObject busParty = obj.optJSONObject("BusParty");
                     if (busParty != null) {
                         partyName = busParty.optString("Name", "");
@@ -158,16 +155,12 @@ public  class InvCheckInActivity extends BaseActivity {
                     if (!refNum.isEmpty() || !partyName.isEmpty()) {
                         header = refNum + "-" + partyName;
                     }
+                    */
+
                 }
 
-                intent.putExtra("header", header);
-                intent.putExtra("Id", getValue()); // Pass the selected item's ID
-                getRootActivity().startActivity(intent);
 
 
-                //Intent intent = new Intent(getRootActivity(),InvCheckInDetailsActivity.class);
-                //getRootActivity().startActivity(intent);
-                //return;
             }
             else {
                 super.onButtonClick(action);
@@ -201,10 +194,11 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getEditTextControl("BusEmployee.Code","Em").setColumnWeight(2));
                 controls.add(Control.getLookupForeignControl("BusParty","Supplier","Name").setColumnWeight(9));
                 controls.add(Control.getHiddenControl( "Status", null));
+                controls.add(Control.getHiddenControl( "TotalAmount", null));
                 return controls;
             }
             else if(action.equals(Control.ACTION_ADD ) || action.equals(Control.ACTION_EDIT)){
-               controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
+                controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
                 controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
                 controls.add(Control.getEditDecimalControl("TotalAmount", "Amount").setDecimalPlaces(2));
                 if(action.equals(Control.ACTION_ADD)){

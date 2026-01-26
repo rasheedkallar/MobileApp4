@@ -378,21 +378,49 @@ public class Control {
         public Object getAggregateValue(Control.ControlBase control,JSONObject obj){
             return  control.getValue();
         }
+
+
+        public Double getAggregateSum(JSONArray array, String fieldName) {
+            double sum = 0.0;
+
+            try {
+                for (int i = 0; i < array.length(); i++) {
+                    JSONObject item = array.optJSONObject(i);
+                    if (item != null) {
+                        // Get the value for the given field name
+                        double value = item.optDouble(fieldName, 0.0);
+                        sum += value;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return sum;
+        }
+
+
+
+
+
+
+        private HashMap<String,AggregateValue> Aggregate = new HashMap<>();
+        private ArrayList<ControlBase> Controls;
         @Override
         public void refreshDetailedView(JSONArray data) {
             if(Table == null)GridData = data;
             else {
-                ArrayList<ControlBase> controls = getControls(ACTION_REFRESH);
+                Controls = getControls(ACTION_REFRESH);
                 String id_field_name = getIdFieldName();
                 try {
                     if (getValues() == null) setValues(new ArrayList<Long>());
                     getValues().clear();
                     Table.removeAllViews();
-                    addHeaderRow(Table, controls);
+                    addHeaderRow(Table, Controls);
                     boolean selectionFound = false;
                     final TableLayout parentTable = Table;
                     ArrayList<ControlBase> AggregateControls = getControls(ACTION_REFRESH);
-                    HashMap<String,AggregateValue> Aggregate = new HashMap<>();
+                    Aggregate = new HashMap<>();
                     for (int i = 0; i < AggregateControls.size(); i++) {
                         if(AggregateControls.get(i).getAggregate() != null && AggregateControls.get(i).getAggregate().length() !=0 && !Aggregate.containsKey(AggregateControls.get(i).getName())){
                             Aggregate.put(AggregateControls.get(i).getName(),new AggregateValue(AggregateControls.get(i).getAggregate()));
