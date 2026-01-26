@@ -910,7 +910,7 @@ public class Control {
 
                 rl = new RelativeLayout(container.getContext());
                 //LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(container), RelativeLayout.LayoutParams.WRAP_CONTENT);
-                LinearLayout.LayoutParams rlP = getLayoutParams(container);
+                FlexboxLayout.LayoutParams rlP = getLayoutParams(container);
 
 
                 rl.setBackground(getHeaderBackground());
@@ -2150,12 +2150,12 @@ public class Control {
         //LinearLayout.LayoutParams
 
 
-        public LinearLayout.LayoutParams getLayoutParams(ViewGroup container){
+        public FlexboxLayout.LayoutParams getLayoutParams(ViewGroup container){
 
-            LinearLayout.LayoutParams lp;
+            FlexboxLayout.LayoutParams lp;
             int singleSize = BaseActivity.ControlWidth;
-            if(ControlSize<-5)lp=  new LinearLayout.LayoutParams(Math.abs(ControlSize) * singleSize / 10, RelativeLayout.LayoutParams.WRAP_CONTENT,ControlWeight);
-            else  lp = new LinearLayout.LayoutParams(ControlSize, RelativeLayout.LayoutParams.WRAP_CONTENT,ControlWeight);
+            if(ControlSize<-5)lp=  new FlexboxLayout.LayoutParams(Math.abs(ControlSize) * singleSize / 10, RelativeLayout.LayoutParams.WRAP_CONTENT);
+            else  lp = new FlexboxLayout.LayoutParams(ControlSize, RelativeLayout.LayoutParams.WRAP_CONTENT);
             //lp.set
 
             return  lp;
@@ -2220,7 +2220,7 @@ public class Control {
 
             RootLayout.setBackground(getEditorBackground());
 
-            LinearLayout.LayoutParams RootLayoutP = getLayoutParams(container);
+            FlexboxLayout.LayoutParams RootLayoutP = getLayoutParams(container);
             RootLayout.setLayoutParams(RootLayoutP);
             RootLayout.setOrientation(LinearLayout.VERTICAL);
 
