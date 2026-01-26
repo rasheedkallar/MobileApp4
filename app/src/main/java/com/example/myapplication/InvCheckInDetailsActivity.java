@@ -46,9 +46,9 @@ import kotlin.jvm.functions.Function2;
 
 public  class InvCheckInDetailsActivity extends BaseActivity {
     private final  Control.HeaderControl headerControl =  new Control.HeaderControl("Header","Header").setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
-    private final  BalanceControl balance1Control =  new BalanceControl("Total","Total");
-    private final  BalanceControl balance2Control =  new BalanceControl("Added","Added");
-    private final  BalanceControl balance3Control =  new BalanceControl("Balance","Balance");
+    private final  BalanceControl balance1Control =  new BalanceControl("Total","Total").setControlWeight(0.33f);
+    private final  BalanceControl balance2Control =  new BalanceControl("Added","Added").setControlWeight(0.34f);;
+    private final  BalanceControl balance3Control =  new BalanceControl("Balance","Balance").setControlWeight(0.33f);
 
 
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
@@ -58,9 +58,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         Controls.add(headerControl);
         BarcodeControl barcodeControl = new BarcodeControl();
         Controls.add(barcodeControl);
-        //balance1Control.changeControlSize(33,Control.CONTROL_SIZE_TYPE_PERCENTAGE);
-        //balance2Control.changeControlSize(34,Control.CONTROL_SIZE_TYPE_PERCENTAGE);
-        //balance3Control.changeControlSize(33,Control.CONTROL_SIZE_TYPE_PERCENTAGE);
+
 
         Controls.add(balance1Control);
         Controls.add(balance2Control);
@@ -74,6 +72,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
         };
     }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         header = getIntent().getStringExtra("header");
@@ -86,14 +86,18 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         itemControl.setEnableScroll(true);
         super.onCreate(savedInstanceState);
         itemControl.refreshGrid();
-
-
     }
     public  static  class BalanceControl extends Control.EditDecimalControl {
         public BalanceControl(String name, String caption) {
             super(name, caption);
-            setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
+            setControlSize(0);
             setIsRequired(false);
+        }
+
+
+        public BalanceControl setControlWeight(float controlWeight) {
+            super.setControlWeight(controlWeight);
+            return  this;
         }
     }
 

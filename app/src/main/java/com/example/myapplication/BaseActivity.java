@@ -23,6 +23,7 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,6 +41,9 @@ import com.example.myapplication.model.PopupBase;
 import com.example.myapplication.model.PopupDate;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupHtml;
+import com.google.android.flexbox.FlexDirection;
+import com.google.android.flexbox.FlexWrap;
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 
@@ -82,7 +86,8 @@ public abstract class BaseActivity extends AppCompatActivity  {
     private static final int CAMERA_PERMISSION_REQUEST_CODE  = 2;
     private ActivityResultLauncher<Intent> takePictureLauncher;
     private ActivityResultLauncher<Intent> pickImageLauncher;
-    public LinearLayout Container;
+    //public LinearLayout Container;
+    public FlexboxLayout Container;
     public ArrayList<Control.ControlBase> Controls = new ArrayList<>();
 
     public static String IpAddress;
@@ -195,11 +200,19 @@ public abstract class BaseActivity extends AppCompatActivity  {
         }
 
 
+        Container = new FlexboxLayout(this);
+        TableLayout.LayoutParams fblP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        Container.setLayoutParams(fblP);
+        Container.setFlexDirection(FlexDirection.ROW);
+        Container.setFlexWrap(FlexWrap.WRAP);
+        //sv.addView(FieldsContainer);
 
-        Container = new LinearLayout(this);
-        LinearLayout.LayoutParams llValueP = new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        Container.setLayoutParams(llValueP);
-        Container.setOrientation(LinearLayout.VERTICAL);
+
+
+        //Container = new LinearLayout(this);
+        //LinearLayout.LayoutParams llValueP = new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        //Container.setLayoutParams(llValueP);
+        //Container.setOrientation(LinearLayout.VERTICAL);
         if(EnableScroll){
             ScrollView sv = new ScrollView(this);
             RelativeLayout.LayoutParams svP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);

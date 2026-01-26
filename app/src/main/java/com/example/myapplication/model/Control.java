@@ -77,9 +77,6 @@ public class Control {
     public static String ACTION_SAVE= "Save";
     public static int CONTROL_SIZE_DOUBLE = -20;
     public static int CONTROL_SIZE_SINGLE = -10;
-
-    public static int CONTROL_SIZE_TYPE_NORMAL = 0;
-    public static int CONTROL_SIZE_TYPE_PERCENTAGE = 1;
     public static String AGGREGATE_SUM = "Sum";
     public static String AGGREGATE_AVERAGE = "Average";
     public static String AGGREGATE_COUNT = "Count";
@@ -912,7 +909,10 @@ public class Control {
             if(getButtons() != null && getButtons().size() >0){
 
                 rl = new RelativeLayout(container.getContext());
-                LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(container), RelativeLayout.LayoutParams.WRAP_CONTENT);
+                //LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(container), RelativeLayout.LayoutParams.WRAP_CONTENT);
+                LinearLayout.LayoutParams rlP = getLayoutParams(container);
+
+
                 rl.setBackground(getHeaderBackground());
                 rl.setLayoutParams(rlP);
                 container.addView(rl);
@@ -2109,26 +2109,26 @@ public class Control {
     public static abstract   class ControlBase<T extends ControlBase<T,U>,U extends Serializable>  implements Serializable {
         protected abstract void onButtonClick(ActionButton button);
         private int ControlSize = Control.CONTROL_SIZE_SINGLE;
-        private int ControlSizeType = Control.CONTROL_SIZE_TYPE_NORMAL;
+
         public int getControlSize(){
             return ControlSize;
         }
 
 
-
-        public int getControlSizeType(){
-            return ControlSizeType;
+        private float ControlWeight = 0;
+        public float getControlWeight() {
+            return ControlWeight;
         }
-        public T setControlSize(int size){
-            //ControlSize = size;
-            //return  (T)this;
-            return changeControlSize( size,CONTROL_SIZE_TYPE_NORMAL);
 
-        }
-        public T changeControlSize(int size,int type){
-            ControlSize = (int)size;
-            ControlSizeType = type;
+        public T setControlWeight(float controlWeight) {
+            ControlWeight = controlWeight;
             return  (T)this;
+        }
+
+        public T setControlSize(int size){
+            ControlSize = (int)size;
+            return  (T)this;
+
         }
         public int getAction() {
             return Action;
@@ -2147,19 +2147,21 @@ public class Control {
             return (T)this;
         }
 
-        public int getWidth(ViewGroup container){
+        //LinearLayout.LayoutParams
 
-            if(ControlSizeType == Control.CONTROL_SIZE_TYPE_PERCENTAGE){
-                int actualWidth = _container.getWidth();
-                return actualWidth * ControlSize / 100;
-            }
-            else {
 
-                int singleSize = BaseActivity.ControlWidth;
-                if(ControlSize<-5)return Math.abs(ControlSize) * singleSize / 10;
-                else return ControlSize;
-            }
+        public LinearLayout.LayoutParams getLayoutParams(ViewGroup container){
+
+            LinearLayout.LayoutParams lp;
+            int singleSize = BaseActivity.ControlWidth;
+            if(ControlSize<-5)lp=  new LinearLayout.LayoutParams(Math.abs(ControlSize) * singleSize / 10, RelativeLayout.LayoutParams.WRAP_CONTENT,ControlWeight);
+            else  lp = new LinearLayout.LayoutParams(ControlSize, RelativeLayout.LayoutParams.WRAP_CONTENT,ControlWeight);
+            //lp.set
+
+            return  lp;
         }
+
+
         public ActionButton getActionButton(String action){
             Optional<ActionButton> button = this.getButtons().stream().filter(i-> i.Name.equals(action)).findFirst();
             if(button.isPresent())return  button.get();
@@ -2218,7 +2220,7 @@ public class Control {
 
             RootLayout.setBackground(getEditorBackground());
 
-            RelativeLayout.LayoutParams RootLayoutP = new RelativeLayout.LayoutParams(getWidth(container), RelativeLayout.LayoutParams.WRAP_CONTENT);
+            LinearLayout.LayoutParams RootLayoutP = getLayoutParams(container);
             RootLayout.setLayoutParams(RootLayoutP);
             RootLayout.setOrientation(LinearLayout.VERTICAL);
 
@@ -2425,6 +2427,9 @@ public class Control {
             ListTextView.setTag(getName());
             row.addView(ListTextView);
         }
+
+
+
         protected static class FieldList implements  Serializable{
             public FieldList(int index){
                 Index  = index;
