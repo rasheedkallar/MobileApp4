@@ -46,9 +46,9 @@ import kotlin.jvm.functions.Function2;
 
 public  class InvCheckInDetailsActivity extends BaseActivity {
     private final  Control.HeaderControl headerControl =  new Control.HeaderControl("Header","Header").setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
-    private final  BalanceControl balance1Control =  new BalanceControl("Total","Total").setControlWeight(0.33f);
-    private final  BalanceControl balance2Control =  new BalanceControl("Added","Added").setControlWeight(0.34f);;
-    private final  BalanceControl balance3Control =  new BalanceControl("Balance","Balance").setControlWeight(0.33f);
+    private final  BalanceControl balance1Control =  new BalanceControl("Total","Total").setFlexBasisPercent(0.33f);
+    private final  BalanceControl balance2Control =  new BalanceControl("Added","Added").setFlexBasisPercent(0.34f);;
+    private final  BalanceControl balance3Control =  new BalanceControl("Balance","Balance").setFlexBasisPercent(0.33f);
 
 
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
@@ -95,8 +95,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
 
 
-        public BalanceControl setControlWeight(float controlWeight) {
-            super.setControlWeight(controlWeight);
+        public BalanceControl setFlexBasisPercent(float controlWeight) {
+            super.setFlexBasisPercent(controlWeight);
             return  this;
         }
     }

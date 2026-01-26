@@ -2115,13 +2115,13 @@ public class Control {
         }
 
 
-        private float ControlWeight = 0;
-        public float getControlWeight() {
-            return ControlWeight;
+        private float FlexBasisPercent = 0;
+        public float getFlexBasisPercent() {
+            return FlexBasisPercent;
         }
 
-        public T setControlWeight(float controlWeight) {
-            ControlWeight = controlWeight;
+        public T setFlexBasisPercent(float flexBasisPercent) {
+            FlexBasisPercent = flexBasisPercent;
             return  (T)this;
         }
 
@@ -2156,7 +2156,7 @@ public class Control {
             int singleSize = BaseActivity.ControlWidth;
             if(ControlSize<-5)lp=  new FlexboxLayout.LayoutParams(Math.abs(ControlSize) * singleSize / 10, RelativeLayout.LayoutParams.WRAP_CONTENT);
             else  lp = new FlexboxLayout.LayoutParams(ControlSize, RelativeLayout.LayoutParams.WRAP_CONTENT);
-            //lp.set
+            if(FlexBasisPercent != 0)lp.setFlexBasisPercent(FlexBasisPercent);
 
             return  lp;
         }
