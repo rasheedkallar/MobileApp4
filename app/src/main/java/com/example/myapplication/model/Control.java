@@ -398,19 +398,11 @@ public class Control {
 
             return sum;
         }
-
-
-
-
-
-
-        private HashMap<String,AggregateValue> Aggregate = new HashMap<>();
-        private ArrayList<ControlBase> Controls;
         @Override
         public void refreshDetailedView(JSONArray data) {
             if(Table == null)GridData = data;
             else {
-                Controls = getControls(ACTION_REFRESH);
+                ArrayList<ControlBase> Controls = getControls(ACTION_REFRESH);
                 String id_field_name = getIdFieldName();
                 try {
                     if (getValues() == null) setValues(new ArrayList<Long>());
@@ -420,7 +412,7 @@ public class Control {
                     boolean selectionFound = false;
                     final TableLayout parentTable = Table;
                     ArrayList<ControlBase> AggregateControls = getControls(ACTION_REFRESH);
-                    Aggregate = new HashMap<>();
+                    HashMap<String,AggregateValue> Aggregate = new HashMap<>();
                     for (int i = 0; i < AggregateControls.size(); i++) {
                         if(AggregateControls.get(i).getAggregate() != null && AggregateControls.get(i).getAggregate().length() !=0 && !Aggregate.containsKey(AggregateControls.get(i).getName())){
                             Aggregate.put(AggregateControls.get(i).getName(),new AggregateValue(AggregateControls.get(i).getAggregate()));

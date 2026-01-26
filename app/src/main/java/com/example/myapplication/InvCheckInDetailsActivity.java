@@ -121,10 +121,10 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             setIsRequired(false);
         }
 
-        public interface OnBarcodeScannedListener {
+        public  interface OnBarcodeScannedListener {
             void onBarcodeScanned(String barcode, DataService.Lookup lookup);
         }
-        private OnBarcodeScannedListener listener;
+        private transient OnBarcodeScannedListener listener;
         // Method to set the callback
         public void setOnBarcodeScannedListener(OnBarcodeScannedListener listener) {
             this.listener = listener;
@@ -344,7 +344,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public interface OnRefreshListener {
             void onRefreshListener(JSONArray data, Double amount);
         }
-        private InvCheckInLineDetailedControl.OnRefreshListener listener;
+        private transient InvCheckInLineDetailedControl.OnRefreshListener listener;
         // Method to set the callback
         public void setOnRefreshListener(InvCheckInLineDetailedControl.OnRefreshListener listener) {
             this.listener = listener;
