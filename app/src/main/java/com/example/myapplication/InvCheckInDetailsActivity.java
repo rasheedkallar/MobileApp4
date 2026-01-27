@@ -6,6 +6,7 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.InputType;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,27 +21,35 @@ import android.widget.Toast;
 import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
+import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupLookup;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
+
+import kotlin.jvm.functions.Function2;
 
 public  class InvCheckInDetailsActivity extends BaseActivity {
     private final  Control.HeaderControl headerControl =  new Control.HeaderControl("Header","Header").setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
-    private final  BalanceControl balance1Control =  new BalanceControl("Total","Total").setFlexBasisPercent(0.33f);
-    private final  BalanceControl balance2Control =  new BalanceControl("Added","Added").setFlexBasisPercent(0.34f);;
-    private final  BalanceControl balance3Control =  new BalanceControl("Balance","Balance").setFlexBasisPercent(0.33f);
+    private final  BalanceControl balance1Control =  new BalanceControl("Total","Total").setFlexBasisPercent(0.3333f);
+    private final  BalanceControl balance2Control =  new BalanceControl("Added","Added").setFlexBasisPercent(0.3333f);;
+    private final  BalanceControl balance3Control =  new BalanceControl("Balance","Balance").setFlexBasisPercent(0.3333f);
 
+    private final  BarcodeControl barcodeControl =  new BarcodeControl();
 
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
 
     public InvCheckInDetailsActivity(){
         Controls.add(headerControl);
-        BarcodeControl barcodeControl = new BarcodeControl();
         Controls.add(barcodeControl);
         Controls.add(balance1Control);
         Controls.add(balance2Control);
@@ -110,11 +119,16 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
 
         itemControl.refreshGrid();
+
+        new Handler().postDelayed(barcodeControl::requestFocus, 2000);
+
+
+        //new Handler().postDelayed(barcodeControl.requestFocus();, 2000);
+
     }
     public  static  class BalanceControl extends Control.EditDecimalControl {
         public BalanceControl(String name, String caption) {
             super(name, caption);
-            setControlSize(0);
             setIsRequired(false);
         }
         public BalanceControl setFlexBasisPercent(float controlWeight) {
@@ -132,7 +146,144 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
     public  static  class BarcodeControl extends Control.EditTextControl {
         public BarcodeControl() {
-            super("Item", null);
+            super("Barcode", null);
+            getButtons().add(new Control.ActionButton(Control.ACTION_KEYBOARD));
+            setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
+            setIsRequired(false);
+        }
+        private boolean ScanMode = true;
+        public BarcodeControl  setScanMode(boolean value) {
+            ScanMode = value;
+            return  this;
+        }
+        public boolean getScanMode() {
+            return ScanMode;
+        }
+
+
+        public  interface OnBarcodeScannedListener {
+            void onBarcodeScanned(String barcode, DataService.Lookup lookup);
+        }
+        private transient OnBarcodeScannedListener listener;
+        // Method to set the callback
+        public void setOnBarcodeScannedListener(OnBarcodeScannedListener listener) {
+            this.listener = listener;
+        }
+
+
+        @FunctionalInterface
+        public interface BarcodeListener {
+            void invoke(DataService.Lookup value,String barcode,JSONObject itemInfo);
+        }
+
+        @Override
+        public void valueChange(String oldValue, String newValue) {
+            super.valueChange(oldValue, newValue);
+            if(newValue != null && !ScanMode){
+                requestBarcode(newValue, new BarcodeListener() {
+                    @Override
+                    public void invoke(DataService.Lookup value, String barcode,JSONObject itemInfo) {
+                        EditText editText = getEditTextInput();
+                        String editorBarcode = editText.getText().toString().trim();
+                        if(Objects.equals(barcode, editorBarcode)){
+                            if(listener !=null)listener.onBarcodeScanned(barcode,value);
+                        }
+                    }
+                });
+            }
+        }
+
+        public void requestBarcode(String barcode, BarcodeListener barcodeListener) {
+            new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+                @Override
+                public Void apply(JSONObject jsonObject) {
+                    if(jsonObject == null){
+                        //if(listener !=null)listener.onBarcodeScanned(barcode,null);
+                        barcodeListener.invoke(null,barcode,jsonObject);
+                    }
+                    else{
+                        DataService.Lookup lookup = null;
+                        try {
+                            lookup = new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()),jsonObject.get("FullDescription").toString());
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                        barcodeListener.invoke(lookup,barcode,jsonObject);
+                    }
+                    return null;
+                }
+            }, new Function<String, Void>() {
+                @Override
+                public Void apply(String error) {
+                    //if(listener !=null)listener.onBarcodeScanned(barcode,null);
+                    barcodeListener.invoke(null,barcode,null);
+                    return null;
+                }
+            });
+        }
+        @Override
+        public void addValueView(ViewGroup container) {
+            super.addValueView(container);
+            EditText editText = getEditTextInput();
+            if(!ScanMode) {
+                getActionButton(Control.ACTION_KEYBOARD).setVisible(false);
+            }
+            else{
+                editText.setShowSoftInputOnFocus(false);
+                editText.setOnKeyListener((v, keyCode, event) -> {
+                    if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
+                        String barcode = editText.getText().toString().trim();
+                        if(!barcode.isEmpty() && barcode.indexOf(' ') < 0 && barcode.length() < 20){
+                            requestBarcode(barcode, new BarcodeListener() {
+                                @Override
+                                public void invoke(DataService.Lookup value, String barcode,JSONObject itemInfo) {
+                                    if(ScanMode) {
+
+                                        if (value == null) {
+                                            editText.setText(barcode);
+                                            editText.selectAll();
+                                            editText.requestFocus();
+                                        } else {
+                                            editText.setText(null);
+                                            editText.requestFocus();
+                                        }
+                                        if(listener !=null)listener.onBarcodeScanned(barcode,value);
+                                    }
+                                }
+                            });
+                        }
+                        else{
+                            editText.setText(barcode);
+                            editText.selectAll();
+                            editText.requestFocus();
+                        }
+                        return true; // consume event
+                    }
+
+                    return false;
+                });
+            }
+            editText.setSingleLine(true);
+            editText.setInputType(InputType.TYPE_CLASS_TEXT);
+            editText.setImeOptions(EditorInfo.IME_ACTION_NONE);
+        }
+
+        @Override
+        protected void onButtonClick(Control.ActionButton button) {
+            super.onButtonClick(button);
+            EditText editText = getEditTextInput();
+            if(button.getName().equals(Control.ACTION_KEYBOARD)){
+                InputMethodManager imm = (InputMethodManager) getRootActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                // The button's job is to explicitly SHOW the keyboard for manual entry.
+                // The user can hide it with the system back button.
+                editText.requestFocus();
+                imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+            }
+        }
+    }
+    public  static  class BarcodeControlInput extends Control.EditTextControl {
+        public BarcodeControlInput() {
+            super("Barcode", null);
             getButtons().add(new Control.ActionButton(Control.ACTION_KEYBOARD));
             setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
             setIsRequired(false);
@@ -157,7 +308,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             editText.setOnKeyListener((v, keyCode, event) -> {
                 if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
                     String barcode = editText.getText().toString().trim();
-                    if(barcode != null && barcode.length() !=0 && barcode.indexOf(' ') <0){
+                    if(!barcode.isEmpty() && barcode.indexOf(' ') < 0){
 
                         new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                             @Override
@@ -208,7 +359,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
     }
 
-
     public static  class ItemSearchControl extends Control.SearchControlBase {
 
 
@@ -235,7 +385,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             if(keyCode == 10){
                 if( editor.getText() !=null){
                     String barcode = editor.getText().toString().trim();
-                    if(barcode != null && barcode.length() !=0 && barcode.indexOf(' ') <0){
+                    if(!barcode.isEmpty() && barcode.indexOf(' ') < 0){
 
                         new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                             @Override
@@ -341,6 +491,11 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }, getRootActivity());
         }
     }
+
+
+
+
+
     public static class InvCheckInLineDetailedControl extends Control.DetailedControl {
         public InvCheckInLineDetailedControl() {
             super("InvCheckInLines", "");
@@ -428,15 +583,18 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         private Control.EditTextControlBase descriptionControl = null;
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
-            ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
+            final ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action.equals(Control.ACTION_ADD) || action.equals(Control.ACTION_EDIT) || action.equals(Control.ACTION_REFRESH)){
+
+
                 if(editMode.equals("Camera") && action.equals(Control.ACTION_EDIT)){
                     controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine").setIsRequired(false));
                 }
                 else {
+
                     ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                     if (!action.equals(Control.ACTION_REFRESH)) {
-                        ItemSearchControl isc = new ItemSearchControl();
+                        isc = new ItemSearchControl();
                         isc.setValue(AdditemLookup);
                         isc.setPopupIndex(clickAdd ? -1 : 0).setIsRequired(false);
                         descriptionControl = Control.getEditTextControl("Description", "Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(true).setValue(AddDescription);
@@ -471,13 +629,97 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                         controls.add(Control.getEditTextControl("FullDescription", "Description").setColumnWeight(8).setFormula(ItemSearchControl.ItemFormula));
                     }
                     else{
-                        controls.add(Control.getEditTextControl("Barcode", "Barcode").setIsRequired(false).setValue(AddBarcode));
+                        barcodeControl = (BarcodeControl)new BarcodeControl().setScanMode(false).setCaption("Barcode").setValue(AddBarcode);
+                        barcodeControl.addButton(Control.ACTION_SAVE, new Function<View, Boolean>() {
+                            @Override
+                            public Boolean apply(View view) {
+                                EditText text = barcodeControl.getEditTextInput();
+                                String saveBarcode = text.getText().toString().trim();
+                                DataService.Lookup itemLookup = isc.getValue();
+                                if(itemLookup != null && !saveBarcode.isEmpty()){
+                                    PopupConfirmation.create("Barcode Save confirmation", "Are you sure you want to save barcode?", unused -> {
+                                        barcodeControl.requestBarcode(saveBarcode,new BarcodeControl.BarcodeListener() {
+                                          @Override
+                                          public void invoke(DataService.Lookup value, String barcode, JSONObject itemInfo) {
+                                              if(value != null) {
+                                                  isc.setValue(value);
+                                              }
+                                          }
+                                      });
+
+
+                                        JSONObject obj = new JSONObject();
+                                        try {
+                                            DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+                                            obj.put("ReconDate",format.format(new Date()));
+                                            new DataService().postForSave("AccTransactionLines[" + getValue() + "]", obj, aLong -> {
+                                                getButton(Control.ACTION_CHECKED).setEnabled(false);
+
+                                                return null;
+                                            }, s -> null);
+
+                                        } catch (JSONException e) {
+                                            throw new RuntimeException(e);
+                                        }
+
+
+
+                                        return true;
+                                    }).show(getRootActivity().getSupportFragmentManager(),null);
+                                }
+
+
+
+
+
+
+
+
+                                return null;
+                            }
+                        }).setEnabled(false);
+                        barcodeControl.setOnBarcodeScannedListener(new BarcodeControl.OnBarcodeScannedListener() {
+                            @Override
+                            public void onBarcodeScanned(String barcode, DataService.Lookup lookup) {
+                                ValidateBarcode(lookup);
+                            }
+                        });
+                        controls.add(barcodeControl);
                     }
                 }
                 return controls;
             }
             else{
                 return null;
+            }
+        }
+        private  BarcodeControl barcodeControl;
+        private  ItemSearchControl isc;
+        private  void ValidateBarcode(DataService.Lookup lookup){
+            EditText text = barcodeControl.getEditTextInput();
+            var saveButton = barcodeControl.getButton(Control.ACTION_SAVE);
+
+            text.setTypeface(text.getTypeface(), Typeface.BOLD);
+            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f);
+            var itemLookup = isc.getValue();
+            boolean isValid = (lookup != null)
+                    && (itemLookup != null)
+                    && Objects.equals(itemLookup.getId(), lookup.getId());
+            int darkGreen = Color.parseColor("#1B5E20"); // Green 900
+            int darkRed   = Color.parseColor("#B71C1C"); // Red 900
+            int darkOrange = Color.parseColor("#E65100"); // Deep Orange 900
+
+            if (isValid) {
+                text.setTextColor(darkGreen);
+                if(saveButton != null)saveButton.setEnabled(false);
+            } else {
+                if(lookup == null || lookup.getId() == 0){
+                    text.setTextColor(darkOrange);
+                }
+                else {
+                    text.setTextColor(darkRed);
+                }
+                if(itemLookup != null && itemLookup.getId() != 0)saveButton.setEnabled(true);
             }
         }
     }

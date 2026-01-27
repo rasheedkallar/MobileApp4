@@ -631,8 +631,8 @@ public  class InvCheckInDetails extends BaseActivity {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action == null)return controls;
             if(action.equals(Control.ACTION_FILTER)){
-                controls.add(Control.getDateControl("from","From").setValue(Utility.AddDay(new Date(),-10)));
-                controls.add(Control.getDateControl("to","To").setValue(Utility.AddDay(new Date(),1)));
+                controls.add(Control.getDateControl("from","From").setFlexBasisPercent(.5f).setValue(Utility.AddDay(new Date(),-10)));
+                controls.add(Control.getDateControl("to","To").setFlexBasisPercent(.5f).setValue(Utility.AddDay(new Date(),1)));
                 return controls;
             }
             else if(action.equals(Control.ACTION_REFRESH)){

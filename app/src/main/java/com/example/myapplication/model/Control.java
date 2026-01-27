@@ -915,6 +915,8 @@ public class Control {
             return valid;
         }
         protected transient  TextView CaptionTextView;
+
+        protected transient  TextView FooterTextView;
         protected transient  LinearLayout ActionLayout;
         private transient RelativeLayout rl = null;
 
@@ -2036,9 +2038,15 @@ public class Control {
             super(name, caption);
         }
         protected transient  TextView CaptionTextView;
+        //protected transient  TextView FooterTextView;
 
         public TextView getCaptionTextView() {
             return CaptionTextView;
+        }
+        /*
+
+        public TextView getFooterTextView() {
+            return FooterTextView;
         }
 
         @Override
@@ -2048,6 +2056,12 @@ public class Control {
             else if(CaptionTextView!=null)CaptionTextView.setBackground(getHeaderErrorBackground());
             return valid;
         }
+        @Override
+        public T setFooterText(String footerText) {
+            if(FooterTextView != null)FooterTextView.setText(footerText);
+            return super.setFooterText(footerText);
+        }
+         */
 
         @Override
         public T setCaption(String caption) {
@@ -2055,6 +2069,7 @@ public class Control {
 
             return super.setCaption(caption);
         }
+
 
         @Override
         protected void addContentView(ViewGroup container)
@@ -2119,6 +2134,20 @@ public class Control {
             else{
                 container.addView(llValue);
             }
+            /*
+
+            FooterTextView = new TextView(container.getContext());
+            RelativeLayout.LayoutParams FooterTextViewP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+            FooterTextView.setPadding(10, 10, 10, 10);
+            FooterTextView.setLayoutParams(FooterTextViewP);
+            FooterTextView.setText(getFooterText());
+            FooterTextView.setTextColor(ContextCompat.getColor(container.getContext(), Color.parseColor("#B71C1C")));
+
+            //container.addView(FooterTextView);
+
+
+             */
+
             addValueView(llValue);
         }
     }
@@ -2138,6 +2167,7 @@ public class Control {
 
         public T setFlexBasisPercent(float flexBasisPercent) {
             FlexBasisPercent = flexBasisPercent;
+            if(flexBasisPercent != 0f)setControlSize(0);
             return  (T)this;
         }
 
@@ -2309,14 +2339,14 @@ public class Control {
             if(RootLayout !=null)RootLayout.setBackground(getEditorBackground());
             return  (T)this;
         }
-        public T addButton(String name) {
+        public Control.ActionButton addButton(String name) {
             return addButton(name,null);
         }
-        public T addButton(String name,Function<View, Boolean> onClick) {
+        public Control.ActionButton addButton(String name,Function<View, Boolean> onClick) {
             Control.ActionButton button = new ActionButton(name);
             button.setOnClick(onClick);
             getButtons().add(button);
-            return  (T)this;
+            return  button;
         }
         private String Name;
         public String getName(){
@@ -2354,6 +2384,17 @@ public class Control {
             Caption = caption;
             return (T)this;
         }
+
+        private String FooterText = null;
+        public String getFooterText(){
+            return  FooterText;
+        }
+        public T setFooterText(String footerText) {
+            FooterText = footerText;
+            return (T)this;
+        }
+
+
         public String getFormatValue(U value)
         {
             if(value==null)return null;
@@ -2636,6 +2677,17 @@ public class Control {
             Enabled = enabled;
             return  this;
         }
+        private boolean Visible= true;
+        public ActionButton setVisible(boolean visible) {
+
+            Visible = visible;
+            if(button != null)button.setVisibility(Visible ? View.VISIBLE : View.GONE);
+            return  this;
+        }
+        public boolean getVisible(){
+            return  Visible;
+        }
+
         public boolean getEnabled(){
             return  Enabled;
         }
@@ -2723,7 +2775,9 @@ public class Control {
                 else if (Name.equals( Control.ACTION_KEYBOARD)) {
                     paths = getPaths(new String[]{"M20,6H4c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V8C22,6.9,21.1,6,20,6zM11,17H4v-2h7v2zm9,0h-7v-2h7v2zm0-4H4v-2h16v2zm0-4H4V7h16v2z"} ,enabled);
                 }
-
+                else if (Name.equals( Control.ACTION_SAVE)) {
+                    paths = getPaths(new String[]{"M17,3L5,3c-1.11,0 -2,0.9 -2,2v14c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2L21,7l-4,-4zM12,19c-1.66,0 -3,-1.34 -3,-3s1.34,-3 3,-3 3,1.34 3,3 -1.34,3 -3,3zM15,9L5,9L5,5h10v4z"} ,enabled);
+                }
 
                 //M20,6H4c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V8C22,6.9,21.1,6,20,6zM11,17H4v-2h7v2zm9,0h-7v-2h7v2zm0-4H4v-2h16v2zm0-4H4V7h16v2z
 
@@ -2732,6 +2786,7 @@ public class Control {
             Drawable d = VectorDrawableCreator.getVectorDrawable(button.getContext(),24,24,24,24,paths);
             button.setBackground(d);
             button.setEnabled(enabled);
+
         }
         public void addView(ViewGroup container, Function<Button,Void> buttonClick){
             button = new Button(container.getContext());
@@ -2744,6 +2799,7 @@ public class Control {
                     }
                 }
             });
+            button.setVisibility(Visible ? View.VISIBLE : View.GONE);
             LinearLayout.LayoutParams btLp= new LinearLayout.LayoutParams(Width,Height);
             btLp.setMargins(10,0,10,0);
             button.setLayoutParams(btLp);

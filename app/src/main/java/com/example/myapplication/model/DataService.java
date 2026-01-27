@@ -224,6 +224,13 @@ public class DataService {
     public  void getObject(String url,Function<JSONObject,Void>  success, Context context){
         getObject(JSONObject.class, url, success, context);
     }
+    public  void getObject(String url,Function<JSONObject,Void>  success, Function<String,Void>  failure){
+        getString(url, s -> {
+            convertResult(TypeToken.get(JSONObject.class),s,success,failure);
+            return null;
+        },failure);
+    }
+
     public <T>  void getObject(Class<T> type,String url,Function<T,Void>  success, Context context){
 
         getObject(type, url, success, s -> {
