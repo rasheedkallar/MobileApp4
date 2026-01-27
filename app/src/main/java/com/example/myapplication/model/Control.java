@@ -378,11 +378,8 @@ public class Control {
         public Object getAggregateValue(Control.ControlBase control,JSONObject obj){
             return  control.getValue();
         }
-
-
         public Double getAggregateSum(JSONArray array, String fieldName) {
             double sum = 0.0;
-
             try {
                 for (int i = 0; i < array.length(); i++) {
                     JSONObject item = array.optJSONObject(i);
@@ -395,7 +392,6 @@ public class Control {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
             return sum;
         }
         @Override

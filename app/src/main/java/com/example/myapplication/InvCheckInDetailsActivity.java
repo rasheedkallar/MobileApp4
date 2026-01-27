@@ -1,6 +1,8 @@
 package com.example.myapplication;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.InputType;
@@ -88,6 +90,21 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             public void onRefreshListener(JSONArray data, Double amount) {
                 balance2Control.setValue(amount);
                 balance3Control.setValue(TotalAmount - amount);
+
+                EditText txt = balance3Control.getEditTextInput();
+                txt.setTypeface(null, Typeface.BOLD);
+                // Calculate 2% tolerance
+                double tolerance = TotalAmount * 0.01;
+
+                // Check if amount is within ±2% of TotalAmount
+                if (Math.abs(TotalAmount - amount) <= tolerance) {
+                    txt.setTextColor(Color.parseColor("#006400")); // Within range
+                } else {
+                    txt.setTextColor(Color.parseColor("#8B0000"));   // Outside range
+                }
+
+
+
             }
         });
 

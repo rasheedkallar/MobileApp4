@@ -57,7 +57,8 @@ public class InspectUnitActivity extends BaseActivity {
 
         @Override
         protected String getWhere(String action) {
-            return "IsDeleted = false and AccTransaction.RefLookup.Attr1 = \"Purchase\" and AccTransaction.Status = \"Final\" and InvItemUnit.ItemId=" + ItemId;
+            return "Deleted == false && AccTransaction.RefLookup.Attr1 == \"Purchase\" && AccTransaction.Status == \"Final\" && InvItemUnit.ItemId=" + ItemId;
+            //return null;
         }
 
         @Override
@@ -78,7 +79,7 @@ public class InspectUnitActivity extends BaseActivity {
                 controls.add(Control.getDateControl("AccTransaction.TranDate","Date").setColumnWeight(3));
                 controls.add(Control.getEditTextControl("AccTransaction.BusParty.Name","Supplier").setColumnWeight(6));
                 controls.add(Control.getEditDecimalControl("Qty","Qty").setFormula("{0}.Qty * {0}.Fraction").setColumnWeight(3));
-                controls.add(Control.getEditDecimalControl("Rate","Rate").setFormula("({0}.Rate + ISNULL({0}.TaxRate,0)) / {0}.Fraction").setColumnWeight(2));
+                controls.add(Control.getEditDecimalControl("Rate","Rate").setFormula("({0}.Rate + {0}.TaxRate - {0}.DiscountRate) / {0}.Fraction").setColumnWeight(2));
 
                 return controls;
             }
