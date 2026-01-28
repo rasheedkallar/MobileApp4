@@ -115,6 +115,13 @@ public  class InvCheckInActivity extends BaseActivity {
         @Override
         protected void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
             super.selectRow(row, header, tableLayout);
+            try {
+                JSONObject obj = (JSONObject)row.getTag();
+                SelectedStatus = obj.get("Status").toString();
+            }catch (JSONException e){
+                System.out.println(e.getMessage());
+                SelectedStatus = null;
+            }
             getActionButton(Control.ACTION_STATUS).setEnabled(true);
             getActionButton(Control.ACTION_ADD_SUB).setEnabled(true);
         }
@@ -167,17 +174,7 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         }
         private String SelectedStatus = null;
-        @Override
-        protected void onRowSelected(TableRow row) {
-            super.onRowSelected(row);
-            try {
-                JSONObject obj = (JSONObject)row.getTag();
-                SelectedStatus = obj.get("Status").toString();
-            }catch (JSONException e){
-                System.out.println(e.getMessage());
-                SelectedStatus = null;
-            }
-        }
+
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
