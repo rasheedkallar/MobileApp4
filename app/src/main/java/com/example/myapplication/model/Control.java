@@ -81,6 +81,10 @@ public class Control {
     public static String AGGREGATE_COUNT = "Count";
     public static String AGGREGATE_MAX = "Max";
     public static String AGGREGATE_MIN = "Min";
+
+    public static HeaderControl getHeaderControl( String name, String value){
+        return new HeaderControl(name,value);
+    }
     public static HiddenControl getHiddenControl( String name, Serializable value){
         return new HiddenControl(name,value);
     }
@@ -1872,6 +1876,11 @@ public class Control {
 
     public  static class HeaderControl  extends FieldControlBase<HeaderControl,String> {
 
+        public HeaderControl(String name, String caption) {
+            super(name, caption);
+            setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
+        }
+
         private boolean SingleLine = false;
         public HeaderControl setSingleLine(boolean singleLine) {
             SingleLine = singleLine;
@@ -1881,9 +1890,7 @@ public class Control {
             return SingleLine;
         }
 
-        public HeaderControl(String name, String caption) {
-            super(name, caption);
-        }
+
 
         @Override
         public HeaderControl setValue(String value) {

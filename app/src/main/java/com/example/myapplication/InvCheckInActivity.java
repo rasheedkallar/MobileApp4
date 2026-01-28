@@ -1,66 +1,24 @@
 package com.example.myapplication;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.InputFilter;
-import android.text.InputType;
-import android.text.TextWatcher;
-import android.text.method.DigitsKeyListener;
-import android.view.Gravity;
-import android.view.KeyEvent;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import androidx.core.content.ContextCompat;
-import androidx.core.graphics.ColorUtils;
-
-import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
-import com.example.myapplication.model.PopupBase;
-import com.example.myapplication.model.PopupConfirmation;
-import com.example.myapplication.model.PopupForm;
-import com.example.myapplication.model.PopupHtml;
-import com.example.myapplication.model.PopupInput;
 import com.example.myapplication.model.PopupLookup;
-import com.example.myapplication.model.PopupSearch;
 import com.example.myapplication.model.Utility;
-import com.google.gson.JsonNull;
 import com.loopj.android.http.RequestParams;
-
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.Serializable;
-import java.text.DateFormat;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-
-import kotlin.jvm.functions.Function2;
-import kotlin.jvm.functions.Function3;
-
 public  class InvCheckInActivity extends BaseActivity {
-
     private final InvCheckInDetailedControl itemControl = new InvCheckInDetailedControl();
-
     public InvCheckInActivity(){
+        Controls.add(Control.getHeaderControl("Header","Stock Receive"));
         Controls.add(itemControl);
     }
     @Override
@@ -69,11 +27,9 @@ public  class InvCheckInActivity extends BaseActivity {
         itemControl.setValue(checkInId);
         super.onCreate(savedInstanceState);
     }
-
-
     public static class InvCheckInDetailedControl extends Control.DetailedControl {
         public InvCheckInDetailedControl() {
-            super("InvCheckIns", "Stock Receive");
+            super("InvCheckIns", null);
             setVirtualDelete(true);
             setEnableScroll(true);
             getButtons().add(new Control.ActionButton(Control.ACTION_STATUS).setEnabled(false));
@@ -88,9 +44,6 @@ public  class InvCheckInActivity extends BaseActivity {
         protected String getOrderBy(String action) {
             return "Status == \"Draft\" ? 1 : Status == \"Final\" ? 2 : 3, Id Desc";
         }
-
-
-
         @Override
         protected void rowAdded(ArrayList<Control.ControlBase> controls,JSONObject data) {
             super.rowAdded(controls,data);
@@ -151,23 +104,7 @@ public  class InvCheckInActivity extends BaseActivity {
 
                     intent.putExtra("row", data);
                     getRootActivity().startActivity(intent);
-                    /*
-                    String refNum = obj.optString("RefNum", "");
-                    String partyName = "";
-                    JSONObject busParty = obj.optJSONObject("BusParty");
-                    if (busParty != null) {
-                        partyName = busParty.optString("Name", "");
-                    }
-
-                    if (!refNum.isEmpty() || !partyName.isEmpty()) {
-                        header = refNum + "-" + partyName;
-                    }
-                    */
-
                 }
-
-
-
             }
             else {
                 super.onButtonClick(action);
