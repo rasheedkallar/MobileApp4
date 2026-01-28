@@ -1,4 +1,5 @@
 package com.example.myapplication.model;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -45,12 +46,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import kotlin.jvm.functions.Function2;
-import kotlin.text.UStringsKt;
 
 public class Control {
     public static String ACTION_SEARCH = "Search";
@@ -921,6 +920,14 @@ public class Control {
         private transient RelativeLayout rl = null;
 
 
+        private int ScrollPermanentHeight = 0;
+        public int getScrollPermanentHeight() {
+            return ScrollPermanentHeight;
+        }
+        public void setScrollPermanentHeight(int scrollPermanentHeight) {
+            ScrollPermanentHeight = scrollPermanentHeight;
+        }
+
 
         @Override
         protected void addContentView(ViewGroup container) {
@@ -986,9 +993,23 @@ public class Control {
             llValue.setOrientation(LinearLayout.VERTICAL);
             if(EnableScroll){
                 ScrollView sv = new ScrollView(container.getContext());
-                RelativeLayout.LayoutParams svP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-                svP.setLayoutDirection(LinearLayout.HORIZONTAL);
-                sv.setLayoutParams(svP);
+                if(getScrollPermanentHeight() == 0){
+                    RelativeLayout.LayoutParams params= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                     RelativeLayout.LayoutParams.WRAP_CONTENT);
+                    sv.setLayoutParams(params);
+                }
+                else{
+                    int screenHeight = Resources.getSystem().getDisplayMetrics().heightPixels;
+                    int scrollHeight = screenHeight - ScrollPermanentHeight;
+                    RelativeLayout.LayoutParams params =
+                            new RelativeLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    scrollHeight
+                            );
+                    sv.setLayoutParams(params);
+                }
+                //ScrollView sv = new ScrollView(container.getContext());
+                //svP.setLayoutDirection(LinearLayout.HORIZONTAL);
                 sv.addView(llValue);
                 container.addView(sv);
 
@@ -1851,6 +1872,14 @@ public class Control {
 
     public  static class HeaderControl  extends FieldControlBase<HeaderControl,String> {
 
+        private boolean SingleLine = false;
+        public HeaderControl setSingleLine(boolean singleLine) {
+            SingleLine = singleLine;
+            return this;
+        }
+        public boolean getSingleLine() {
+            return SingleLine;
+        }
 
         public HeaderControl(String name, String caption) {
             super(name, caption);
@@ -1894,6 +1923,15 @@ public class Control {
             TextView captionControl = super.getCaptionTextView();
             captionControl.setTypeface(captionControl.getTypeface(), Typeface.BOLD);
             captionControl.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20); // e.g., 20sp
+
+            if(SingleLine){
+
+                captionControl.setSingleLine(true);
+                captionControl.setEllipsize(null);     // optional
+                captionControl.setHorizontallyScrolling(true);
+
+            }
+
             //headerControl.getEditTextInput().setTextColor(Color.WHITE);
         }
 
@@ -2034,21 +2072,16 @@ public class Control {
         public static final int HEADER_CONTAINER_ID = 1001;
         public static final int VALUE_CONTAINER_ID = 1002;
         public static final int ACTION_CONTAINER_ID = 1003;
+        public static final int FOOTER_CONTAINER_ID = 1004;
         public FieldControlBase(String name, String caption) {
             super(name, caption);
         }
         protected transient  TextView CaptionTextView;
-        //protected transient  TextView FooterTextView;
+        protected transient  TextView FooterTextView;
 
         public TextView getCaptionTextView() {
             return CaptionTextView;
         }
-        /*
-
-        public TextView getFooterTextView() {
-            return FooterTextView;
-        }
-
         @Override
         public boolean validate() {
             boolean valid = super.validate();
@@ -2056,12 +2089,26 @@ public class Control {
             else if(CaptionTextView!=null)CaptionTextView.setBackground(getHeaderErrorBackground());
             return valid;
         }
+
+        public TextView getFooterTextView() {
+            return FooterTextView;
+        }
+
+
         @Override
         public T setFooterText(String footerText) {
-            if(FooterTextView != null)FooterTextView.setText(footerText);
+            if(FooterTextView != null) {
+                if (footerText == null || footerText.trim().isEmpty()) {
+                    FooterTextView.setText(null);
+                    FooterTextView.setVisibility(View.GONE);   // hide completely
+                } else {
+                    FooterTextView.setVisibility(View.VISIBLE); // show
+                    FooterTextView.setText(footerText);
+                }
+            }
             return super.setFooterText(footerText);
         }
-         */
+
 
         @Override
         public T setCaption(String caption) {
@@ -2101,7 +2148,7 @@ public class Control {
                 llAction.setLayoutParams(llActionP);
                 llAction.setId(ACTION_CONTAINER_ID);
                 llAction.setBackgroundColor(Color.parseColor("#008477"));
-                llActionP.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+                //llActionP.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
                 for (int i = 0; i < getButtons().size(); i++) {
                     final ActionButton button = getButtons().get(i);
                     button.addView(llAction, new Function<Button, Void>() {
@@ -2119,34 +2166,69 @@ public class Control {
             RelativeLayout.LayoutParams llValueP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             llValue.setLayoutParams(llValueP);
             llValue.setId(VALUE_CONTAINER_ID);
+
+            FooterTextView = new TextView(container.getContext());
+            FooterTextView.setBackgroundColor(Color.YELLOW);
+            FooterTextView.setId(FOOTER_CONTAINER_ID);
+            RelativeLayout.LayoutParams FooterTextViewP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+            FooterTextView.setPadding(10, 10, 10, 10);
+            FooterTextView.setLayoutParams(FooterTextViewP);
+            FooterTextView.setTextColor(Color.parseColor("#B71C1C"));
+            String footerText = getFooterText();
+
+            if (footerText == null || footerText.trim().isEmpty()) {
+                FooterTextView.setText(null);
+                FooterTextView.setVisibility(View.GONE);   // hide completely
+            } else {
+                FooterTextView.setVisibility(View.VISIBLE); // show
+                FooterTextView.setText(footerText);
+            }
+
+
+
+
+
             if(rl != null){
                 if(getButtonHeader() ){
                     container.addView(llValue);
                     rl.setBackgroundColor(Color.parseColor("#008477"));
+                    container.addView(FooterTextView);
                 }
                 else {
                     rl.addView(llValue);
                     llValueP.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
                     llValueP.addRule(RelativeLayout.LEFT_OF, ACTION_CONTAINER_ID);
-                    llValueP.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+                    //llValueP.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+
+                    rl.addView(FooterTextView);
+
+
+
+
+                    //FooterTextViewP.addRule(RelativeLayout.CENTER_IN_PARENT, 0);
+                    FooterTextViewP.addRule(RelativeLayout.ALIGN_PARENT_START);
+                    FooterTextViewP.addRule(RelativeLayout.ALIGN_PARENT_END);
+                    FooterTextViewP.addRule(RelativeLayout.BELOW, ACTION_CONTAINER_ID);
+
+
+
+
+
                 }
+
             }
             else{
                 container.addView(llValue);
+                container.addView(FooterTextView);
             }
-            /*
-
-            FooterTextView = new TextView(container.getContext());
-            RelativeLayout.LayoutParams FooterTextViewP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-            FooterTextView.setPadding(10, 10, 10, 10);
-            FooterTextView.setLayoutParams(FooterTextViewP);
-            FooterTextView.setText(getFooterText());
-            FooterTextView.setTextColor(ContextCompat.getColor(container.getContext(), Color.parseColor("#B71C1C")));
-
-            //container.addView(FooterTextView);
 
 
-             */
+
+
+
+
+
+
 
             addValueView(llValue);
         }

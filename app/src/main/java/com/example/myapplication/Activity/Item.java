@@ -36,8 +36,7 @@ public class Item {
             controls.add(Control.getEditTextControl("InvItem.Description","Description").setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS).setControlSize(Control.CONTROL_SIZE_DOUBLE));
             controls.add(Control.getEditTextPickerControl("Code", "Unit", getUnits(), null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS).setValue("PCS"));
             controls.add(Control.getEditDecimalControl("Fraction", "Fraction").setDecimalPlaces(3).setValue(1.0));
-            controls.add(Control.getEditDecimalControl("SalesRate","Rate1").setColumnWidth(200).setIsRequired(false));
-            controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
+            controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setColumnWidth(200).setIsRequired(false));
             controls.add(Control.getLookupForeignControl("InvItem.InvItemGroup", "Item Group",  "Code").setEnabled(false));
             controls.add(Control.getHiddenControl("InvItem.ItemTaxId", 1));
 
@@ -285,8 +284,8 @@ public class Item {
                 controls.add(Control.getEditTextPickerControl("Code", "Unit", getUnits(), null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
                 controls.add(Control.getEditDecimalControl("Fraction", "Fraction").setDecimalPlaces(3));
             }
-            controls.add(Control.getEditDecimalControl("SalesRate","Rate1").setColumnWidth(150).setIsRequired(false));
-            controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(150).setIsRequired(false));
+            controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setColumnWidth(150).setIsRequired(false));
+
             if(action.equals(Control.ACTION_REFRESH)) {
                 controls.add(Control.getEditDecimalControl("Cost","Cost").setFormula("{0}.InvItem.PurchaseRate * {0}.Fraction").setColumnWidth(150));
                 controls.add(Control.getEditDecimalControl("Stock","Stock").setDecimalPlaces(3).setFormula("{0}.InvItem.Stock/{0}.Fraction").setColumnWidth(200));

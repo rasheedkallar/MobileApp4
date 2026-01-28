@@ -123,8 +123,7 @@ public  class InvCheckInDetails extends BaseActivity {
                     controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
                     controls.add(Control.getEditDecimalControl("Fraction","Fraction").setDecimalPlaces(3));
                     controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setIsRequired(false));
-                    controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
-                    addNewRecord(getFullPath(),controls, getFullPath());
+                   addNewRecord(getFullPath(),controls, getFullPath());
                     return null;
                 }, getRootActivity());
             }
@@ -508,8 +507,8 @@ public  class InvCheckInDetails extends BaseActivity {
                     if(action == Control.ACTION_EDIT)controls.add(Control.getEditTextControl("InvItem.Description","Item").setControlSize(Control.CONTROL_SIZE_DOUBLE));
                     controls.add(Control.getEditTextPickerControl("Code", "Unit", Item.getUnits(), null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
                     controls.add(Control.getEditDecimalControl("Fraction", "Fraction").setDecimalPlaces(3).setValue(1.0));
-                    controls.add(Control.getEditDecimalControl("SalesRate","Rate1").setColumnWidth(200).setIsRequired(false));
-                    controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
+                    controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setColumnWidth(200).setIsRequired(false));
+
                     if(action == Control.ACTION_EDIT)controls.add(Control.getLookupForeignControl("InvItem.InvItemGroup", "Item Group",  "Code"));
                     if(action == Control.ACTION_EDIT)controls.add(Control.getLookupForeignControl("InvItem.InvItemTax", "Item Tax",  "Code"));
                 }

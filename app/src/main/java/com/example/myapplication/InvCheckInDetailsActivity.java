@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -22,6 +23,7 @@ import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupConfirmation;
+import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
 
 import org.json.JSONArray;
@@ -49,6 +51,9 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
 
     public InvCheckInDetailsActivity(){
+        headerControl.setSingleLine(true);
+        barcodeControl.setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
+        itemControl.setScrollPermanentHeight(550);
         Controls.add(headerControl);
         Controls.add(barcodeControl);
         Controls.add(balance1Control);
@@ -148,7 +153,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public BarcodeControl() {
             super("Barcode", null);
             getButtons().add(new Control.ActionButton(Control.ACTION_KEYBOARD));
-            setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
+            setControlSize(Control.CONTROL_SIZE_DOUBLE);
             setIsRequired(false);
         }
         private boolean ScanMode = true;
@@ -159,7 +164,14 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public boolean getScanMode() {
             return ScanMode;
         }
-
+        private transient DataService.Lookup LastBarcodeItem = null;
+        public DataService.Lookup getLastBarcodeItem() {
+            return LastBarcodeItem;
+        }
+        public BarcodeControl  setLastBarcodeItem(DataService.Lookup value) {
+            LastBarcodeItem = value;
+            return  this;
+        }
 
         public  interface OnBarcodeScannedListener {
             void onBarcodeScanned(String barcode, DataService.Lookup lookup);
@@ -184,9 +196,16 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     @Override
                     public void invoke(DataService.Lookup value, String barcode,JSONObject itemInfo) {
                         EditText editText = getEditTextInput();
-                        String editorBarcode = editText.getText().toString().trim();
-                        if(Objects.equals(barcode, editorBarcode)){
-                            if(listener !=null)listener.onBarcodeScanned(barcode,value);
+                        if(editText != null) {
+                            String editorBarcode = editText.getText().toString().trim();
+                            if (Objects.equals(barcode, editorBarcode)) {
+                                LastBarcodeItem = value;
+                                if (listener != null) listener.onBarcodeScanned(barcode, value);
+                            }
+                        }
+                        else{
+                            LastBarcodeItem = value;
+                            if (listener != null) listener.onBarcodeScanned(barcode, value);
                         }
                     }
                 });
@@ -452,7 +471,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
                     controls.add(Control.getEditDecimalControl("Fraction","Fraction").setDecimalPlaces(3));
                     controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setIsRequired(false));
-                    //controls.add(Control.getEditDecimalControl("SalesRate1","Rate2").setColumnWidth(200).setIsRequired(false));
                     addNewRecord(getFullPath(),controls, getFullPath());
                     return null;
                 }, getRootActivity());
@@ -499,6 +517,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
     public static class InvCheckInLineDetailedControl extends Control.DetailedControl {
         public InvCheckInLineDetailedControl() {
             super("InvCheckInLines", "");
+            setEnableScroll(true);
             getButtons().add(0,new Control.ActionButton(Control.ACTION_BACK));
             getButtons().add(1,new Control.ActionButton(Control.ACTION_SEARCH));
             getButtons().add(2,new Control.ActionButton(Control.ACTION_BARCODE).setEnabled(false));
@@ -595,12 +614,16 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                     if (!action.equals(Control.ACTION_REFRESH)) {
                         isc = new ItemSearchControl();
+                        barcodeControl = (BarcodeControl)new BarcodeControl().setScanMode(false).setCaption("Barcode").setValue(AddBarcode);
                         isc.setValue(AdditemLookup);
                         isc.setPopupIndex(clickAdd ? -1 : 0).setIsRequired(false);
                         descriptionControl = Control.getEditTextControl("Description", "Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(true).setValue(AddDescription);
                         if(AdditemLookup !=null)descriptionControl.setIsRequired(false);
                         isc.setValueChangedListener((lookup, lookup2) -> {
                             descriptionControl.setIsRequired(lookup2 == null);
+                            if(barcodeControl != null) {
+                                ValidateBarcode(barcodeControl.getLastBarcodeItem());
+                            }
                             return null;
                         });
                         controls.add(isc);
@@ -610,7 +633,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     qtyControl.setDecimalPlaces(3).setColumnWeight(3);
                     controls.add(qtyControl);
                     Control.EditDecimalControl amountControl = Control.getEditDecimalControl("Amount", "Amt +VAT");
-                    amountControl.setAggregate(Control.AGGREGATE_SUM);
+                    //amountControl.setAggregate(Control.AGGREGATE_SUM);
                     amountControl.setIsRequired(true).setColumnWeight(3);
                     amountControl.addButton(Control.ACTION_PERCENT, new Function<View, Boolean>() {
                         @Override
@@ -629,7 +652,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                         controls.add(Control.getEditTextControl("FullDescription", "Description").setColumnWeight(8).setFormula(ItemSearchControl.ItemFormula));
                     }
                     else{
-                        barcodeControl = (BarcodeControl)new BarcodeControl().setScanMode(false).setCaption("Barcode").setValue(AddBarcode);
+
                         barcodeControl.addButton(Control.ACTION_SAVE, new Function<View, Boolean>() {
                             @Override
                             public Boolean apply(View view) {
@@ -637,44 +660,37 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                                 String saveBarcode = text.getText().toString().trim();
                                 DataService.Lookup itemLookup = isc.getValue();
                                 if(itemLookup != null && !saveBarcode.isEmpty()){
-                                    PopupConfirmation.create("Barcode Save confirmation", "Are you sure you want to save barcode?", unused -> {
-                                        barcodeControl.requestBarcode(saveBarcode,new BarcodeControl.BarcodeListener() {
-                                          @Override
-                                          public void invoke(DataService.Lookup value, String barcode, JSONObject itemInfo) {
-                                              if(value != null) {
-                                                  isc.setValue(value);
-                                              }
-                                          }
-                                      });
+
+                                    String message = "Are you sure you want to save barcode to unit " + itemLookup.getName() + "?";
 
 
-                                        JSONObject obj = new JSONObject();
-                                        try {
-                                            DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-                                            obj.put("ReconDate",format.format(new Date()));
-                                            new DataService().postForSave("AccTransactionLines[" + getValue() + "]", obj, aLong -> {
-                                                getButton(Control.ACTION_CHECKED).setEnabled(false);
+                                    PopupConfirmation.create("Barcode Save confirmation", message, unused -> {
+                                        new DataService().postForList("InvItemBarcodes[]", "it0 => new {it0.Id, it0.Code }", "it0=> it0.Code == \"" + saveBarcode + "\"", null, array -> {
 
-                                                return null;
-                                            }, s -> null);
+                                            try {
+                                                JSONObject param = new JSONObject().put("Code",saveBarcode);
+                                                param.put("ItemUnitId",itemLookup.getId());
+                                                String path = "InvItemBarcodes[]";
+                                                if(array.length() > 0) {
+                                                    path = "InvItemBarcodes[" + array.getJSONObject(0).getLong("Id") + "]";
+                                                }
+                                                new DataService().postForSave(path, param, aLong -> {
+                                                    barcodeControl.setLastBarcodeItem(itemLookup);
+                                                    ValidateBarcode(itemLookup);
+                                                    return null;
+                                                }, s -> {
+                                                    PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                                                    return null;
+                                                });
+                                            } catch (JSONException e) {
+                                                throw new RuntimeException(e);
+                                            }
 
-                                        } catch (JSONException e) {
-                                            throw new RuntimeException(e);
-                                        }
-
-
-
+                                            return null;
+                                        }, getRootActivity());
                                         return true;
                                     }).show(getRootActivity().getSupportFragmentManager(),null);
                                 }
-
-
-
-
-
-
-
-
                                 return null;
                             }
                         }).setEnabled(false);
@@ -697,29 +713,38 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         private  ItemSearchControl isc;
         private  void ValidateBarcode(DataService.Lookup lookup){
             EditText text = barcodeControl.getEditTextInput();
+            if(text == null)return;
             var saveButton = barcodeControl.getButton(Control.ACTION_SAVE);
-
+            String barcode = text.getText().toString().trim();
             text.setTypeface(text.getTypeface(), Typeface.BOLD);
             text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f);
+
+
+
             var itemLookup = isc.getValue();
             boolean isValid = (lookup != null)
                     && (itemLookup != null)
                     && Objects.equals(itemLookup.getId(), lookup.getId());
             int darkGreen = Color.parseColor("#1B5E20"); // Green 900
             int darkRed   = Color.parseColor("#B71C1C"); // Red 900
-            int darkOrange = Color.parseColor("#E65100"); // Deep Orange 900
+            //int darkOrange = Color.parseColor("#E65100"); // Deep Orange 900
+            int darkBlue = Color.BLUE;
+
 
             if (isValid) {
                 text.setTextColor(darkGreen);
                 if(saveButton != null)saveButton.setEnabled(false);
+                barcodeControl.setFooterText(null);
             } else {
                 if(lookup == null || lookup.getId() == 0){
-                    text.setTextColor(darkOrange);
+                    text.setTextColor(darkBlue);
+                    barcodeControl.setFooterText(null);
                 }
                 else {
                     text.setTextColor(darkRed);
+                    barcodeControl.setFooterText(lookup.getName());
                 }
-                if(itemLookup != null && itemLookup.getId() != 0)saveButton.setEnabled(true);
+                saveButton.setEnabled(itemLookup != null && itemLookup.getId() != 0 && !barcode.isEmpty());
             }
         }
     }
