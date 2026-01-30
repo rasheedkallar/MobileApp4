@@ -9,9 +9,11 @@ import com.example.myapplication.BaseActivity;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
 import com.example.myapplication.model.PopupBase;
+import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupInput;
+import com.google.gson.JsonNull;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 
@@ -21,6 +23,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,19 +54,13 @@ public class Item {
             PopupFormArgs ppf = new PopupFormArgs(header,controls,path,null);
             setArgs(ppf);
         }
-
-
         public void show(BaseActivity activity){
             addNewRecord(activity,getArgs().getPath(),getArgs().getControls(),null);
         }
-
-
-
         public void addNewRecord(BaseActivity activity, String path, ArrayList<Control.ControlBase> controls, String actionPath){
             for (int i = 0; i < controls.size(); i++) {
                 controls.get(i).setPath(path);
             }
-
             ArrayList<Control.LookupControlBase> popupInputs = (ArrayList<Control.LookupControlBase>)controls.stream()
                     .filter(o -> o instanceof Control.LookupControlBase)
                     .map(o -> (Control.LookupControlBase)o)
@@ -75,24 +72,7 @@ public class Item {
         private void ShowAdd(BaseActivity activity,ArrayList<Control.LookupControlBase> popupInputs, ArrayList<Control.ControlBase> controls, String path, String actionPath){
 
             if(popupInputs == null || popupInputs.size() == 0){
-                //PopupForm pf =   new PopupForm();
-                //pf.setArgs(new PopupForm.PopupFormArgs( "Item Add",controls,path,0L).setActionPath(actionPath));
-
-            /*
-            pf.setSaveListener(new Function<Long, Boolean>() {
-                @Override
-                public Boolean apply(Long aLong) {
-                    new DataService().postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(it1=> it1.Id = " + aLong + ").Select(it1=> it1.InvItem).FirstOrDefault()", null, array -> {
-                        SearchItem(array);
-                        return null;
-                    }, getBaseContext());
-                    return true;
-                }
-            });
-
-             */
                 show( activity.getSupportFragmentManager(),null);
-
             }else{
                 popupInputs.get(0).onPopupList(activity,new Function<DataService.Lookup, Void>() {
                     @Override
@@ -104,7 +84,6 @@ public class Item {
                 });
             }
         }
-
     }
 
 
@@ -184,29 +163,37 @@ public class Item {
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> barcodeControls = new ArrayList<Control.ControlBase>();
-            if(action == Control.ACTION_REFRESH) {
+            if(Objects.equals(action, Control.ACTION_REFRESH)) {
                 barcodeControls.add(Control.getEditTextControl("Code", "Barcode"));
             }
             return barcodeControls;
         }
 
         private void AddBarcode(String barcode){
-            JSONObject json = new JSONObject();
-            try{
-                json.put("Code",barcode.trim());
-            }
-            catch (Exception e){
-                System.out.println(e.getMessage());
-            }
-            new DataService().postForSave(getFullPathNew(), json, aLong -> {
-                readValueObject(aLong);
-                refreshGrid(Table);
+
+            String saveBarcode = barcode.trim();
+            new DataService().postForList("InvItemBarcodes[]", "it0 => new {it0.Id, it0.Code }", "it0=> it0.Code == \"" + saveBarcode + "\"", null, array -> {
+                try {
+                    JSONObject param = new JSONObject().put("Code",saveBarcode);
+                    if(array.length() > 0) {
+                        param.put("Id",array.getJSONObject(0).getLong("Id"));
+                    }
+                    new DataService().postForSave(getFullPathNew(), param, aLong -> {
+                        readValueObject(aLong);
+                        refreshGrid(Table);
+                        return null;
+                    }, s -> {
+                        PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                        return null;
+                    });
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
                 return null;
-            }, s -> {
-                PopupHtml.create("Error",s).show(getRootActivity().getSupportFragmentManager(),null);
-                return null;
-            });
+            }, getRootActivity());
         }
+
+
 
         @Override
         public void onButtonClick(Control.ActionButton action) {
@@ -226,28 +213,42 @@ public class Item {
                 });
                 pi.show(getRootActivity().getSupportFragmentManager(),null);
             }
+            else if(action.getName().equals(Control.ACTION_DELETE)){
+                PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", new Function<Void, Boolean>() {
+                    @Override
+                    public Boolean apply(Void unused) {
+                        try {
+                            JSONObject param = new JSONObject();
+                            param.put("ItemUnitId", JSONObject.NULL);
+                            new DataService().postForSave(getFullPath(), param, aLong -> {
+                                readValueObject(aLong);
+                                refreshGrid(Table);
+                                return null;
+                            }, s -> {
+                                PopupHtml.create("Delete Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                                return null;
+                            });
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                        return true;
+                    }
+                }).show(((BaseActivity)action.getButton().getContext()).getSupportFragmentManager(), null);
+            }
             else {
                 super.onButtonClick(action);
             }
         }
     }
-
-
-
     public static class InvItemUnitDetails extends Control.DetailedControl
     {
-
-
-
         public InvItemUnitDetails(DataService.Lookup item) {
             super("InvItemUnits", "Units");
             getButtons().add(3,new Control.ActionButton(Control.ACTION_BARCODE));
             getButtons().add(4,new Control.ActionButton(Control.ACTION_PRINT));
             Item =item;
         }
-
         private DataService.Lookup Item;
-
         @Override
         public void onButtonClick(Control.ActionButton action) {
             if(action.getName() == Control.ACTION_BARCODE){

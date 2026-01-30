@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.DataService;
+import com.example.myapplication.model.PopupBase;
 import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
@@ -172,6 +173,41 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             LastBarcodeItem = value;
             return  this;
         }
+        private  void ValidateBarcode(DataService.Lookup itemLookup){
+            EditText text = getEditTextInput();
+            if(text == null)return;
+            var saveButton = getButton(Control.ACTION_SAVE);
+            String barcode = text.getText().toString().trim();
+            text.setTypeface(text.getTypeface(), Typeface.BOLD);
+            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f);
+            DataService.Lookup lookup = getLastBarcodeItem();
+            //var itemLookup = isc.getValue();
+            boolean isValid = (lookup != null)
+                    && (itemLookup != null)
+                    && Objects.equals(itemLookup.getId(), lookup.getId());
+            int darkGreen = Color.parseColor("#1B5E20"); // Green 900
+            int darkRed   = Color.parseColor("#B71C1C"); // Red 900
+            //int darkOrange = Color.parseColor("#E65100"); // Deep Orange 900
+            int darkBlue = Color.BLUE;
+            if (isValid) {
+                text.setTextColor(darkGreen);
+                if(saveButton != null)saveButton.setEnabled(false);
+                setFooterText(null);
+            } else {
+                if(lookup == null || lookup.getId() == 0){
+                    text.setTextColor(darkBlue);
+                    setFooterText(null);
+                }
+                else {
+                    text.setTextColor(darkRed);
+                    setFooterText(lookup.getName());
+                }
+                saveButton.setEnabled(itemLookup != null && itemLookup.getId() != 0 && !barcode.isEmpty());
+            }
+        }
+
+
+
 
         public  interface OnBarcodeScannedListener {
             void onBarcodeScanned(String barcode, DataService.Lookup lookup);
@@ -240,6 +276,40 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 }
             });
         }
+        public void ResetBarcodeInput(Function< DataService.Lookup,Void> listner){
+            EditText editText = getEditTextInput();
+            String barcode = editText.getText().toString().trim();
+            if(!barcode.isEmpty() && barcode.indexOf(' ') < 0 && barcode.length() < 20){
+                requestBarcode(barcode, new BarcodeListener() {
+                    @Override
+                    public void invoke(DataService.Lookup value, String barcode,JSONObject itemInfo) {
+
+                        setLastBarcodeItem(value);
+
+                        if(ScanMode) {
+
+                            if (value == null) {
+                                editText.setText(barcode);
+                                editText.selectAll();
+                                editText.requestFocus();
+                            } else {
+                                editText.setText(null);
+                                editText.requestFocus();
+                            }
+                            if(listener !=null)listener.onBarcodeScanned(barcode,value);
+                        }
+                        listner.apply(value);
+                    }
+                });
+            }
+            else{
+                editText.setText(barcode);
+                editText.selectAll();
+                editText.requestFocus();
+            }
+        }
+
+
         @Override
         public void addValueView(ViewGroup container) {
             super.addValueView(container);
@@ -251,31 +321,12 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 editText.setShowSoftInputOnFocus(false);
                 editText.setOnKeyListener((v, keyCode, event) -> {
                     if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                        String barcode = editText.getText().toString().trim();
-                        if(!barcode.isEmpty() && barcode.indexOf(' ') < 0 && barcode.length() < 20){
-                            requestBarcode(barcode, new BarcodeListener() {
-                                @Override
-                                public void invoke(DataService.Lookup value, String barcode,JSONObject itemInfo) {
-                                    if(ScanMode) {
-
-                                        if (value == null) {
-                                            editText.setText(barcode);
-                                            editText.selectAll();
-                                            editText.requestFocus();
-                                        } else {
-                                            editText.setText(null);
-                                            editText.requestFocus();
-                                        }
-                                        if(listener !=null)listener.onBarcodeScanned(barcode,value);
-                                    }
-                                }
-                            });
-                        }
-                        else{
-                            editText.setText(barcode);
-                            editText.selectAll();
-                            editText.requestFocus();
-                        }
+                        ResetBarcodeInput(new Function<DataService.Lookup, Void>() {
+                            @Override
+                            public Void apply(DataService.Lookup lookup) {
+                                return null;
+                            }
+                        });
                         return true; // consume event
                     }
 
@@ -300,6 +351,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
         }
     }
+    /*
     public  static  class BarcodeControlInput extends Control.EditTextControl {
         public BarcodeControlInput() {
             super("Barcode", null);
@@ -316,6 +368,38 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public void setOnBarcodeScannedListener(OnBarcodeScannedListener listener) {
             this.listener = listener;
         }
+        public void  RefreshBarcodeStatus(){
+            EditText editText = getEditTextInput();
+            String barcode = editText.getText().toString().trim();
+            if(!barcode.isEmpty() && barcode.indexOf(' ') < 0) {
+                new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+                    @Override
+                    public Void apply(JSONObject jsonObject) {
+                        if (jsonObject == null) {
+                            editText.setText(barcode);
+                            editText.selectAll();
+                            editText.requestFocus();
+                            if (listener != null) listener.onBarcodeScanned(barcode, null);
+                        } else {
+                            try {
+
+                                var lookup = new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()), jsonObject.get("FullDescription").toString());
+                                if (listener != null) listener.onBarcodeScanned(barcode, lookup);
+                                editText.setText(null);
+                                editText.requestFocus();
+                            } catch (JSONException e) {
+                                System.out.println(e.getMessage());
+                                Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                        return null;
+                    }
+                }, editText.getContext());
+
+            }
+        }
+
+
         @Override
         public void addValueView(ViewGroup container) {
             super.addValueView(container);
@@ -326,36 +410,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             editText.setImeOptions(EditorInfo.IME_ACTION_NONE);
             editText.setOnKeyListener((v, keyCode, event) -> {
                 if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                    String barcode = editText.getText().toString().trim();
-                    if(!barcode.isEmpty() && barcode.indexOf(' ') < 0){
-
-                        new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
-                            @Override
-                            public Void apply(JSONObject jsonObject) {
-                                if(jsonObject == null){
-                                    editText.setText(barcode);
-                                    editText.selectAll();
-                                    editText.requestFocus();
-                                    if(listener !=null)listener.onBarcodeScanned(barcode,null);
-                                }
-                                else{
-                                    try {
-
-                                        var lookup = new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()),jsonObject.get("FullDescription").toString());
-                                        if(listener !=null)listener.onBarcodeScanned(barcode,lookup);
-                                        editText.setText(null);
-                                        editText.requestFocus();
-                                    }
-                                    catch (JSONException e)
-                                    {
-                                        System.out.println(e.getMessage());
-                                        Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                                return null;
-                            }
-                        }, editText.getContext());
-                    }
+                    RefreshBarcodeStatus();
                     return true; // consume event
                 }
                 return false;
@@ -378,7 +433,9 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
     }
 
-    public static  class ItemSearchControl extends Control.SearchControlBase {
+
+     */
+    public static  class ItemSearchControl extends Control.SearchControlBase  {
 
 
 
@@ -395,8 +452,37 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             searchControls.add(Control.getEditTextControl("Description","Description").setColumnWeight(12));
             setControls(searchControls);
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD));
+            getButtons().add(new Control.ActionButton(Control.ACTION_EDIT));
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_INBOX).setEnabled(false));
+            getButtons().add(new Control.ActionButton(Control.ACTION_BARCODE).setEnabled(false));
+        }
+
+
+        private  void  RefreshBarcode(String barcode,EditText editor){
+            new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+                @Override
+                public Void apply(JSONObject jsonObject) {
+                    if(jsonObject == null){
+                        editor.setText(barcode);
+                        editor.selectAll();
+                        editor.requestFocus();
+                    }
+                    else{
+                        try {
+                            setValue(new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()),jsonObject.get("FullDescription").toString()));
+                            //OnItemSelected.invoke(jsonObject.get("Description").toString(),editor.getText().toString().trim());
+                            Popup.dismiss();
+                        }
+                        catch (JSONException e)
+                        {
+                            System.out.println(e.getMessage());
+                            Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    return null;
+                }
+            }, editor.getContext());
         }
 
         @Override
@@ -405,30 +491,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 if( editor.getText() !=null){
                     String barcode = editor.getText().toString().trim();
                     if(!barcode.isEmpty() && barcode.indexOf(' ') < 0){
+                        RefreshBarcode(barcode,editor);
 
-                        new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
-                            @Override
-                            public Void apply(JSONObject jsonObject) {
-                                if(jsonObject == null){
-                                    editor.setText(barcode);
-                                    editor.selectAll();
-                                    editor.requestFocus();
-                                }
-                                else{
-                                    try {
-                                        setValue(new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()),jsonObject.get("FullDescription").toString()));
-                                        //OnItemSelected.invoke(jsonObject.get("Description").toString(),editor.getText().toString().trim());
-                                        Popup.dismiss();
-                                    }
-                                    catch (JSONException e)
-                                    {
-                                        System.out.println(e.getMessage());
-                                        Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                                return null;
-                            }
-                        }, editor.getContext());
                     }
                 }
             }
@@ -441,6 +505,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             super.valueChange(oldValue,newValue);
             getActionButton(Control.ACTION_ADD_SUB).setEnabled(getValue() != null);
             getActionButton(Control.ACTION_INBOX).setEnabled(getValue() != null);
+            getActionButton(Control.ACTION_BARCODE).setEnabled(getValue() != null);
         }
         private ArrayList<String> getUnits(){
             ArrayList<String> units = new ArrayList<>();
@@ -460,9 +525,14 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         @Override
         protected void onButtonClick(Control.ActionButton button) {
             if(button.getName().equals(Control.ACTION_ADD)){
-
                 ArrayList<Control.ControlBase> controls = new Item.PopupItemForm("",getFullPath()).getArgs().getControls();
                 addNewRecord(getFullPath(),controls, getFullPath());
+            }
+            else if(button.getName().equals(Control.ACTION_EDIT)){
+                ArrayList<Control.ControlBase> controls = new Item.PopupItemForm("",getFullPath()).getArgs().getControls();
+                controls.add(Control.getHiddenControl("InvItem.Id"));
+                controls.add(Control.getHiddenControl("Id"));
+                editRecord(getFullPath(),controls, getFullPath());
             }
             else if(button.getName().equals(Control.ACTION_ADD_SUB)){
                 new DataService().postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
@@ -477,30 +547,57 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
             else if(button.getName().equals(Control.ACTION_INBOX)){
                 new DataService().postForList(DataService.Lookup.class,
-                        "InvItemUnits[" + getValue().getId() + "].InvItem.InvItemUnits[]",
-                        "new {Id, Code + \" \" + Fraction as Name}",
-                        "", "Code + \" \" + Fraction",
-                        lookups -> {
-                            PopupLookup pl = PopupLookup.create(getCaption(),lookups,0L,(unit)->{
-                                if(unit == null){
-                                    onButtonClick(getActionButton(Control.ACTION_ADD_SUB));
-                                }
-                                else {
-                                    readValueObject(unit.getId());
-                                }
-                                return true;
-                            });
-                            pl.getArgs().setNullCaption("Add New Unit");
-                            pl.getArgs().setHeader("Change Unit");
-                            pl.show(getRootActivity().getSupportFragmentManager(),null);
-                            return null;
-                        }, getRootActivity());
+                "InvItemUnits[" + getValue().getId() + "].InvItem.InvItemUnits[]",
+                "new {Id, Code + \" \" + Fraction as Name}",
+                "", "Code + \" \" + Fraction",
+                lookups -> {
+                    PopupLookup pl = PopupLookup.create(getCaption(),lookups,0L,(unit)->{
+                        if(unit == null){
+                            onButtonClick(getActionButton(Control.ACTION_ADD_SUB));
+                        }
+                        else {
+                            readValueObject(unit.getId());
+                        }
+                        return true;
+                    });
+                    pl.getArgs().setNullCaption("Add New Unit");
+                    pl.getArgs().setHeader("Change Unit");
+                    pl.show(getRootActivity().getSupportFragmentManager(),null);
+                    return null;
+                }, getRootActivity());
+            }
+            else if(button.getName().equals(Control.ACTION_BARCODE)){
+                Item.PopupItemBarcode pib = new Item.PopupItemBarcode();
+                pib.setArgs(new Item.PopupItemBarcode.PopupItemBarcodeArgs("Barcode", "InvItemUnits[" + getValue().getId() + "].InvItem"    ).setEnableScroll(true));
+                pib.show(((BaseActivity)button.getButton().getContext()).getSupportFragmentManager(),null);
+                pib.setOnDoCancel(new Function<Void, Boolean>() {
+                    @Override
+                    public Boolean apply(Void unused) {
+                        if(BarcodeRefreshListener != null)
+                            return BarcodeRefreshListener.apply(null);
+                        else return true;
+                    }
+                });
             }
             else
             {
                 super.onButtonClick(button);
             }
         }
+        public transient Function<Void,Boolean> BarcodeRefreshListener;
+
+        //public transient OnBarcodeRefreshListener BarcodeRefreshListener;
+        public void setBarcodeRefreshListener(Function<Void,Boolean> listener){
+            BarcodeRefreshListener = listener;
+        }
+        public Function<Void,Boolean> getBarcodeRefreshListener(){
+            return BarcodeRefreshListener;
+        }
+
+
+
+
+
         @Override
         protected void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack) {
             new DataService().getList("InvItem/Get?keyWords=" + keywords, array -> {
@@ -508,6 +605,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 return null;
             }, getRootActivity());
         }
+
+
     }
 
 
@@ -604,13 +703,10 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         protected ArrayList<Control.ControlBase> getControls(String action) {
             final ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
             if(action.equals(Control.ACTION_ADD) || action.equals(Control.ACTION_EDIT) || action.equals(Control.ACTION_REFRESH)){
-
-
                 if(editMode.equals("Camera") && action.equals(Control.ACTION_EDIT)){
                     controls.add(Control.getImageControl("Images", "Item Images", "InvCheckInLine").setIsRequired(false));
                 }
                 else {
-
                     ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                     if (!action.equals(Control.ACTION_REFRESH)) {
                         isc = new ItemSearchControl();
@@ -622,9 +718,22 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                         isc.setValueChangedListener((lookup, lookup2) -> {
                             descriptionControl.setIsRequired(lookup2 == null);
                             if(barcodeControl != null) {
-                                ValidateBarcode(barcodeControl.getLastBarcodeItem());
+                                barcodeControl.ValidateBarcode(isc.getValue());
                             }
                             return null;
+                        });
+                        isc.setBarcodeRefreshListener(new Function<Void, Boolean>() {
+                            @Override
+                            public Boolean apply(Void unused) {
+                                barcodeControl.ResetBarcodeInput(new Function<DataService.Lookup, Void>() {
+                                    @Override
+                                    public Void apply(DataService.Lookup lookup) {
+                                        barcodeControl.ValidateBarcode(isc.getValue());
+                                        return null;
+                                    }
+                                });
+                                return true;
+                            }
                         });
                         controls.add(isc);
                         controls.add(descriptionControl);
@@ -633,7 +742,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     qtyControl.setDecimalPlaces(3).setColumnWeight(3);
                     controls.add(qtyControl);
                     Control.EditDecimalControl amountControl = Control.getEditDecimalControl("Amount", "Amt +VAT");
-                    //amountControl.setAggregate(Control.AGGREGATE_SUM);
                     amountControl.setIsRequired(true).setColumnWeight(3);
                     amountControl.addButton(Control.ACTION_PERCENT, new Function<View, Boolean>() {
                         @Override
@@ -660,13 +768,9 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                                 String saveBarcode = text.getText().toString().trim();
                                 DataService.Lookup itemLookup = isc.getValue();
                                 if(itemLookup != null && !saveBarcode.isEmpty()){
-
                                     String message = "Are you sure you want to save barcode to unit " + itemLookup.getName() + "?";
-
-
                                     PopupConfirmation.create("Barcode Save confirmation", message, unused -> {
                                         new DataService().postForList("InvItemBarcodes[]", "it0 => new {it0.Id, it0.Code }", "it0=> it0.Code == \"" + saveBarcode + "\"", null, array -> {
-
                                             try {
                                                 JSONObject param = new JSONObject().put("Code",saveBarcode);
                                                 param.put("ItemUnitId",itemLookup.getId());
@@ -676,7 +780,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                                                 }
                                                 new DataService().postForSave(path, param, aLong -> {
                                                     barcodeControl.setLastBarcodeItem(itemLookup);
-                                                    ValidateBarcode(itemLookup);
+                                                    barcodeControl.ValidateBarcode(itemLookup);
                                                     return null;
                                                 }, s -> {
                                                     PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
@@ -685,7 +789,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                                             } catch (JSONException e) {
                                                 throw new RuntimeException(e);
                                             }
-
                                             return null;
                                         }, getRootActivity());
                                         return true;
@@ -697,7 +800,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                         barcodeControl.setOnBarcodeScannedListener(new BarcodeControl.OnBarcodeScannedListener() {
                             @Override
                             public void onBarcodeScanned(String barcode, DataService.Lookup lookup) {
-                                ValidateBarcode(lookup);
+                                barcodeControl.ValidateBarcode(isc.getValue());
                             }
                         });
                         controls.add(barcodeControl);
@@ -711,41 +814,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
         private  BarcodeControl barcodeControl;
         private  ItemSearchControl isc;
-        private  void ValidateBarcode(DataService.Lookup lookup){
-            EditText text = barcodeControl.getEditTextInput();
-            if(text == null)return;
-            var saveButton = barcodeControl.getButton(Control.ACTION_SAVE);
-            String barcode = text.getText().toString().trim();
-            text.setTypeface(text.getTypeface(), Typeface.BOLD);
-            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f);
 
-
-
-            var itemLookup = isc.getValue();
-            boolean isValid = (lookup != null)
-                    && (itemLookup != null)
-                    && Objects.equals(itemLookup.getId(), lookup.getId());
-            int darkGreen = Color.parseColor("#1B5E20"); // Green 900
-            int darkRed   = Color.parseColor("#B71C1C"); // Red 900
-            //int darkOrange = Color.parseColor("#E65100"); // Deep Orange 900
-            int darkBlue = Color.BLUE;
-
-
-            if (isValid) {
-                text.setTextColor(darkGreen);
-                if(saveButton != null)saveButton.setEnabled(false);
-                barcodeControl.setFooterText(null);
-            } else {
-                if(lookup == null || lookup.getId() == 0){
-                    text.setTextColor(darkBlue);
-                    barcodeControl.setFooterText(null);
-                }
-                else {
-                    text.setTextColor(darkRed);
-                    barcodeControl.setFooterText(lookup.getName());
-                }
-                saveButton.setEnabled(itemLookup != null && itemLookup.getId() != 0 && !barcode.isEmpty());
-            }
-        }
     }
 }

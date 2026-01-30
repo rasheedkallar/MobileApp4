@@ -20,6 +20,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.example.myapplication.BaseActivity;
@@ -46,6 +47,12 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
         setArguments(a);
         return this;
     }
+
+
+
+
+
+
     private BaseActivity RootActivity;
     public BaseActivity getRootActivity(){
         return RootActivity;
@@ -77,6 +84,7 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
         if(RootActivity.Popups.contains(this))
             RootActivity.Popups.remove(this);
         super.onDismiss(dialog);
+
     }
 
     private AlertDialog Popup;
@@ -183,7 +191,7 @@ public abstract class PopupBase<T extends PopupBase<T,U>,U extends PopupBase.Pop
     }
 
     public void setOnDoCancel(Function<Void, Boolean> onDoCancel) {
-        this.onDoOk = onDoCancel;
+        this.onDoCancel = onDoCancel;
     }
 
     public void doOk(){

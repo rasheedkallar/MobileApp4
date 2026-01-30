@@ -648,7 +648,7 @@ public class Control {
                 }
                 new DataService().postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
                     loadEditData(EditControls,jsonObject);
-                    PopupForm from = new PopupForm().setArgs(new PopupForm.PopupFormArgs(getCaption() + " Edit",EditControls,getDataPath(Control.ACTION_EDIT),getValue()));
+                    PopupForm from = new PopupForm().setArgs(new PopupForm.PopupFormArgs((getCaption() != null ? getCaption() + " " : "") + "Edit",EditControls,getDataPath(Control.ACTION_EDIT),getValue()));
                     from.getArgs().setActionPath(getFullPath());
                     from.show( getRootActivity().getSupportFragmentManager(),null);
                     return null;
@@ -1521,7 +1521,7 @@ public class Control {
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls,String path,String actionPath){
             if(popupInputs == null || popupInputs.size() == 0){
                 new PopupForm()
-                        .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,path,0L).setActionPath(actionPath))
+                        .setArgs(new PopupForm.PopupFormArgs((getCaption() != null ? getCaption() + " " : "") + "Add",controls,path,0L).setActionPath(actionPath))
                         .show( getRootActivity().getSupportFragmentManager(),null);
             }
             else{
