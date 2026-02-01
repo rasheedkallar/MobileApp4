@@ -48,7 +48,7 @@ public  class SalesPreview extends BaseActivity {
             addButton(Control.ACTION_REFRESH);
         }
         public void  RefreshData(){
-            new DataService().postForExecuteList("sp_SalesPreview", new JSONObject(), new Function<JSONArray, Void>() {
+            new DataService(getRootActivity()).postForExecuteList("sp_SalesPreview", new JSONObject(), new Function<JSONArray, Void>() {
                 @Override
                 public Void apply(JSONArray jsonArray) {
 

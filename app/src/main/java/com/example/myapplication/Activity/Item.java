@@ -133,7 +133,7 @@ public class Item {
         public void AddControls(LinearLayout container) {
             //Long invCheckInLineId = getArgs().getInvCheckInLineId();
             String s ="it0 => new{it0.Id,it0.Description,it0.InvItemUnits.OrderBy(Fraction).Select(it1 => new {it1.Id,it1.ItemNumber + \" \" + it1.Code + \" \" + it1.Fraction as Unit,it1.InvItemBarcodes.OrderByDescending(Id).Select(it2 => new{it2.Id,it2.Code}) as InvItemBarcodes}) as InvItemUnits}";
-            new DataService().postForSelect(getArgs().getPath(), s, jsonObject -> {
+            new DataService(getContext()).postForSelect(getArgs().getPath(), s, jsonObject -> {
                 try{
                     Title.setText(jsonObject.getString("Description"));
                     JSONArray units = (JSONArray)jsonObject.get("InvItemUnits");
@@ -172,13 +172,13 @@ public class Item {
         private void AddBarcode(String barcode){
 
             String saveBarcode = barcode.trim();
-            new DataService().postForList("InvItemBarcodes[]", "it0 => new {it0.Id, it0.Code }", "it0=> it0.Code == \"" + saveBarcode + "\"", null, array -> {
+            new DataService(getRootActivity()).postForList("InvItemBarcodes[]", "it0 => new {it0.Id, it0.Code }", "it0=> it0.Code == \"" + saveBarcode + "\"", null, array -> {
                 try {
                     JSONObject param = new JSONObject().put("Code",saveBarcode);
                     if(array.length() > 0) {
                         param.put("Id",array.getJSONObject(0).getLong("Id"));
                     }
-                    new DataService().postForSave(getFullPathNew(), param, aLong -> {
+                    new DataService(getRootActivity()).postForSave(getFullPathNew(), param, aLong -> {
                         readValueObject(aLong);
                         refreshGrid(Table);
                         return null;
@@ -220,7 +220,7 @@ public class Item {
                         try {
                             JSONObject param = new JSONObject();
                             param.put("ItemUnitId", JSONObject.NULL);
-                            new DataService().postForSave(getFullPath(), param, aLong -> {
+                            new DataService(getRootActivity()).postForSave(getFullPath(), param, aLong -> {
                                 readValueObject(aLong);
                                 refreshGrid(Table);
                                 return null;
@@ -258,7 +258,7 @@ public class Item {
             }
             else if(action.getName().equals(Control.ACTION_PRINT)){
 
-                new DataService().getString("InvItem/GetShelfEdgePrint?unitId=" + this.getValue(), s -> {
+                new DataService(getRootActivity()).getString("InvItem/GetShelfEdgePrint?unitId=" + this.getValue(), s -> {
                     PopupHtml.create("Message",s).show(getRootActivity().getSupportFragmentManager(),null);
                     return null;
                 }, action.getButton().getContext());

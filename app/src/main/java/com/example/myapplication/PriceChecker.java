@@ -59,7 +59,7 @@ public class PriceChecker extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_price_checker);
         ImageView imageView =  findViewById(R.id.image);
-        new DataService().get("refFile?imagePath=~\\Images\\PriceChecker\\Sample1.jpg" , new AsyncHttpResponseHandler() {
+        new DataService(getBaseContext()).get("refFile?imagePath=~\\Images\\PriceChecker\\Sample1.jpg" , new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                 Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
@@ -97,7 +97,7 @@ public class PriceChecker extends BaseActivity {
                 JSONObject param = new JSONObject();
                 param.put("param1","PriceChecker");
                 param.put("param2",Barcode.getText().toString().trim());
-                new DataService().postForExecuteList("sp_DataInspection", param, jsonArray -> {
+                new DataService(getBaseContext()).postForExecuteList("sp_DataInspection", param, jsonArray -> {
                     Timer.cancel();
                     Timer.start();
 
@@ -160,7 +160,7 @@ public class PriceChecker extends BaseActivity {
 
 
                 param.put("expiryDate",now.plusMinutes(10));
-                new DataService().postForExecuteList("sp_UpdateMonitorStatus", param, new Function<JSONArray, Void>() {
+                new DataService(getBaseContext()).postForExecuteList("sp_UpdateMonitorStatus", param, new Function<JSONArray, Void>() {
                     @Override
                     public Void apply(JSONArray jsonArray) {
                         System.out.println(jsonArray.toString());

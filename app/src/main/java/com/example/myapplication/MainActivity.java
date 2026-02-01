@@ -63,7 +63,7 @@ public class MainActivity extends BaseActivity {
         }
         @Override
         public void  refreshGrid(TableLayout table){
-            new DataService().postForExecuteList("sp_UpdateMonitorStatus", new JSONObject(), new Function<JSONArray, Void>() {
+            new DataService(getRootActivity()).postForExecuteList("sp_UpdateMonitorStatus", new JSONObject(), new Function<JSONArray, Void>() {
                 @Override
                 public Void apply(JSONArray jsonArray) {
 

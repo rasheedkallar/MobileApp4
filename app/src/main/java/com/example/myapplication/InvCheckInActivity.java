@@ -86,7 +86,7 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Final");
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Cancel");
                 PopupLookup.create(getCaption(), stats, null, lookup -> {
-                    new DataService().postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getValue() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
+                    new DataService(getRootActivity()).postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getValue() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
                         refreshGrid(Table);
                         return null;
                     },getRootActivity());

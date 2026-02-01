@@ -513,7 +513,7 @@ public class Control {
                 FieldList fields = new FieldList(0);
                 fields.Fields.put("Id","it0.Id");
                 addForSelectQuery(fields);
-                new DataService().postForSelect(getPath(),"it0 => " + fields.getSelectString(), jsonObject -> {
+                new DataService(getRootActivity()).postForSelect(getPath(),"it0 => " + fields.getSelectString(), jsonObject -> {
                     readValueJSONObject(jsonObject,getName());
                     return null;
                 },table.getContext());
@@ -570,7 +570,7 @@ public class Control {
                     lp.Where = where;
                     lp.OrderBy = getOrderBy(ACTION_REFRESH);
                     lp.Take = getTake();
-                    new DataService().postForList(getFullPathNew(),lp, jsonArray -> {
+                    new DataService(getRootActivity()).postForList(getFullPathNew(),lp, jsonArray -> {
                         refreshDetailedView(jsonArray);
                         return null;
                     },table.getContext());
@@ -609,7 +609,7 @@ public class Control {
                 }
                 EditControls.get(i).addForSelectQuery(fields);
             }
-            new DataService().postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
+            new DataService(getRootActivity()).postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
                 loadEditData(EditControls,jsonObject);
                 return null;
             }, getRootActivity());
@@ -646,7 +646,7 @@ public class Control {
                     }
                     EditControls.get(i).addForSelectQuery(fields);
                 }
-                new DataService().postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
+                new DataService(getRootActivity()).postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
                     loadEditData(EditControls,jsonObject);
                     PopupForm from = new PopupForm().setArgs(new PopupForm.PopupFormArgs((getCaption() != null ? getCaption() + " " : "") + "Edit",EditControls,getDataPath(Control.ACTION_EDIT),getValue()));
                     from.getArgs().setActionPath(getFullPath());
@@ -658,7 +658,7 @@ public class Control {
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", new Function<Void, Boolean>() {
                     @Override
                     public Boolean apply(Void unused) {
-                        new DataService().postForDelete(getDataPath(Control.ACTION_DELETE), b -> {
+                        new DataService(getRootActivity()).postForDelete(getDataPath(Control.ACTION_DELETE), b -> {
                             setValue(null);
                             refreshGrid(Table);
                             return null;
@@ -722,7 +722,7 @@ public class Control {
         public void onButtonClick(ActionButton button) {
             if(button.Name.equals(Control.ACTION_DELETE)){
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)->{
-                    new DataService().postForDelete("RefFiles[" + getValue() + "]", new Function<Boolean, Void>() {
+                    new DataService(getRootActivity()).postForDelete("RefFiles[" + getValue() + "]", new Function<Boolean, Void>() {
                         @Override
                         public Void apply(Boolean s) {
                             getValues().remove(getValue());
@@ -808,7 +808,7 @@ public class Control {
                 getValues().add(id);
             }
             ImageView imageView = GetImageView(id);
-            new DataService().get("EntityApi/GetImage/" + id, new AsyncHttpResponseHandler() {
+            new DataService(getRootActivity()).get("EntityApi/GetImage/" + id, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
@@ -1338,7 +1338,7 @@ public class Control {
             if(getFormula() != null && getFormula().length() != 0){
                 select = "it0 => new {it0.Id, it0." + getFormula().replace("{0}." + getName(),"it0") + " as Name}";
             }
-            new DataService().postForList(DataService.Lookup.class, getFullPath(), select, getWhere(), orderBy, lookups -> {
+            new DataService(getRootActivity()).postForList(DataService.Lookup.class, getFullPath(), select, getWhere(), orderBy, lookups -> {
                 PopupLookup.create(getCaption(),lookups,getValue() == null? null : getValue().getId(),(lookup)->{
                     setValue(lookup);
                     return true;
@@ -1407,7 +1407,7 @@ public class Control {
 
                 String path = getFullPath() + "[" + value + "]";
                 if(getName().equals("."))path = getPath();
-                new DataService().postForSelect(DataService.Lookup.class,path,json, lookup -> {
+                new DataService(getRootActivity()).postForSelect(DataService.Lookup.class,path,json, lookup -> {
                     setValue(lookup);
                     if(txtValue != null){
                         txtValue.setText(lookup.getName());
@@ -1500,7 +1500,7 @@ public class Control {
             return "it0 => " + fields.getSelectString();
         }
         public void editRecord(String path,ArrayList<ControlBase> controls,String actionPath){
-            new DataService().postForSelect(path,getSelect(controls), jsonObject -> {
+            new DataService(getRootActivity()).postForSelect(path,getSelect(controls), jsonObject -> {
                 try {
                     for (int i = 0; i < controls.size(); i++) {
                         controls.get(i).setPath(path);

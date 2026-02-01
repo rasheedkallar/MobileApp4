@@ -71,7 +71,7 @@ public  class TransactionMonitor extends BaseActivity {
             JSONObject param = new JSONObject();
             try {
                 param.put("accTranId",getArgs().getTranId());
-                new DataService().postForExecuteList("sp_CheckListAcc", param, jsonArray -> {
+                new DataService(getRootActivity()).postForExecuteList("sp_CheckListAcc", param, jsonArray -> {
                     for (int i = 0; i < jsonArray.length(); i++) {
                         try {
                             JSONObject obj = jsonArray.getJSONObject(i);
@@ -184,7 +184,7 @@ public  class TransactionMonitor extends BaseActivity {
             addButton(Control.ACTION_REFRESH);
         }
         private  void  RefreshData(JSONObject param){
-            new DataService().postForExecuteList("sp_TransMonitor", param, jsonArray -> {
+            new DataService(getRootActivity()).postForExecuteList("sp_TransMonitor", param, jsonArray -> {
                 refreshDetailedView(jsonArray);
                 return null;
             }, getRootActivity());

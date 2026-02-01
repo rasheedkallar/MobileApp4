@@ -1,5 +1,6 @@
 package com.example.myapplication.model;
 import com.example.myapplication.BaseActivity;
+import com.example.myapplication.Data.DataServiceSecured;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -9,6 +10,7 @@ import com.loopj.android.http.RequestParams;
 import cz.msebera.android.httpclient.Header;
 import kotlin.text.Charsets;
 import android.content.Context;
+import android.provider.ContactsContract;
 import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,11 +25,25 @@ import java.util.ArrayList;
 import java.util.function.Function;
 
 public class DataService {
+
+    private final Context appContext;
+
+    public DataService(Context context){
+        appContext = context;
+    }
+
+
     private static String serverIp = "10.207.176.109"; //office CORP
     private static String  serverPort = "80";
 
 
     public void httpAction(String type, String url,RequestParams params,AsyncHttpResponseHandler response){
+
+        //new DataServiceSecured(appContext).httpAction(type,url,params,response);
+
+
+
+
         String finalUrl= getRootUrl()  + "/api/" + url;  //office
         AsyncHttpClient ahc = new AsyncHttpClient();
         ahc.setResponseTimeout(50000);
@@ -43,6 +59,8 @@ public class DataService {
         else if(type.equals("DELETE")){
             ahc.delete(finalUrl, params, response);
         }
+
+
     }
     public static String getRootUrl(){
 

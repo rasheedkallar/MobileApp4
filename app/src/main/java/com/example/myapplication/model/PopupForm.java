@@ -96,7 +96,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
                 for (Control.ControlBase control : getArgs().getControls()) {
                     control.updateValueToJSONObject(obj);
                 }
-                new DataService().postForSave(getArgs().getPath(), obj, aLong -> {
+                new DataService(getRootActivity()).postForSave(getArgs().getPath(), obj, aLong -> {
                     doAfterSaved(aLong);
                     return null;
                 }, s -> {

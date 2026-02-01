@@ -249,7 +249,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
 
         public void requestBarcode(String barcode, BarcodeListener barcodeListener) {
-            new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+            new DataService(getRootActivity()).getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                 @Override
                 public Void apply(JSONObject jsonObject) {
                     if(jsonObject == null){
@@ -460,7 +460,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
 
         private  void  RefreshBarcode(String barcode,EditText editor){
-            new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+            new DataService(getRootActivity()).getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                 @Override
                 public Void apply(JSONObject jsonObject) {
                     if(jsonObject == null){
@@ -535,7 +535,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 editRecord(getFullPath(),controls, getFullPath());
             }
             else if(button.getName().equals(Control.ACTION_ADD_SUB)){
-                new DataService().postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
+                new DataService(getRootActivity()).postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
                     ArrayList<Control.ControlBase> controls = new ArrayList<>();
                     controls.add(0,Control.getLookupForeignControl("InvItem","Item Unit","Description").setValue(lookup));
                     controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
@@ -546,7 +546,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 }, getRootActivity());
             }
             else if(button.getName().equals(Control.ACTION_INBOX)){
-                new DataService().postForList(DataService.Lookup.class,
+                new DataService(getRootActivity()).postForList(DataService.Lookup.class,
                 "InvItemUnits[" + getValue().getId() + "].InvItem.InvItemUnits[]",
                 "new {Id, Code + \" \" + Fraction as Name}",
                 "", "Code + \" \" + Fraction",
@@ -600,7 +600,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
         @Override
         protected void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack) {
-            new DataService().getList("InvItem/Get?keyWords=" + keywords, array -> {
+            new DataService(getRootActivity()).getList("InvItem/Get?keyWords=" + keywords, array -> {
                 callBack.apply(array);
                 return null;
             }, getRootActivity());
@@ -770,7 +770,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                                 if(itemLookup != null && !saveBarcode.isEmpty()){
                                     String message = "Are you sure you want to save barcode to unit " + itemLookup.getName() + "?";
                                     PopupConfirmation.create("Barcode Save confirmation", message, unused -> {
-                                        new DataService().postForList("InvItemBarcodes[]", "it0 => new {it0.Id, it0.Code }", "it0=> it0.Code == \"" + saveBarcode + "\"", null, array -> {
+                                        new DataService(getRootActivity()).postForList("InvItemBarcodes[]", "it0 => new {it0.Id, it0.Code }", "it0=> it0.Code == \"" + saveBarcode + "\"", null, array -> {
                                             try {
                                                 JSONObject param = new JSONObject().put("Code",saveBarcode);
                                                 param.put("ItemUnitId",itemLookup.getId());
@@ -778,7 +778,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                                                 if(array.length() > 0) {
                                                     path = "InvItemBarcodes[" + array.getJSONObject(0).getLong("Id") + "]";
                                                 }
-                                                new DataService().postForSave(path, param, aLong -> {
+                                                new DataService(getRootActivity()).postForSave(path, param, aLong -> {
                                                     barcodeControl.setLastBarcodeItem(itemLookup);
                                                     barcodeControl.ValidateBarcode(itemLookup);
                                                     return null;

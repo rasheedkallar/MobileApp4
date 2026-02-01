@@ -243,7 +243,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
 
 
-                new DataService().upload(image_file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
+                new DataService(getBaseContext()).upload(image_file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
                     @Override
                     public Void apply(Long aLong) {
                         Bitmap imageBitmap = null;
@@ -288,7 +288,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
                     }
                     DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                     String newFileName = dateFormat.format(new Date());
-                    new DataService().upload(file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
+                    new DataService(getBaseContext()).upload(file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
                         @Override
                         public Void apply(Long aLong) {
                             onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_id,aLong);

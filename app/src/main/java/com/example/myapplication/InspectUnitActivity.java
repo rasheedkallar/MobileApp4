@@ -109,7 +109,7 @@ public class InspectUnitActivity extends BaseActivity {
                 throw new RuntimeException(e);
             }
 
-            new DataService().postForExecuteList("sp_DataInspection", param, new Function<JSONArray, Void>() {
+            new DataService(getRootActivity()).postForExecuteList("sp_DataInspection", param, new Function<JSONArray, Void>() {
                 @Override
                 public Void apply(JSONArray jsonArray) {
 
@@ -163,7 +163,7 @@ public class InspectUnitActivity extends BaseActivity {
         @Override
         protected void doAfterSaved(Long id) {
             super.doAfterSaved(id);
-            new DataService().postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(Id=" + id + ").Select(InvItem).FirstOrDefault()", null, array -> {
+            new DataService(getRootActivity()).postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(Id=" + id + ").Select(InvItem).FirstOrDefault()", null, array -> {
                 try {
                     ((InspectUnitActivity)getRootActivity()).SearchItem(array.getJSONObject(0),id);
                 } catch (JSONException e) {
@@ -202,7 +202,7 @@ public class InspectUnitActivity extends BaseActivity {
                     obj.put("itemUnitId",ItemUnitId);
                     obj.put("stock",getArgs().getControls().get(1).getValue());
                     obj.put("user","mobile");
-                    new DataService().postForExecute(Integer.class, "sp_UpdateStock", obj, new Function<Integer, Void>() {
+                    new DataService(getRootActivity()).postForExecute(Integer.class, "sp_UpdateStock", obj, new Function<Integer, Void>() {
                         @Override
                         public Void apply(Integer integer) {
                             if(CallBack.apply((Double)getArgs().getControls().get(0).getValue()))dismiss();
@@ -292,7 +292,7 @@ public class InspectUnitActivity extends BaseActivity {
                 public boolean onItemSelected(TableRow row, JSONObject data, DataService.Lookup lookup) {
 
                     if(lookup != null){
-                        new DataService().postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(it1=> it1.Id = " + lookup.getId() + ").Select(it1=> it1.InvItem).FirstOrDefault()", null, array -> {
+                        new DataService(getBaseContext()).postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(it1=> it1.Id = " + lookup.getId() + ").Select(it1=> it1.InvItem).FirstOrDefault()", null, array -> {
                             try {
                                 SearchItem(array.getJSONObject(0),lookup.getId());
                             } catch (JSONException e) {
@@ -310,7 +310,7 @@ public class InspectUnitActivity extends BaseActivity {
                         String text = editor.getText().toString().trim();
                         if(text != null && text.length() !=0){
 
-                            new DataService().getList("InvItem/Get?keyWords=" + text, array -> {
+                            new DataService(getBaseContext()).getList("InvItem/Get?keyWords=" + text, array -> {
                                 Popup.refreshDetailedView(array);
                                 return null;
                             }, getBaseContext());
@@ -356,7 +356,7 @@ public class InspectUnitActivity extends BaseActivity {
                             RequestParams rp = new RequestParams();
                             rp.add("Barcode",barcode);
                             rp.add("Select",Select);
-                            new DataService().postForObject("InvItem/GetItemByBarcode", rp, jsonObject -> {
+                            new DataService(getBaseContext()).postForObject("InvItem/GetItemByBarcode", rp, jsonObject -> {
                                 Long unitId = null;
                                 try {
                                     if(jsonObject == null || jsonObject.equals(JSONObject.NULL)){

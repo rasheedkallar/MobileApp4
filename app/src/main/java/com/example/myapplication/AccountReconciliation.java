@@ -46,7 +46,7 @@ public  class AccountReconciliation extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if(savedInstanceState == null){
-            new DataService().postForList("AccDefaults[]",
+            new DataService(getBaseContext()).postForList("AccDefaults[]",
             "it0=> new{it0.AccLedger.Id,it0.AccLedger.Name,it0.AccLedger.Balance, it0.AccLedger." + Select + " as AccTransactionLines}",
             "Name = \"Ledger Monitor\" or Name = \"Ledger Monitor_" + User + "\"",
             "AccLedger.Name",
@@ -84,7 +84,7 @@ public  class AccountReconciliation extends BaseActivity {
                         try {
                             DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
                             obj.put("ReconDate",format.format(new Date()));
-                            new DataService().postForSave("AccTransactionLines[" + getValue() + "]", obj, aLong -> {
+                            new DataService(getRootActivity()).postForSave("AccTransactionLines[" + getValue() + "]", obj, aLong -> {
                                 getButton(Control.ACTION_CHECKED).setEnabled(false);
                                 RefreshData();
                                 return null;
@@ -124,7 +124,7 @@ public  class AccountReconciliation extends BaseActivity {
             txtBalance.setBackgroundColor(colour);
         }
         private void  RefreshData(){
-            new DataService().postForSelect("AccLedgers[" + Id + "]", "it0=> new{it0.Id,it0.Name,it0.Balance,it0." + Select + " as AccTransactionLines}", new Function<JSONObject, Void>() {
+            new DataService(getRootActivity()).postForSelect("AccLedgers[" + Id + "]", "it0=> new{it0.Id,it0.Name,it0.Balance,it0." + Select + " as AccTransactionLines}", new Function<JSONObject, Void>() {
                 @Override
                 public Void apply(JSONObject jsonObject) {
                     try {

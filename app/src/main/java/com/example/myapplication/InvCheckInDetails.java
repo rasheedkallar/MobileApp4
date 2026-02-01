@@ -59,7 +59,7 @@ public  class InvCheckInDetails extends BaseActivity {
                     String barcode = editor.getText().toString().trim();
                     if(barcode != null && barcode.length() !=0 && barcode.indexOf(' ') <0){
 
-                        new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+                        new DataService(getRootActivity()).getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                             @Override
                             public Void apply(JSONObject jsonObject) {
                                 if(jsonObject == null){
@@ -117,7 +117,7 @@ public  class InvCheckInDetails extends BaseActivity {
                 addNewRecord(getFullPath(),controls, getFullPath());
             }
             else if(button.getName() == Control.ACTION_ADD_SUB){
-                new DataService().postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
+                new DataService(getRootActivity()).postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
                     ArrayList<Control.ControlBase> controls = new ArrayList<>();
                     controls.add(0,Control.getLookupForeignControl("InvItem","Item","Description").setValue(lookup));
                     controls.add(Control.getEditTextPickerControl("Code","Unit",getUnits(),null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
@@ -128,7 +128,7 @@ public  class InvCheckInDetails extends BaseActivity {
                 }, getRootActivity());
             }
             else if(button.getName() == Control.ACTION_INBOX){
-                new DataService().postForList(DataService.Lookup.class,
+                new DataService(getRootActivity()).postForList(DataService.Lookup.class,
                     "InvItemUnits[" + getValue().getId() + "].InvItem.InvItemUnits[]",
                     "new {Id, Code + \" \" + Fraction as Name}",
                     "", "Code + \" \" + Fraction",
@@ -154,7 +154,7 @@ public  class InvCheckInDetails extends BaseActivity {
         }
         @Override
         protected void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack) {
-            new DataService().getList("InvItem/Get?keyWords=" + keywords, array -> {
+            new DataService(getRootActivity()).getList("InvItem/Get?keyWords=" + keywords, array -> {
                 callBack.apply(array);
                 return null;
             }, getRootActivity());
@@ -288,7 +288,7 @@ public  class InvCheckInDetails extends BaseActivity {
                     FieldList fields = new FieldList(0);
                     fields.Fields.put("Id","it0.Id");
                     addForSelectQuery(fields);
-                    new DataService().postForSelect("InvItemUnits[" + ItemUnitId + "]","it0 => " + fields.getSelectString(), jsonObject -> {
+                    new DataService(getRootActivity()).postForSelect("InvItemUnits[" + ItemUnitId + "]","it0 => " + fields.getSelectString(), jsonObject -> {
                         readValueJSONObject(jsonObject,getName());
                         return null;
                     },table.getContext());
@@ -437,7 +437,7 @@ public  class InvCheckInDetails extends BaseActivity {
                                 JSONObject args = new JSONObject();
                                 args.put("SalesRate",currentValue);
                                 reqCount++;
-                                new DataService().postForSave("InvItemUnits[" + id + "]", args, aLong -> {
+                                new DataService(getRootActivity()).postForSave("InvItemUnits[" + id + "]", args, aLong -> {
                                     tv.setBackgroundColor(Color.TRANSPARENT);
                                     try {
                                         if(tv.getText() != null && tv.getText().length() != 0)obj.put("SalesRate",null);
@@ -470,7 +470,7 @@ public  class InvCheckInDetails extends BaseActivity {
             @Override
             public void onButtonClick(Control.ActionButton action) {
                 if(action.getName().equals(Control.ACTION_ADD)){
-                    new DataService().postForSelect(DataService.Lookup.class, "InvItemUnits[" + ItemUnitId + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
+                    new DataService(getRootActivity()).postForSelect(DataService.Lookup.class, "InvItemUnits[" + ItemUnitId + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {
                         ItemLookup = lookup;
                         super.onButtonClick(action);
                         return null;
@@ -602,7 +602,7 @@ public  class InvCheckInDetails extends BaseActivity {
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Final");
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Cancel");
                 PopupLookup.create(getCaption(), stats, null, lookup -> {
-                    new DataService().postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getValue() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
+                    new DataService(getRootActivity()).postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getValue() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
                         refreshGrid(Table);
                         return null;
                     },getRootActivity());

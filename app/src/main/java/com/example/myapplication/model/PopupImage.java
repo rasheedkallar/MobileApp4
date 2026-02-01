@@ -38,7 +38,7 @@ public class PopupImage extends PopupBase<PopupImage, PopupImage.PopupImageArgs>
 
 
         container.addView(imageView);
-        new DataService().get("refFile?size=0&id=" + getArgs().getId() , new AsyncHttpResponseHandler() {
+        new DataService(getRootActivity()).get("refFile?size=0&id=" + getArgs().getId() , new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                 Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
