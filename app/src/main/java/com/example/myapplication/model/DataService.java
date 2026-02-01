@@ -312,7 +312,9 @@ public class DataService {
             return  data;
         }
     }
+    /*
     public  void upload(File file,String fileName, String entity,Long id,String fileGroup , String path, Function<Long,Void> success, Context context){
+
         System.out.println("&fileName," + entity + "," + id );
         RequestParams params = new RequestParams();
         try{
@@ -324,8 +326,14 @@ public class DataService {
             return;
         }
         System.out.println(params);
+
         String finalUrl= getRootUrl() + "/api/" + "EntityApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
-        httpAction("POST",finalUrl, params, new AsyncHttpResponseHandler() {
+
+        AsyncHttpClient  cl = new AsyncHttpClient();
+        //cl.setTimeout(10000);
+        cl.setResponseTimeout(50000);
+        //cl.setConnectTimeout(10000);
+        cl.post(finalUrl, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
@@ -347,6 +355,46 @@ public class DataService {
             }
         });
     }
+    */
+
+
+    public  void upload(File file,String fileName, String entity,Long id,String fileGroup , String path, Function<Long,Void> success, Context context){
+        System.out.println("&fileName," + entity + "," + id );
+        RequestParams params = new RequestParams();
+        try{
+            params.put("file",file,"image/jpeg");
+        }
+        catch (FileNotFoundException e){
+            System.out.println(e.getMessage());
+            Toast.makeText(context, "Invalid image", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        System.out.println(params);
+        String url= "EntityApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+        httpAction("POST",url, params, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String result = new String(responseBody);
+                System.out.println(result);
+                success.apply(Long.parseLong(result));
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String result ="Error on : Post Image";
+                if(responseBody != null)result = result + "\r\n" + new String(responseBody);
+                if(error != null) {
+                    result = result + "\r\n" + error.getMessage();
+
+                }
+                for (String item: result.split("\r\n")) {
+                    System.out.println(result);
+                }
+                Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
     public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         System.out.println(params);
