@@ -50,8 +50,9 @@ import java.util.function.Function;
 
 
 public class MainActivity extends BaseActivity {
-    public MainActivity(){
-        Controls.add(new MainActivity.MonitorStatusControl());
+    public MainActivity()
+    {
+        //Controls.add(new MainActivity.MonitorStatusControl());
     }
     public static class MonitorStatusControl extends Control.DetailedControl {
         public MonitorStatusControl() {

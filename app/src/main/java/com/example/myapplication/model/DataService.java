@@ -23,28 +23,27 @@ import java.util.ArrayList;
 import java.util.function.Function;
 
 public class DataService {
-
-
-    //private static String serverIp = "192.168.0.199"; //production
-
-
-
-    //private static String serverIp = "10.207.176.91"; //office
-
-    //private static String serverIp = "lp-22-0331.adt.ae/"; //office guest
     private static String serverIp = "10.207.176.109"; //office CORP
-    //private static String serverIp = "10.205.50.22"; //office ADT HUB
-
-
-
-
-
-    //private static String serverIp = "abunaser01/"; //shop
-
-    //private static String serverIp = "192.168.0.126"; //home
-    //private static String serverIp = "192.168.0.139"; //homeWifi
-    //192.168.0.126
     private static String  serverPort = "80";
+
+
+    public void httpAction(String type, String url,RequestParams params,AsyncHttpResponseHandler response){
+        String finalUrl= getRootUrl()  + "/api/" + url;  //office
+        AsyncHttpClient ahc = new AsyncHttpClient();
+        ahc.setResponseTimeout(50000);
+        if(type.equals("GET")){
+            ahc.get(finalUrl, response);
+        }
+        else if(type.equals("POST")){
+            ahc.post(finalUrl, params, response);
+        }
+        else if(type.equals("PUT")){
+            ahc.put(finalUrl, params, response);
+        }
+        else if(type.equals("DELETE")){
+            ahc.delete(finalUrl, params, response);
+        }
+    }
     public static String getRootUrl(){
 
         String ip = serverIp;
@@ -54,8 +53,6 @@ public class DataService {
         if(port.equals("80"))return  "http://" + ip ;
         else return  "http://" + ip + ":" + port ;
     }
-
-
     public  void postForSelect(String path, String select,Function<JSONObject,Void>  success, Context context){
         RequestParams param = new RequestParams();
         param.put("Path",path);
@@ -99,22 +96,13 @@ public class DataService {
         lp.OrderBy = orderBy;
         lp.Select = select;
         postForList(path,lp,success,failure);
-
-
-
-
     }
-
-
     public static class ListParams{
         public String Select;
         public String Where;
         public String OrderBy;
         public int Take;
     }
-
-
-
     public <T extends Serializable> void postForList(Class<T> type,String path, String select,String where,String orderBy,Function<ArrayList<T>,Void>  success, Context  context) {
         postForList(type, path,  select, where,orderBy, success, s -> {
             Toast.makeText(context,s,Toast.LENGTH_SHORT);
@@ -143,7 +131,6 @@ public class DataService {
         param.put("SaveJson",saveJson);
         postForObject(Long.class,"EntityApi/Save",param,success,failure);
     }
-
     public <T extends Serializable> void postForExecute(Class<T> type,String path,JSONObject argsJson ,Function<T,Void>  success, Context context){
         postForExecute(type,path,argsJson, success, s -> {
             Toast.makeText(context,s,Toast.LENGTH_SHORT);
@@ -170,8 +157,6 @@ public class DataService {
             return null;
         });
     }
-
-
     public <T extends Serializable> void postForExecuteList(Class<T> type,String path,JSONObject argsJson ,Function<ArrayList<T>,Void>  success, Context context){
         postForExecuteList(type,path,argsJson, success, s -> {
             Toast.makeText(context,s,Toast.LENGTH_SHORT);
@@ -187,18 +172,12 @@ public class DataService {
             return null;
         },failure);
     }
-
-
-
-
     public <T> void postForObject(Class<T> type,String url,RequestParams param,Function<T,Void>  success, Context context){
         postForObject(type, url, param, success, s -> {
             Toast.makeText(context,s,Toast.LENGTH_SHORT);
             return null;
         });
     }
-
-
     public void postForObject(String url,RequestParams param,Function<JSONObject,Void>  success, Function<String,Void>  failure){
         postForObject(JSONObject.class,url,param,success,failure);
     }
@@ -230,7 +209,6 @@ public class DataService {
             return null;
         },failure);
     }
-
     public <T>  void getObject(Class<T> type,String url,Function<T,Void>  success, Context context){
 
         getObject(type, url, success, s -> {
@@ -246,7 +224,7 @@ public class DataService {
     }
     public  void getString(String url, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
-        get(url, new AsyncHttpResponseHandler() {
+        httpAction("GET",url,null ,new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 if(responseBody == null)success.apply(null);
@@ -279,8 +257,6 @@ public class DataService {
             }
         });
     }
-
-
     private <T> void convertResult(TypeToken token, String data,Function<T,Void>  success, Function<String,Void>  failure){
         T result = null;
         if(!data.equals("null")) { //true
@@ -309,8 +285,6 @@ public class DataService {
         }
         success.apply(result);
     }
-
-
     private String formatError(String json){
         System.out.println("Error on service request");
         try{
@@ -325,29 +299,10 @@ public class DataService {
             return json;
         }
     }
-
-
     public  void get(String url, AsyncHttpResponseHandler response){
+        httpAction("GET",url,null,response);
 
-        String finalUrl= getRootUrl()  + "/api/" + url;  //office
-        AsyncHttpClient ahc = new AsyncHttpClient();
-
-        ahc.setResponseTimeout(50000);
-
-        ahc.get(finalUrl, response);
     }
-
-
-
-
-    public  void put(String url, RequestParams params, AsyncHttpResponseHandler response){
-        System.out.println(url);
-        System.out.println(params);
-        String finalUrl= getRootUrl() + "/api/" + url;  //office
-        new AsyncHttpClient().put(finalUrl,params, response);
-    }
-
-
     private String URLEncode(String data){
 
         if(data == null)return  "";
@@ -357,9 +312,7 @@ public class DataService {
             return  data;
         }
     }
-
     public  void upload(File file,String fileName, String entity,Long id,String fileGroup , String path, Function<Long,Void> success, Context context){
-
         System.out.println("&fileName," + entity + "," + id );
         RequestParams params = new RequestParams();
         try{
@@ -371,14 +324,8 @@ public class DataService {
             return;
         }
         System.out.println(params);
-
         String finalUrl= getRootUrl() + "/api/" + "EntityApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
-
-        AsyncHttpClient  cl = new AsyncHttpClient();
-        //cl.setTimeout(10000);
-        cl.setResponseTimeout(50000);
-        //cl.setConnectTimeout(10000);
-        cl.post(finalUrl, params, new AsyncHttpResponseHandler() {
+        httpAction("POST",finalUrl, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
@@ -403,18 +350,13 @@ public class DataService {
     public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         System.out.println(params);
-        String finalUrl= getRootUrl() + "/api/" + url;  //office
-
-        AsyncHttpClient ahc  = new AsyncHttpClient();
-        ahc.setResponseTimeout(50000);
-        ahc.post(finalUrl, params, new AsyncHttpResponseHandler() {
+        httpAction("POST",url, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
                 System.out.println(result);
                 success.apply(result);
             }
-
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 String result ="Error on : " + url;
@@ -440,27 +382,17 @@ public class DataService {
             }
         });
     }
-
-
-
-
     public static class Lookup implements Serializable {
-
         private String Properties;
         private Long Id;
         private String Name;
-
         public  Lookup()
         {
-
         }
         public Lookup(Long id,String name){
             Id = id;
             Name = name;
         }
-
-
-
         public Long getId() {
             return Id;
         }
@@ -468,30 +400,21 @@ public class DataService {
         public void setId(Long id) {
             Id = id;
         }
-
-
-
         public String getName() {
             return Name;
         }
-
         public void setName(String name) {
             Name = name;
         }
-
-
-
         public String getProperties() {
             return Properties;
         }
-
         public void setProperties(String properties) {
             Properties = properties;
         }
         public JSONObject getDatas() throws JSONException {
             return  new JSONObject(Properties);
         }
-
         public JSONObject convertProperties() throws JSONException{
             return  new JSONObject(Properties);
         }
