@@ -808,7 +808,7 @@ public class Control {
                 getValues().add(id);
             }
             ImageView imageView = GetImageView(id);
-            new DataService(getRootActivity()).get("EntityApi/GetImage/" + id, new AsyncHttpResponseHandler() {
+            new DataService(getRootActivity()).get("MobileApi/GetImage/" + id, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);

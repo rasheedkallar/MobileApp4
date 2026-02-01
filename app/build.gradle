@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'com.example.myapplication'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.example.myapplication"
         minSdk 26
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -39,8 +39,16 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    implementation 'com.loopj.android:android-async-http:1.4.9'
+
+    // UPDATE LoopJ
+    implementation 'com.loopj.android:android-async-http:1.4.11'
+
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
     implementation 'com.google.code.gson:gson:2.10.1'
 
+    // REQUIRED for secure permanent storage (password, token, etc.)
+    implementation "androidx.security:security-crypto:1.1.0-alpha06"
+
+    // REQUIRED for background token refresh every 24 hours
+    implementation "androidx.work:work-runtime:2.9.0"
 }

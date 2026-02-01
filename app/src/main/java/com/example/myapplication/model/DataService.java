@@ -1,6 +1,9 @@
 package com.example.myapplication.model;
 import com.example.myapplication.BaseActivity;
+import com.example.myapplication.Data.ConnectionRepository;
 import com.example.myapplication.Data.DataServiceSecured;
+import com.example.myapplication.Data.ServerErrorExtractor;
+import com.example.myapplication.Data.TokenManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -11,6 +14,7 @@ import cz.msebera.android.httpclient.Header;
 import kotlin.text.Charsets;
 import android.content.Context;
 import android.provider.ContactsContract;
+import android.text.TextUtils;
 import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,66 +26,259 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.ParameterizedType;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class DataService {
 
     private final Context appContext;
+    private final ConnectionRepository connRepo;
+    private final TokenManager tokenManager;
 
-    public DataService(Context context){
-        appContext = context;
+    private  final String Company = "GL";
+
+    public DataService(Context ctx){
+        this.appContext = ctx.getApplicationContext();
+        this.connRepo = new ConnectionRepository(appContext);
+        this.tokenManager = new TokenManager(appContext);
+    }
+    public static class SavedInfo{
+
     }
 
 
-    private static String serverIp = "10.207.176.109"; //office CORP
-    private static String  serverPort = "80";
+    //private static String serverIp = "10.207.176.109"; //office CORP
+    //private static String  serverPort = "80";
+
+    public static ConnectionRepository.MobileConnection CurrentConnection = null;
+    public static Date CurrentUrlWorkingDate = null;
+
+    public static   List<ConnectionRepository.MobileConnection> Connections = null;
 
 
-    public void httpAction(String type, String url,RequestParams params,AsyncHttpResponseHandler response){
-
-        //new DataServiceSecured(appContext).httpAction(type,url,params,response);
 
 
+        public  void GetConnection(Function<ConnectionRepository.MobileConnection,Void> callBack){
+
+        //final int PING_TIMEOUT_MS = 1500; // per your environment; adjust as needed
+        //final String DISCOVERY_URL = "https://api.greenleafuae.com/api/MobileApi/GetMobileConnections";
+        if(CurrentConnection != null){
+            callBack.apply(CurrentConnection);
+            return;
+        }
+        if(Connections == null){
+            Connections = connRepo.getSavedConnections();
+            if(Connections == null || Connections.size() == 0 ){
+                String json = new String("https://api.greenleafuae.com/api/MobileApi/GetMobileConnections");
+               httpAction("GET","https://api.greenleafuae.com/api/MobileApi/GetMobileConnections",null, new AsyncHttpResponseHandler() {
+                   @Override
+                   public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                       String json = new String(responseBody);
+                       System.out.println(json);
+                       TypeToken<java.util.List<ConnectionRepository.MobileConnection>>  token = new TypeToken<java.util.List<ConnectionRepository.MobileConnection>>() {};
+                       convertResult(token,json,(java.util.List<ConnectionRepository.MobileConnection> list) -> {
+                           Connections = list;
+                           connRepo.saveConnections(list);
+                           return null; // IMPORTANT: Function<..., Void> must return null
+                        },
+                       (String error) -> {
+                           return null; // IMPORTANT: Function<..., Void> must return null
+                        }
+                       );
+                   }
+
+                   @Override
+                   public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                       String msg = ServerErrorExtractor.extractError(responseBody);
+                       System.out.println("Error on GetMobileConnections : https://api.greenleafuae.com/api/MobileApi/GetMobileConnections msg : "  + msg);
+                   }
+               },null,1500);
+            }
+            else{
+                ChooseBestConnection(Connections, (ConnectionRepository.MobileConnection mc) -> {
+                    CurrentConnection = mc;
+                    callBack.apply(CurrentConnection);
+                    return null;
+                });
+            }
+        }
+        System.out.println("No active connection available");
+    }
+    private void ChooseBestConnection(java.util.List<ConnectionRepository.MobileConnection> list,Function<ConnectionRepository.MobileConnection,Void> callBack){
+        for (ConnectionRepository.MobileConnection mc : list) {
+            httpAction("GET",mc.url + "/api/MobileApi/Ping",null, new AsyncHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                    String json = new String(responseBody);
+                    System.out.println(mc.url + "/api/MobileApi/Ping");
+                    System.out.println(json);
+                    mc.Valid = true;
+                    mc.ValidDate = new Date();
+                    RespondBestIfAllConnectionValidate(list,callBack);
+                    //callBack.apply(mc)
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                    //String json = new String(responseBody);
+                    String msg = ServerErrorExtractor.extractError(responseBody);
+                    System.out.println("Error on Ping : " + mc.url + "/api/MobileApi/Ping" + " msg : "  + msg);
+                    mc.Valid = false;
+                    mc.ValidDate = new Date();
+                    RespondBestIfAllConnectionValidate(list,callBack);
+                }
+            },null,1000);
+        }
+    }
 
 
-        String finalUrl= getRootUrl()  + "/api/" + url;  //office
+    private void RespondBestIfAllConnectionValidate(
+            java.util.List<ConnectionRepository.MobileConnection> list,
+            Function<ConnectionRepository.MobileConnection, Void> callBack) {
+        for (ConnectionRepository.MobileConnection mc : list) {
+            if(mc.ValidDate == null)break;
+            if(mc.Valid){
+                System.out.println("Valid best Connection :" + mc.name + " " + mc.url);
+                callBack.apply(mc);
+                break;
+            }
+        }
+    }
+    public  void MakeSureToken(ConnectionRepository.MobileConnection mc,Function<ConnectionRepository.MobileConnection,Void> callBack) {
+        if(mc.hasRecentToken(24 * 60 * 60 * 6)){
+            callBack.apply(mc);
+        }
+        else{
+            RequestParams param = new RequestParams();
+            param.put("UserId","rasheedkallar@gmail.com");
+            param.put("Password","Gold123#");
+            param.put("Company","AN");
+
+            httpAction("POST",mc.url + "/api/MobileApi/GetToken",param, new AsyncHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+
+                    String json = new String(responseBody);
+                    System.out.println(json);
+                    TypeToken<String>  token = new TypeToken<String>() {};
+                    convertResult(token,json,
+                        (String tokenKey) -> {
+                            System.out.println(mc.url + "/api/MobileApi/GetToken");
+                            System.out.println(tokenKey);
+                            mc.setTokenNow(tokenKey);
+                            //mc.Token = tokenKey;
+                            //mc.TokenRetrieveTime = new Date();
+                            callBack.apply(mc);
+                            return null; // IMPORTANT: Function<..., Void> must return null
+                        },
+                        (String error) -> {
+                            return null; // IMPORTANT: Function<..., Void> must return null
+                        }
+                    );
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                    String msg = ServerErrorExtractor.extractError(responseBody);
+                    System.out.println("Token retrieve : " + mc.url + "/api/MobileApi/GetToken" + " msg : "  + msg);
+
+                }
+            },null,1000);
+
+
+        }
+
+
+
+    }
+
+    public void httpEntityAction(String type, String url,RequestParams params,AsyncHttpResponseHandler response){
+        GetConnection(new Function<ConnectionRepository.MobileConnection, Void>() {
+            @Override
+            public Void apply(ConnectionRepository.MobileConnection connection) {
+                MakeSureToken(connection,mc -> {
+
+
+                    Map<String, String> headers = null;
+                    if(mc.hasRecentToken(24 * 60 * 60 * 6)){
+                        headers = new HashMap<>();
+                        headers.put("Authorization", "Bearer " + mc.getToken());   // same as your C# DefaultRequestHeaders.Authorization
+
+                    }
+
+                    httpAction(type,mc.url + "/api/" + url,params,new AsyncHttpResponseHandler() {
+                        @Override
+                        public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                            CurrentConnection = mc;
+                            CurrentUrlWorkingDate = new Date();
+                            response.onSuccess(statusCode,headers,responseBody);
+                        }
+
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                            String msg = ServerErrorExtractor.extractError(responseBody);
+                            System.out.println("Error on Ping : " + mc.url + "/" + url + " msg : "  + msg);
+                            response.onFailure(statusCode,headers,responseBody,error);
+                        }
+                    },headers);
+                    return null;
+                });
+                return null;
+            }
+        });
+    }
+    public void httpAction(String type, String url,RequestParams params,AsyncHttpResponseHandler response,Map<String, String> headers) {
+        httpAction(type,url,params,response,headers,50000);
+    }
+    public void httpAction(String type,String url,RequestParams params,AsyncHttpResponseHandler response,Map<String, String> headers,int timeOut) {
+
         AsyncHttpClient ahc = new AsyncHttpClient();
-        ahc.setResponseTimeout(50000);
-        if(type.equals("GET")){
-            ahc.get(finalUrl, response);
-        }
-        else if(type.equals("POST")){
-            ahc.post(finalUrl, params, response);
-        }
-        else if(type.equals("PUT")){
-            ahc.put(finalUrl, params, response);
-        }
-        else if(type.equals("DELETE")){
-            ahc.delete(finalUrl, params, response);
+        ahc.setResponseTimeout(timeOut);
+        ahc.setConnectTimeout(timeOut);
+
+        // Add headers if provided
+        if (headers != null) {
+            for (Map.Entry<String, String> e : headers.entrySet()) {
+                if (e.getKey() != null && e.getValue() != null) {
+                    ahc.addHeader(e.getKey(), e.getValue());
+                }
+            }
         }
 
-
-    }
-    public static String getRootUrl(){
-
-        String ip = serverIp;
-        String port = serverPort;
-        if(BaseActivity.IpAddress != null && BaseActivity.IpAddress.length() != 0)ip = BaseActivity.IpAddress;
-        if(BaseActivity.Port != null && BaseActivity.Port != 0)port = BaseActivity.Port.toString();
-        if(port.equals("80"))return  "http://" + ip ;
-        else return  "http://" + ip + ":" + port ;
+        String verb = (type == null ? "" : type.trim().toUpperCase());
+        switch (verb) {
+            case "GET":
+                ahc.get(url, response);
+                break;
+            case "POST":
+                ahc.post(url, params, response);
+                break;
+            case "PUT":
+                ahc.put(url, params, response);
+                break;
+            case "DELETE":
+                // LoopJ delete() does not have a body variant; this is header-only
+                ahc.delete(url, response);
+                break;
+            default:
+                ahc.get(url, response);
+                break;
+        }
     }
     public  void postForSelect(String path, String select,Function<JSONObject,Void>  success, Context context){
         RequestParams param = new RequestParams();
         param.put("Path",path);
         param.add("Select",select);
-        postForObject(JSONObject.class,"EntityApi/Select",param,success,context);
+        postForObject(JSONObject.class,"MobileApi/Select",param,success,context);
     }
     public <T extends Serializable> void postForSelect(Class<T> type,String path, String select,Function<T,Void>  success, Context context){
         RequestParams param = new RequestParams();
         param.put("Path",path);
         param.add("Select",select);
-        postForObject(type,"EntityApi/Select",param,success,context);
+        postForObject(type,"MobileApi/Select",param,success,context);
     }
 
     public  void postForList(String path, String select,String where,String orderBy,Function<JSONArray,Void>  success, Context context){
@@ -106,7 +303,7 @@ public class DataService {
         param.add("OrderBy",params.OrderBy);
         param.add("Select",params.Select);
         param.put("Take",params.Take);
-        postForObject(JSONArray.class,"EntityApi/List",param,success,failure);
+        postForObject(JSONArray.class,"MobileApi/List",param,success,failure);
     }
     public  void postForList(String path, String select,String where,String orderBy,Function<JSONArray,Void>  success, Function<String,Void>  failure){
         ListParams lp = new ListParams();
@@ -133,7 +330,7 @@ public class DataService {
         param.add("Select",select);
         param.add("Where",where);
         param.add("OrderBy",orderBy);
-        postForString("EntityApi/List", param, s -> {
+        postForString("MobileApi/List", param, s -> {
             convertResult(TypeToken.getParameterized(ArrayList.class, type),s,success,failure);
             return null;
         },failure);
@@ -141,13 +338,13 @@ public class DataService {
     public <T extends Serializable> void postForDelete(String path, Function<Boolean,Void>  success, Function<String,Void>  failure){
         RequestParams param = new RequestParams();
         param.add("Path",path);
-        postForObject(Boolean.class,"EntityApi/Delete",param,success,failure);
+        postForObject(Boolean.class,"MobileApi/Delete",param,success,failure);
     }
     public <T extends Serializable> void postForSave(String path,JSONObject saveJson ,Function<Long,Void>  success, Function<String,Void>  failure){
         RequestParams param = new RequestParams();
         param.add("Path",path);
         param.put("SaveJson",saveJson);
-        postForObject(Long.class,"EntityApi/Save",param,success,failure);
+        postForObject(Long.class,"MobileApi/Save",param,success,failure);
     }
     public <T extends Serializable> void postForExecute(Class<T> type,String path,JSONObject argsJson ,Function<T,Void>  success, Context context){
         postForExecute(type,path,argsJson, success, s -> {
@@ -159,7 +356,7 @@ public class DataService {
         RequestParams param = new RequestParams();
         param.add("Path",path);
         param.put("ArgsJson",argsJson);
-        postForObject(type,"EntityApi/Execute", param, success, failure);
+        postForObject(type,"MobileApi/Execute", param, success, failure);
     }
 
     public  void postForExecuteList(String path, JSONObject argsJson,Function<JSONArray,Void>  success, Function<String,Void>  failure){
@@ -167,7 +364,7 @@ public class DataService {
         RequestParams param = new RequestParams();
         param.add("Path",path);
         param.put("ArgsJson",argsJson);
-        postForObject(JSONArray.class,"EntityApi/Execute",param,success,failure);
+        postForObject(JSONArray.class,"MobileApi/Execute",param,success,failure);
     }
     public <T extends Serializable> void postForExecuteList(String path, JSONObject argsJson,Function<JSONArray,Void>  success, Context context){
         postForExecuteList(path,argsJson, success, s -> {
@@ -185,7 +382,7 @@ public class DataService {
         RequestParams param = new RequestParams();
         param.add("Path",path);
         param.put("ArgsJson",argsJson);
-        postForString("EntityApi/Execute", param, s -> {
+        postForString("MobileApi/Execute", param, s -> {
             convertResult(TypeToken.getParameterized(ArrayList.class, type),s,success,failure);
             return null;
         },failure);
@@ -242,7 +439,7 @@ public class DataService {
     }
     public  void getString(String url, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
-        httpAction("GET",url,null ,new AsyncHttpResponseHandler() {
+        httpEntityAction("GET",url,null ,new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 if(responseBody == null)success.apply(null);
@@ -275,6 +472,7 @@ public class DataService {
             }
         });
     }
+
     private <T> void convertResult(TypeToken token, String data,Function<T,Void>  success, Function<String,Void>  failure){
         T result = null;
         if(!data.equals("null")) { //true
@@ -318,7 +516,7 @@ public class DataService {
         }
     }
     public  void get(String url, AsyncHttpResponseHandler response){
-        httpAction("GET",url,null,response);
+        httpEntityAction("GET",url,null,response);
 
     }
     private String URLEncode(String data){
@@ -345,7 +543,7 @@ public class DataService {
         }
         System.out.println(params);
 
-        String finalUrl= getRootUrl() + "/api/" + "EntityApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+        String finalUrl= getRootUrl() + "/api/" + "MobileApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
 
         AsyncHttpClient  cl = new AsyncHttpClient();
         //cl.setTimeout(10000);
@@ -388,8 +586,8 @@ public class DataService {
             return;
         }
         System.out.println(params);
-        String url= "EntityApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
-        httpAction("POST",url, params, new AsyncHttpResponseHandler() {
+        String url= "MobileApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+        httpEntityAction("POST",url, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
@@ -416,7 +614,7 @@ public class DataService {
     public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         System.out.println(params);
-        httpAction("POST",url, params, new AsyncHttpResponseHandler() {
+        httpEntityAction("POST",url, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
