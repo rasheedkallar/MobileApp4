@@ -1,29 +1,20 @@
 package com.example.myapplication;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
-import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import androidx.core.graphics.ColorUtils;
 
 import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupForm;
-import com.example.myapplication.model.PopupHtml;
-import com.example.myapplication.model.PopupInput;
 import com.example.myapplication.model.PopupSearch;
 import com.loopj.android.http.RequestParams;
 
@@ -32,10 +23,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class InspectUnitActivity extends BaseActivity {
     //protected transient EditText SearchEditText;
@@ -310,7 +298,7 @@ public class InspectUnitActivity extends BaseActivity {
                         String text = editor.getText().toString().trim();
                         if(text != null && text.length() !=0){
 
-                            new DataService(getBaseContext()).getList("InvItem/Get?keyWords=" + text, array -> {
+                            new DataService(getBaseContext()).getList("MobileApi/Get?keyWords=" + text, array -> {
                                 Popup.refreshDetailedView(array);
                                 return null;
                             }, getBaseContext());
@@ -356,7 +344,7 @@ public class InspectUnitActivity extends BaseActivity {
                             RequestParams rp = new RequestParams();
                             rp.add("Barcode",barcode);
                             rp.add("Select",Select);
-                            new DataService(getBaseContext()).postForObject("InvItem/GetItemByBarcode", rp, jsonObject -> {
+                            new DataService(getBaseContext()).postForObject("MobileApi/GetItemByBarcode", rp, jsonObject -> {
                                 Long unitId = null;
                                 try {
                                     if(jsonObject == null || jsonObject.equals(JSONObject.NULL)){

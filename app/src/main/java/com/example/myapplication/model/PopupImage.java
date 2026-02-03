@@ -2,12 +2,10 @@ package com.example.myapplication.model;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.view.MotionEvent;
-import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.example.myapplication.Data.DataService;
 import com.google.android.flexbox.FlexboxLayout;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 

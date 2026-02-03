@@ -16,7 +16,7 @@ import androidx.core.graphics.ColorUtils;
 
 import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
@@ -59,7 +59,7 @@ public  class InvCheckInDetails extends BaseActivity {
                     String barcode = editor.getText().toString().trim();
                     if(barcode != null && barcode.length() !=0 && barcode.indexOf(' ') <0){
 
-                        new DataService(getRootActivity()).getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+                        new DataService(getRootActivity()).getObject("MobileApi/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                             @Override
                             public Void apply(JSONObject jsonObject) {
                                 if(jsonObject == null){
@@ -154,7 +154,7 @@ public  class InvCheckInDetails extends BaseActivity {
         }
         @Override
         protected void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack) {
-            new DataService(getRootActivity()).getList("InvItem/Get?keyWords=" + keywords, array -> {
+            new DataService(getRootActivity()).getList("MobileApi/Get?keyWords=" + keywords, array -> {
                 callBack.apply(array);
                 return null;
             }, getRootActivity());

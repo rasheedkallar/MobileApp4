@@ -1,38 +1,21 @@
 package com.example.myapplication.model;
-import android.app.AlertDialog;
-import android.content.Context;
-import android.graphics.Bitmap;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.KeyEvent;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.Toast;
 
-import com.google.android.flexbox.FlexWrap;
+import com.example.myapplication.Data.DataService;
 import com.google.android.flexbox.FlexboxLayout;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.Serializable;
-import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
-
-import cz.msebera.android.httpclient.Header;
-import kotlin.text.Charsets;
 
 
 public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchArgs> {
@@ -47,21 +30,14 @@ public class PopupSearch extends PopupBase<PopupSearch, PopupSearch.PopupSearchA
     public static PopupSearch create(String header, List<Control.ControlBase> controls, String displayField){
         PopupSearch search = new PopupSearch();
         search.setArgs(new PopupSearch.PopupSearchArgs(header,controls,displayField));
-
-
         return search;
     }
     public static PopupSearch create(PopupSearch.PopupSearchArgs args){
         PopupSearch search = new PopupSearch();
         search.setArgs(args);
-
-
         return search;
     }
-
     public PopupSearchListener Listener;
-
-
     public PopupSearch setListener(PopupSearchListener listener) {
         Listener = listener;
         return this;

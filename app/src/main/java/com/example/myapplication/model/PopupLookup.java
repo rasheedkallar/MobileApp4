@@ -1,36 +1,30 @@
 package com.example.myapplication.model;
 
-import android.content.Context;
-import android.content.DialogInterface;
-import android.graphics.Color;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 
 import androidx.core.content.ContextCompat;
 
 import com.example.myapplication.BaseActivity;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
 
 public class PopupLookup extends PopupBase<PopupLookup, PopupLookup.PopupLookupArgs>{
 
-    public static PopupLookup create(String header, List<DataService.Lookup> lookups,Long value,Function<DataService.Lookup,Boolean> onLookupChanged){
+    public static PopupLookup create(String header, List<DataService.Lookup> lookups, Long value, Function<DataService.Lookup,Boolean> onLookupChanged){
         PopupLookup popup = new PopupLookup();
         popup.setArgs(new PopupLookupArgs(header,lookups,value));
         popup.setOnLookupChanged(onLookupChanged);

@@ -1,26 +1,19 @@
 package com.example.myapplication;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.view.ViewGroup;
-import android.widget.RelativeLayout;
-import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
-import com.example.myapplication.model.PopupConfirmation;
+import com.example.myapplication.Data.DataService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Optional;
 import java.util.function.Function;
 

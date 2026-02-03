@@ -1,38 +1,24 @@
 package com.example.myapplication;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.Bundle;
-import android.text.InputType;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupBase;
-import com.example.myapplication.model.PopupConfirmation;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.sql.Time;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.Period;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.function.Function;
 
 public  class TransactionMonitor extends BaseActivity {
     public TransactionMonitor() {

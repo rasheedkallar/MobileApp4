@@ -1,25 +1,16 @@
 package com.example.myapplication;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.text.InputType;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupConfirmation;
-import com.example.myapplication.model.PopupLookup;
-import com.example.myapplication.model.Utility;
-import com.loopj.android.http.RequestParams;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 

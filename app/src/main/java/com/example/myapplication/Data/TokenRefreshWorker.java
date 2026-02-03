@@ -21,17 +21,17 @@ public class TokenRefreshWorker extends Worker {
 
     @NonNull @Override
     public Result doWork() {
-        ConnectionRepository repo = new ConnectionRepository(getApplicationContext());
+        DataRepository repo = new DataRepository(getApplicationContext());
         TokenManager tm = new TokenManager(getApplicationContext());
 
-        List<ConnectionRepository.MobileConnection> conns = repo.getSavedConnections();
+        List<DataRepository.MobileConnection> conns = repo.getSavedConnections();
         // Include active even if not in list
         String active = repo.getActiveBaseUrl();
         if (active != null) {
             tm.getValidTokenOrRefresh(active);
         }
-        for (ConnectionRepository.MobileConnection mc : conns) {
-            String base = ConnectionRepository.normalizeBase(mc.url);
+        for (DataRepository.MobileConnection mc : conns) {
+            String base = DataRepository.normalizeBase(mc.url);
             tm.getValidTokenOrRefresh(base);
         }
         return Result.success();

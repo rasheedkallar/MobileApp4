@@ -1,9 +1,5 @@
-package com.example.myapplication.model;
+package com.example.myapplication.Data;
 import com.example.myapplication.BaseActivity;
-import com.example.myapplication.Data.ConnectionRepository;
-import com.example.myapplication.Data.DataServiceSecured;
-import com.example.myapplication.Data.ServerErrorExtractor;
-import com.example.myapplication.Data.TokenManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -13,8 +9,6 @@ import com.loopj.android.http.RequestParams;
 import cz.msebera.android.httpclient.Header;
 import kotlin.text.Charsets;
 import android.content.Context;
-import android.provider.ContactsContract;
-import android.text.TextUtils;
 import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,119 +29,169 @@ import java.util.function.Function;
 public class DataService {
 
     private final Context appContext;
-    private final ConnectionRepository connRepo;
-    private final TokenManager tokenManager;
-
-    private  final String Company = "GL";
+    private final DataRepository connRepo;
 
     public DataService(Context ctx){
         this.appContext = ctx.getApplicationContext();
-        this.connRepo = new ConnectionRepository(appContext);
-        this.tokenManager = new TokenManager(appContext);
+        this.connRepo = new DataRepository(appContext);
     }
-    public static class SavedInfo{
+    public  void  GetConnections(Function<List<DataRepository.MobileConnection>,Void> callBack) {
+        String fullUrl = "https://api.greenleafuae.com/api/MobileApi/GetMobileConnections";
+        httpAction("GET",fullUrl,null, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String json = new String(responseBody);
+                System.out.println(json);
+                TypeToken<java.util.List<DataRepository.MobileConnection>>  token = new TypeToken<java.util.List<DataRepository.MobileConnection>>() {};
+                convertResult(token,json,(java.util.List<DataRepository.MobileConnection> list) -> {
+                        DataRepository.Connections = list;
+                        System.out.println(fullUrl + "-"  + list.size());
+                        DataRepository.ConnectionsRefreshDate = new Date();
+                        connRepo.saveConnections(list);
+                        callBack.apply(DataRepository.Connections);
+                        return null; // IMPORTANT: Function<..., Void> must return null
+                    },
+                    (String error) -> {
+                        return null; // IMPORTANT: Function<..., Void> must return null
+                    }
+                );
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String msg = ServerErrorExtractor.extractError(responseBody);
+                System.out.println("Error on GetMobileConnections : https://api.greenleafuae.com/api/MobileApi/GetMobileConnections msg : "  + msg);
+            }
+        },null,1500);
+    }
+    public  void  GetCCompanies(Function<List<DataRepository.Company>,Void> callBack) {
+        String fullUrl = "https://api.greenleafuae.com/api/MobileApi/GetCompanies";
 
+        httpAction("GET",fullUrl,null, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String json = new String(responseBody);
+                System.out.println(json);
+                TypeToken<java.util.List<DataRepository.Company>>  token = new TypeToken<java.util.List<DataRepository.Company>>() {};
+                convertResult(token,json,(java.util.List<DataRepository.Company> list) -> {
+                            DataRepository.Companies = list;
+                            System.out.println(fullUrl + "-"  + list.size());
+
+                            connRepo.saveCompanies(list);
+                            callBack.apply(DataRepository.Companies);
+
+
+                            return null; // IMPORTANT: Function<..., Void> must return null
+                        },
+                        (String error) -> {
+                            return null; // IMPORTANT: Function<..., Void> must return null
+                        }
+                );
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                String msg = ServerErrorExtractor.extractError(responseBody);
+                System.out.println("Error on GetCompanies : https://api.greenleafuae.com/api/MobileApi/GetCompanies msg : "  + msg);
+            }
+        },null,1500);
     }
 
 
-    //private static String serverIp = "10.207.176.109"; //office CORP
-    //private static String  serverPort = "80";
-
-    public static ConnectionRepository.MobileConnection CurrentConnection = null;
-    public static Date CurrentUrlWorkingDate = null;
-
-    public static   List<ConnectionRepository.MobileConnection> Connections = null;
-
-
-
-
-        public  void GetConnection(Function<ConnectionRepository.MobileConnection,Void> callBack){
-
+    public  void GetConnection(Function<DataRepository.MobileConnection,Void> callBack){
         //final int PING_TIMEOUT_MS = 1500; // per your environment; adjust as needed
         //final String DISCOVERY_URL = "https://api.greenleafuae.com/api/MobileApi/GetMobileConnections";
-        if(CurrentConnection != null){
-            callBack.apply(CurrentConnection);
+
+
+        long thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
+        long now = new Date().getTime();
+
+        if(DataRepository.Companies == null) {
+            GetCCompanies(new Function<List<DataRepository.Company>, Void>() {
+                @Override
+                public Void apply(List<DataRepository.Company> companies) {
+                    return null;
+                }
+            });
+        }
+
+
+        if(DataRepository.getCurrentConnection() != null && DataRepository.CurrentConnectionLastCall != null && (now - DataRepository.CurrentConnectionLastCall.getTime()) < thirtyMinutes){
+            callBack.apply(DataRepository.getCurrentConnection());
             return;
         }
-        if(Connections == null){
-            Connections = connRepo.getSavedConnections();
-            if(Connections == null || Connections.size() == 0 ){
-                String json = new String("https://api.greenleafuae.com/api/MobileApi/GetMobileConnections");
-               httpAction("GET","https://api.greenleafuae.com/api/MobileApi/GetMobileConnections",null, new AsyncHttpResponseHandler() {
-                   @Override
-                   public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                       String json = new String(responseBody);
-                       System.out.println(json);
-                       TypeToken<java.util.List<ConnectionRepository.MobileConnection>>  token = new TypeToken<java.util.List<ConnectionRepository.MobileConnection>>() {};
-                       convertResult(token,json,(java.util.List<ConnectionRepository.MobileConnection> list) -> {
-                           Connections = list;
-                           connRepo.saveConnections(list);
-                           return null; // IMPORTANT: Function<..., Void> must return null
-                        },
-                       (String error) -> {
-                           return null; // IMPORTANT: Function<..., Void> must return null
-                        }
-                       );
-                   }
-
-                   @Override
-                   public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                       String msg = ServerErrorExtractor.extractError(responseBody);
-                       System.out.println("Error on GetMobileConnections : https://api.greenleafuae.com/api/MobileApi/GetMobileConnections msg : "  + msg);
-                   }
-               },null,1500);
-            }
-            else{
-                ChooseBestConnection(Connections, (ConnectionRepository.MobileConnection mc) -> {
-                    CurrentConnection = mc;
-                    callBack.apply(CurrentConnection);
-                    return null;
+        else if(DataRepository.Connections == null || DataRepository.Connections.isEmpty()){
+            DataRepository.Connections = connRepo.getSavedConnections();
+            if(DataRepository.Connections == null || DataRepository.Connections.size() == 0 ){
+                GetConnections(new Function<List<DataRepository.MobileConnection>, Void>() {
+                    @Override
+                    public Void apply(List<DataRepository.MobileConnection> mobileConnections) {
+                        ChooseBestConnection(DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+                            DataRepository.setCurrentConnection(mc);
+                            callBack.apply(DataRepository.getCurrentConnection());
+                            return null;
+                        });
+                        return null;
+                    }
                 });
             }
+            else{
+                ChooseBestConnection(DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+                    DataRepository.setCurrentConnection(mc);
+                    callBack.apply(DataRepository.getCurrentConnection());
+                    return null;
+                });
+                if (DataRepository.ConnectionsRefreshDate == null || DataRepository.ConnectionsRefreshDate.before(new Date(System.currentTimeMillis() - 15 * 60 * 1000))) {
+                    System.out.println( "Current connections refreshing from server after last refresh 15 minutes earlier");
+                    GetConnections(new Function<List<DataRepository.MobileConnection>, Void>() {
+                        @Override
+                        public Void apply(List<DataRepository.MobileConnection> mobileConnections) {
+                            return null;
+                        }
+                    });
+                    GetCCompanies(new Function<List<DataRepository.Company>, Void>() {
+                        @Override
+                        public Void apply(List<DataRepository.Company> companies) {
+                            return null;
+                        }
+                    });
+                }
+            }
         }
-        System.out.println("No active connection available");
+        else {
+            ChooseBestConnection(DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+                DataRepository.setCurrentConnection(mc);;
+                callBack.apply(DataRepository.getCurrentConnection());
+                return null;
+            });
+        }
+        //System.out.println("No active connection available");
     }
-    private void ChooseBestConnection(java.util.List<ConnectionRepository.MobileConnection> list,Function<ConnectionRepository.MobileConnection,Void> callBack){
-        for (ConnectionRepository.MobileConnection mc : list) {
-            httpAction("GET",mc.url + "/api/MobileApi/Ping",null, new AsyncHttpResponseHandler() {
+    private void ChooseBestConnection(java.util.List<DataRepository.MobileConnection> list, Function<DataRepository.MobileConnection,Void> callBack){
+        for (DataRepository.MobileConnection mc : list) {
+            mc.ValidateConnection(appContext, new Function<Boolean, Void>() {
                 @Override
-                public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                    String json = new String(responseBody);
-                    System.out.println(mc.url + "/api/MobileApi/Ping");
-                    System.out.println(json);
-                    mc.Valid = true;
-                    mc.ValidDate = new Date();
-                    RespondBestIfAllConnectionValidate(list,callBack);
-                    //callBack.apply(mc)
+                public Void apply(Boolean aBoolean) {
+                    RespondBestIfAllConnectionValidate(list, callBack);
+                    return null;
                 }
-
-                @Override
-                public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                    //String json = new String(responseBody);
-                    String msg = ServerErrorExtractor.extractError(responseBody);
-                    System.out.println("Error on Ping : " + mc.url + "/api/MobileApi/Ping" + " msg : "  + msg);
-                    mc.Valid = false;
-                    mc.ValidDate = new Date();
-                    RespondBestIfAllConnectionValidate(list,callBack);
-                }
-            },null,1000);
+            });
         }
     }
 
 
     private void RespondBestIfAllConnectionValidate(
-            java.util.List<ConnectionRepository.MobileConnection> list,
-            Function<ConnectionRepository.MobileConnection, Void> callBack) {
-        for (ConnectionRepository.MobileConnection mc : list) {
-            if(mc.ValidDate == null)break;
+            java.util.List<DataRepository.MobileConnection> list,
+            Function<DataRepository.MobileConnection, Void> callBack) {
+        for (DataRepository.MobileConnection mc : list) {
+            if(mc.ValidDate == null)return;
             if(mc.Valid){
                 System.out.println("Valid best Connection :" + mc.name + " " + mc.url);
                 callBack.apply(mc);
-                break;
+                return;
             }
         }
+        System.out.println("No valid connection available");
     }
-    public  void MakeSureToken(ConnectionRepository.MobileConnection mc,Function<ConnectionRepository.MobileConnection,Void> callBack) {
+    public  void MakeSureToken(DataRepository.MobileConnection mc, Function<DataRepository.MobileConnection,Void> callBack) {
         if(mc.hasRecentToken(24 * 60 * 60 * 6)){
             callBack.apply(mc);
         }
@@ -155,9 +199,9 @@ public class DataService {
             RequestParams param = new RequestParams();
             param.put("UserId","rasheedkallar@gmail.com");
             param.put("Password","Gold123#");
-            param.put("Company","AN");
-
-            httpAction("POST",mc.url + "/api/MobileApi/GetToken",param, new AsyncHttpResponseHandler() {
+            param.put("Company",BaseActivity.Company);
+            String finalUrl = mc.url + "/api/MobileApi/GetToken";
+            httpAction("POST",finalUrl,param, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
 
@@ -166,8 +210,7 @@ public class DataService {
                     TypeToken<String>  token = new TypeToken<String>() {};
                     convertResult(token,json,
                         (String tokenKey) -> {
-                            System.out.println(mc.url + "/api/MobileApi/GetToken");
-                            System.out.println(tokenKey);
+                            System.out.println(finalUrl + "-" + BaseActivity.Company + "-" + tokenKey);
                             mc.setTokenNow(tokenKey);
                             //mc.Token = tokenKey;
                             //mc.TokenRetrieveTime = new Date();
@@ -179,7 +222,6 @@ public class DataService {
                         }
                     );
                 }
-
                 @Override
                 public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                     String msg = ServerErrorExtractor.extractError(responseBody);
@@ -187,36 +229,26 @@ public class DataService {
 
                 }
             },null,1000);
-
-
         }
-
-
-
     }
 
     public void httpEntityAction(String type, String url,RequestParams params,AsyncHttpResponseHandler response){
-        GetConnection(new Function<ConnectionRepository.MobileConnection, Void>() {
+        GetConnection(new Function<DataRepository.MobileConnection, Void>() {
             @Override
-            public Void apply(ConnectionRepository.MobileConnection connection) {
+            public Void apply(DataRepository.MobileConnection connection) {
                 MakeSureToken(connection,mc -> {
-
-
                     Map<String, String> headers = null;
                     if(mc.hasRecentToken(24 * 60 * 60 * 6)){
                         headers = new HashMap<>();
                         headers.put("Authorization", "Bearer " + mc.getToken());   // same as your C# DefaultRequestHeaders.Authorization
-
                     }
-
                     httpAction(type,mc.url + "/api/" + url,params,new AsyncHttpResponseHandler() {
                         @Override
                         public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                            CurrentConnection = mc;
-                            CurrentUrlWorkingDate = new Date();
+                            //DataRepository.CurrentConnection = mc;
+                            DataRepository.CurrentConnectionLastCall = new Date();
                             response.onSuccess(statusCode,headers,responseBody);
                         }
-
                         @Override
                         public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                             String msg = ServerErrorExtractor.extractError(responseBody);

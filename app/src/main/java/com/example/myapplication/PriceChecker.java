@@ -1,31 +1,22 @@
 package com.example.myapplication;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Lifecycle;
 
-import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupBase;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 
@@ -33,9 +24,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.function.Function;

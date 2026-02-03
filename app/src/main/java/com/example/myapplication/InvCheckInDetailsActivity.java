@@ -13,7 +13,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -21,8 +20,7 @@ import android.widget.Toast;
 
 import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
-import com.example.myapplication.model.PopupBase;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
@@ -31,15 +29,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
-
-import kotlin.jvm.functions.Function2;
 
 public  class InvCheckInDetailsActivity extends BaseActivity {
     private final  Control.HeaderControl headerControl =  new Control.HeaderControl("Header","Header").setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
@@ -249,7 +241,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
 
         public void requestBarcode(String barcode, BarcodeListener barcodeListener) {
-            new DataService(getRootActivity()).getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+            new DataService(getRootActivity()).getObject("MobileApi/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                 @Override
                 public Void apply(JSONObject jsonObject) {
                     if(jsonObject == null){
@@ -372,7 +364,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             EditText editText = getEditTextInput();
             String barcode = editText.getText().toString().trim();
             if(!barcode.isEmpty() && barcode.indexOf(' ') < 0) {
-                new DataService().getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+                new DataService().getObject("MobileApi/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                     @Override
                     public Void apply(JSONObject jsonObject) {
                         if (jsonObject == null) {
@@ -460,7 +452,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
 
         private  void  RefreshBarcode(String barcode,EditText editor){
-            new DataService(getRootActivity()).getObject("InvItem/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
+            new DataService(getRootActivity()).getObject("MobileApi/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                 @Override
                 public Void apply(JSONObject jsonObject) {
                     if(jsonObject == null){
@@ -600,7 +592,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
         @Override
         protected void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack) {
-            new DataService(getRootActivity()).getList("InvItem/Get?keyWords=" + keywords, array -> {
+            new DataService(getRootActivity()).getList("MobileApi/Get?keyWords=" + keywords, array -> {
                 callBack.apply(array);
                 return null;
             }, getRootActivity());

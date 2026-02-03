@@ -1,31 +1,36 @@
 package com.example.myapplication;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.media.Image;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.SpannableString;
+import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -35,35 +40,30 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
+import com.example.myapplication.Data.DataRepository;
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupBase;
-import com.example.myapplication.model.PopupDate;
 import com.example.myapplication.model.PopupForm;
-import com.example.myapplication.model.PopupHtml;
+import com.example.myapplication.model.PopupLookup;
+import com.example.myapplication.model.PopupSearch;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
-import com.google.gson.reflect.TypeToken;
-import com.loopj.android.http.AsyncHttpResponseHandler;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.function.Function;
 
 public abstract class BaseActivity extends AppCompatActivity  {
@@ -91,6 +91,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
     public ArrayList<Control.ControlBase> Controls = new ArrayList<>();
 
     public static String IpAddress;
+    public static String Company;
     public static String User;
     public static Integer Port = 80;
     public static Integer ControlWidth = 470;
@@ -111,6 +112,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
             controls.add(Control.getEditIntegerControl("ActionButtonWidth","Action Button Width").setValue(ActionButtonWidth));
             controls.add(Control.getEditIntegerControl("AppMode","App Mode").setValue(AppMode));
+            controls.add(Control.getEditTextControl("Company","Company").setValue(Company));
 
 
 
@@ -138,6 +140,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             Control.EditIntegerControl buttonWidth = getControl("ButtonWidth");
             Control.EditIntegerControl actionButtonWidth = getControl("ActionButtonWidth");
             Control.EditIntegerControl appMode = getControl("AppMode");
+            Control.EditTextControl company = getControl("Company");
 
 
 
@@ -148,6 +151,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             editor.putInt(buttonWidth.getName(),buttonWidth.getValue());
             editor.putInt(actionButtonWidth.getName(),actionButtonWidth.getValue());
             editor.putInt(appMode.getName(),appMode.getValue());
+            editor.putString(company.getName(),company.getValue());
 
 
 
@@ -160,16 +164,51 @@ public abstract class BaseActivity extends AppCompatActivity  {
             ButtonWidth = buttonWidth.getValue();
             ActionButtonWidth = actionButtonWidth.getValue();
             AppMode = appMode.getValue();
+            Company = company.getValue();
+            DataRepository.setCurrentConnection(null);
 
+            if(Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
+                for (DataRepository.Company c : DataRepository.Companies) {
+                    if (c.code != null && c.code.equals(Company)) {
+                        DataRepository.setCurrentCompany(c);
+                        break;
+                    }
+                }
+            }
+            else{
+                DataRepository.setCurrentCompany(null);
+            }
+
+
+            //DataRepository.setCurrentCompany(null);
+            Intent intent = new Intent(getRootActivity(), MainActivity.class); // the activity to launch if logged in
+            startActivity(intent);
 
             dismiss();
         }
     }
 
+    public transient  static    MenuItem ConnectionMenu = null;
 
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu,menu);
+        ConnectionMenu = menu.findItem(R.id.mnu_net);
+        //if( DataRepository.CurrentConnection == null)RefreshConnectionMenu();
+        //else FormatMenuItem(ConnectionMenu);
+        return true;
+    }
+
+
+
+    public transient  static androidx.appcompat.app.ActionBar MenuBar;
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+
 
         SharedPreferences sharedPref = getSharedPreferences("Settings",Context.MODE_PRIVATE);
         IpAddress = sharedPref.getString("IpAddress",null);
@@ -178,8 +217,62 @@ public abstract class BaseActivity extends AppCompatActivity  {
         ControlWidth = sharedPref.getInt("ControlWidth",470);
         ActionButtonWidth = sharedPref.getInt("ActionButtonWidth",75);
         AppMode = sharedPref.getInt("AppMode",1);
+        Company = sharedPref.getString("Company",null);
+        DataRepository.Companies = new DataRepository(this).getSavedCompanies();
+        DataRepository.Connections = new DataRepository(this).getSavedConnections();
+        MenuBar = getSupportActionBar();
+
+        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty()){
+            new DataService(this).GetCCompanies(new Function<List<DataRepository.Company>, Void>() {
+                @Override
+                public Void apply(List<DataRepository.Company> companies) {
+                    if(Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
+                        for (DataRepository.Company c : DataRepository.Companies) {
+                            if (c.code != null && c.code.equals(Company)) {
+                                DataRepository.setCurrentCompany(c);
+                                break;
+                            }
+                        }
+                    }
+                    else{
+                        DataRepository.setCurrentCompany(null);
+                    }
+                    return null;
+                }
+            });
+        }
 
 
+
+        //title.setTitle(Company);
+
+
+
+        //if(DataRepository.getCurrentCompany() != null){
+        //    String companyName = DataRepository.getCurrentCompany().name;
+        //    Objects.requireNonNull(getSupportActionBar()).setTitle(companyName);
+        //}
+        if(DataRepository.getCurrentConnection() == null && DataRepository.Connections!= null && !DataRepository.Connections.isEmpty()){
+            DataRepository.ChooseBestConnection(this,DataRepository.Connections, new Function<DataRepository.MobileConnection, Void>() {
+                @Override
+                public Void apply(DataRepository.MobileConnection mobileConnection) {
+                    DataRepository.setCurrentConnection(mobileConnection);
+                    return null;
+                }
+            });
+        }
+
+        if(Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
+            for (DataRepository.Company c : DataRepository.Companies) {
+                if (c.code != null && c.code.equals(Company)) {
+                    DataRepository.setCurrentCompany(c);
+                    break;
+                }
+            }
+        }
+        else{
+            DataRepository.setCurrentCompany(null);
+        }
 
         if(savedInstanceState != null) {
             Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
@@ -205,14 +298,6 @@ public abstract class BaseActivity extends AppCompatActivity  {
         Container.setLayoutParams(fblP);
         Container.setFlexDirection(FlexDirection.ROW);
         Container.setFlexWrap(FlexWrap.WRAP);
-        //sv.addView(FieldsContainer);
-
-
-
-        //Container = new LinearLayout(this);
-        //LinearLayout.LayoutParams llValueP = new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        //Container.setLayoutParams(llValueP);
-        //Container.setOrientation(LinearLayout.VERTICAL);
         if(EnableScroll){
             ScrollView sv = new ScrollView(this);
             RelativeLayout.LayoutParams svP= new  RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -225,13 +310,6 @@ public abstract class BaseActivity extends AppCompatActivity  {
             setContentView(Container);
         }
 
-
-
-
-
-        //setContentView(R.layout.activity_base);
-        //Container = (LinearLayout) findViewById(R.id.container);
-
         final BaseActivity activity = this;
 
         takePictureLauncher = registerForActivityResult(
@@ -240,9 +318,6 @@ public abstract class BaseActivity extends AppCompatActivity  {
             if (result.getResultCode() == Activity.RESULT_OK) {
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
-
-
-
                 new DataService(getBaseContext()).upload(image_file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
                     @Override
                     public Void apply(Long aLong) {
@@ -257,9 +332,6 @@ public abstract class BaseActivity extends AppCompatActivity  {
                         return null;
                     }
                 }, this);
-
-
-
             }
         });
         pickImageLauncher = registerForActivityResult(
@@ -295,24 +367,16 @@ public abstract class BaseActivity extends AppCompatActivity  {
                             return null;
                         }
                     }, this);
-
-
                 }catch (IOException e){
-
                 }
             }
         });
         if(Controls != null){
-
             for (int i = 0; i < Controls.size(); i++) {
                 Controls.get(i).addView(Container);
                 Controls.get(i).setRootActivity(this);
             }
         }
-
-
-
-
     }
 
     @Override
@@ -502,47 +566,73 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
 
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu,menu);
-        return true;
-    }
+
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        Intent intent;
-        switch(item.getTitle().toString()){
-            case "Home":
-                intent = new Intent(this,MainActivity.class);
-                break;
-            case "Stock Receive":
-                intent = new Intent(this,InvCheckInActivity.class);
-                break;
+        if(item.getItemId() == R.id.mnu_net && DataRepository.Connections != null && !DataRepository.Connections.isEmpty()){
+            List<DataService.Lookup> lookups = new ArrayList<>();
 
-            case "Inspect Unit":
-                intent = new Intent(this,InspectUnitActivity.class);
-                break;
-            case "Account Reconciliation":
-                intent = new Intent(this,AccountReconciliation.class);
-                break;
-            case "Sales Preview":
-                intent = new Intent(this,SalesPreview.class);
-                break;
-            case "Transaction Monitor":
-                intent = new Intent(this,TransactionMonitor.class);
-                break;
-            case "Test":
-                intent = new Intent(this,TestActivity.class);
-                break;
-            case "Settings":
-                SettingsPopupForm ps = new SettingsPopupForm();
-                ps.show(getSupportFragmentManager(),null);
+            for (int i = 0; i < DataRepository.Connections.size(); i++) {
+                DataService.Lookup lookup = new DataService.Lookup();
+                lookup.setId((long)i);
+                lookup.setName(DataRepository.Connections.get(i).name);
+                lookups.add(lookup);
+            }
+            PopupLookup pl = PopupLookup.create("Select Connection",lookups,0L,(connection)->{
+                if(connection != null){
+                    int index = (int)(long) connection.getId();
+                    DataRepository.MobileConnection mc = DataRepository.Connections.get(index);
+                    DataRepository.setCurrentConnection(mc);
+                    mc.ValidateConnection(this, new Function<Boolean, Void>() {
+                        @Override
+                        public Void apply(Boolean aBoolean) {
+                            return null;
+                        }
+                    });
+                }
                 return true;
-            default:
-                super.onOptionsItemSelected(item);
-                return  false;
+            });
+
+
+            pl.show(this.getSupportFragmentManager(),null);
         }
-        startActivity(intent);
+        else {
+
+
+            Intent intent;
+            switch (item.getTitle().toString()) {
+                case "Home":
+                    intent = new Intent(this, MainActivity.class);
+                    break;
+                case "Stock Receive":
+                    intent = new Intent(this, InvCheckInActivity.class);
+                    break;
+
+                case "Inspect Unit":
+                    intent = new Intent(this, InspectUnitActivity.class);
+                    break;
+                case "Account Reconciliation":
+                    intent = new Intent(this, AccountReconciliation.class);
+                    break;
+                case "Sales Preview":
+                    intent = new Intent(this, SalesPreview.class);
+                    break;
+                case "Transaction Monitor":
+                    intent = new Intent(this, TransactionMonitor.class);
+                    break;
+                case "Test":
+                    intent = new Intent(this, TestActivity.class);
+                    break;
+                case "Settings":
+                    SettingsPopupForm ps = new SettingsPopupForm();
+                    ps.show(getSupportFragmentManager(), null);
+                    return true;
+                default:
+                    super.onOptionsItemSelected(item);
+                    return false;
+            }
+            startActivity(intent);
+        }
         return  true;
     }
 

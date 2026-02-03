@@ -3,19 +3,15 @@ package com.example.myapplication.Activity;
 
 import android.text.InputType;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import com.example.myapplication.BaseActivity;
 import com.example.myapplication.model.Control;
-import com.example.myapplication.model.DataService;
+import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupBase;
 import com.example.myapplication.model.PopupConfirmation;
 import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupInput;
-import com.google.gson.JsonNull;
-import com.google.gson.reflect.TypeToken;
-import com.loopj.android.http.AsyncHttpResponseHandler;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,8 +22,6 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import cz.msebera.android.httpclient.Header;
 
 public class Item {
 
@@ -258,7 +252,7 @@ public class Item {
             }
             else if(action.getName().equals(Control.ACTION_PRINT)){
 
-                new DataService(getRootActivity()).getString("InvItem/GetShelfEdgePrint?unitId=" + this.getValue(), s -> {
+                new DataService(getRootActivity()).getString("MobileApi/GetShelfEdgePrint?unitId=" + this.getValue(), s -> {
                     PopupHtml.create("Message",s).show(getRootActivity().getSupportFragmentManager(),null);
                     return null;
                 }, action.getButton().getContext());

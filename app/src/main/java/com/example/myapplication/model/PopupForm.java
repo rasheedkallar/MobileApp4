@@ -1,56 +1,23 @@
 package com.example.myapplication.model;
-import android.app.AlertDialog;
-import android.app.Notification;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.Bitmap;
-import android.location.GnssAntennaInfo;
-import android.opengl.Visibility;
-import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
-import android.widget.TableRow;
-import android.widget.TextView;
 
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentManager;
-
-import com.example.myapplication.BaseActivity;
-import com.example.myapplication.R;
+import com.example.myapplication.Data.DataService;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
-import com.google.android.material.internal.FlowLayout;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
-import com.loopj.android.http.ResponseHandlerInterface;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.Type;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
-
-import cz.msebera.android.httpclient.Header;
-import kotlin.jvm.functions.Function2;
 
 
 public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {

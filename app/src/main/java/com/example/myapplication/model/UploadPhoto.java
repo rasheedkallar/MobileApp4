@@ -1,9 +1,6 @@
 package com.example.myapplication.model;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -11,11 +8,9 @@ import android.provider.MediaStore;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.example.myapplication.BaseActivity;
+import com.example.myapplication.Data.DataService;
 
 import java.util.ArrayList;
 
