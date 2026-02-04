@@ -194,7 +194,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         for (int i = 0; i < getArgs().getControls().size(); i++) {
             if(getArgs().getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
                 Control.ImageControl ic = (Control.ImageControl)getArgs().getControls().get(i);
-                if(ic.getEntityName() != null && ic.getEntityName().equals(entityName) && ic.getParentId() != null && ic.getGuid().equals(guid))
+                if(ic.getEntityName() != null && ic.getEntityName().equals(entityName) && ic.getParentId() != null && ic.getParentGuid().equals(guid))
                     ic.onCapturedImage(action,image,id,guid);
             }
         }

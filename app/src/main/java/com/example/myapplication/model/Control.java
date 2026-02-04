@@ -46,6 +46,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -688,6 +689,7 @@ public class Control {
             buttons.add(new ActionButton(Control.ACTION_VIEW).setEnabled(false));
             buttons.add(new ActionButton(Control.ACTION_DELETE).setEnabled(false));
             setButtons(buttons);
+            setVirtualDelete(true);
         }
         private String EntityName;
         public String getEntityName() {
@@ -753,10 +755,10 @@ public class Control {
                 }).show(getRootActivity().getSupportFragmentManager(),null);
             }
             else if(button.Name.equals(Control.ACTION_CAMERA)) {
-                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getName() ,Guid);
+                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getName() ,ParentGuid);
             }
             else if(button.Name.equals(Control.ACTION_GALLERY)) {
-                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,getEntityName(),getName(),Guid);
+                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,getEntityName(),getName(),ParentGuid);
             }
             else if(button.Name.equals(Control.ACTION_VIEW)) {
                 PopupImage.create("Image View", getValue()).show(getRootActivity().getSupportFragmentManager(),null);
@@ -831,29 +833,33 @@ public class Control {
         public void refreshDetailedView(JSONArray data) {
 
         }
-        private String Guid;
-        public String getGuid() {
-            return Guid;
+        private String ParentGuid;
+        public String getParentGuid() {
+            return ParentGuid;
+        }
+
+        private Map<Long,String> guidMap;
+        public String getGuidForId(Long id){
+            return guidMap.get(id);
         }
 
         @Override
         public ImageControl readValueJSONObject(JSONObject data, String field) {
-
-
             try {
                 JSONObject obj = data.getJSONObject(field);
                 JSONArray images = obj.getJSONArray("Images");
-                Guid = obj.getString("Guid");
+                guidMap = new HashMap<Long,String>();
+                for (int i = 0; i < images.length(); i++) {
+                    JSONObject item = images.getJSONObject(i);
+                    guidMap.put(item.getLong("Id"),item.getString("Guid"));
+                }
+                ParentGuid = obj.getString("Guid");
                 return super.readValueJSONObject(obj,"Images");
 
             } catch (JSONException e) {
                 return super.readValueJSONObject(data,field);
             }
-
-
         }
-
-
     }
     public static abstract class DetailedControlBase<T extends ControlBase<T,Long>> extends ControlBase<T, Long> {
         public static final int HEADER_CONTAINER_ID = 1001;
