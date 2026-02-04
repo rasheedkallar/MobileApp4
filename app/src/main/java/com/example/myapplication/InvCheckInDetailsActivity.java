@@ -428,11 +428,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
      */
     public static  class ItemSearchControl extends Control.SearchControlBase  {
-
-
-
-
-
         private static final String ItemFormula = "{0}.InvItemUnit == null ? {0}.Description : {0}.InvItemUnit.ItemNumber + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
         public ItemSearchControl() {
             super("InvItemUnit", "Item",null ,"FullDescription");
@@ -444,7 +439,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             searchControls.add(Control.getEditTextControl("Description","Description").setColumnWeight(12));
             setControls(searchControls);
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD));
-            getButtons().add(new Control.ActionButton(Control.ACTION_EDIT));
+            getButtons().add(new Control.ActionButton(Control.ACTION_EDIT).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_INBOX).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_BARCODE).setEnabled(false));
@@ -498,6 +493,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             getActionButton(Control.ACTION_ADD_SUB).setEnabled(getValue() != null);
             getActionButton(Control.ACTION_INBOX).setEnabled(getValue() != null);
             getActionButton(Control.ACTION_BARCODE).setEnabled(getValue() != null);
+            getActionButton(Control.ACTION_EDIT).setEnabled(getValue() != null);
         }
         private ArrayList<String> getUnits(){
             ArrayList<String> units = new ArrayList<>();
@@ -524,7 +520,12 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 ArrayList<Control.ControlBase> controls = new Item.PopupItemForm("",getFullPath()).getArgs().getControls();
                 controls.add(Control.getHiddenControl("InvItem.Id"));
                 controls.add(Control.getHiddenControl("Id"));
-                editRecord(getFullPath(),controls, getFullPath());
+                var value = getValue();
+                String path = "InvItemUnits[]";
+                if(value.getId() != 0){
+                    path = "InvItemUnits[" + value.getId() + "]";
+                }
+                editRecord(path,controls, getFullPath());
             }
             else if(button.getName().equals(Control.ACTION_ADD_SUB)){
                 new DataService(getRootActivity()).postForSelect(DataService.Lookup.class, "InvItemUnits[" + getValue().getId() + "]", "new {InvItem.Id,InvItem.Description as Name}", lookup -> {

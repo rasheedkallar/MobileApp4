@@ -73,13 +73,13 @@ public class DataRepository {
 
     public static void ChooseBestConnection(Context context,java.util.List<DataRepository.MobileConnection> list, Function<DataRepository.MobileConnection,Void> callBack){
         for (DataRepository.MobileConnection mc : list) {
+            mc.Status = "ForBestPick";
             mc.ValidateConnection(context, new Function<Boolean, Void>() {
                 @Override
                 public Void apply(Boolean aBoolean) {
                     RespondBestIfAllConnectionValidate(list, new Function<MobileConnection, Void>() {
                         @Override
                         public Void apply(MobileConnection mobileConnection) {
-                            setCurrentConnection(mobileConnection);
                             if(callBack != null)callBack.apply(mobileConnection);
                             return null;
                         }
@@ -93,18 +93,28 @@ public class DataRepository {
 
 
 
-    private static void RespondBestIfAllConnectionValidate(
-            java.util.List<DataRepository.MobileConnection> list,
-            Function<DataRepository.MobileConnection, Void> callBack) {
+    private static void RespondBestIfAllConnectionValidate(java.util.List<DataRepository.MobileConnection> list,Function<DataRepository.MobileConnection, Void> callBack) {
+        boolean Compleated = true;
+
+        var current = getCurrentConnection();
         for (DataRepository.MobileConnection mc : list) {
-            if(mc.ValidDate == null)return;
-            if(mc.Valid){
-                System.out.println("Valid best Connection :" + mc.name + " " + mc.url);
-                if(callBack != null)callBack.apply(mc);
+            if(mc.ValidDate == null && Compleated) {
+                Compleated = false;
+            }
+            if(mc.Valid && Compleated){
+                if(current != mc)setCurrentConnection(mc);
+                if(mc.Status.equals("ForBestPick")) {
+                    mc.Status = "BestConnection";
+                    System.out.println("Valid best Connection :" + mc.name + " " + mc.url);
+                    if(callBack != null)callBack.apply(mc);
+                }
                 return;
             }
+            else if(mc.Valid){
+                if(current != mc)DataRepository.setCurrentConnection(mc);
+            }
         }
-        System.out.println("No valid connection available");
+        if(Compleated)System.out.println("No valid connection available");
     }
     public static void refreshConnectionMenu(){
         if(BaseActivity.ConnectionMenu != null){
@@ -189,6 +199,9 @@ public class DataRepository {
         /** When the Token was last retrieved on device (UTC recommended) */
 
         public static Date TokenRetrieveTime = null;
+
+
+
 
         //public String TokenCompany = null;
 
@@ -283,6 +296,8 @@ public class DataRepository {
         }
         public transient boolean Valid = false;
         public transient Date ValidDate = null;
+
+        public transient  String Status = "Created";
 
     }
 
