@@ -29,7 +29,6 @@ import cz.msebera.android.httpclient.Header;
 public class DataRepository {
 
     private static DataRepository.MobileConnection CurrentConnection = null;
-
     private static DataRepository.Company CurrentCompany = null;
     public static DataRepository.Company getCurrentCompany(){
         return CurrentCompany;
@@ -54,10 +53,16 @@ public class DataRepository {
     public static   Date CompaniesRefreshDate = null;
     public static Date ConnectionsRefreshDate = null;
 
+    public static Settings CurrentSettings = new Settings();
+
+
 
 
     private static final String KEY_CONNECTIONS = "connections";
     private static final String KEY_COMPANIES = "Companies";
+
+    private static final String KEY_SETTINGS = "Settings";
+
     private static final String KEY_ACTIVE_URL = "active_base_url";
     private final SecureStore store;
     private final Gson gson = new Gson();
@@ -71,7 +76,14 @@ public class DataRepository {
             mc.ValidateConnection(context, new Function<Boolean, Void>() {
                 @Override
                 public Void apply(Boolean aBoolean) {
-                    RespondBestIfAllConnectionValidate(list, callBack);
+                    RespondBestIfAllConnectionValidate(list, new Function<MobileConnection, Void>() {
+                        @Override
+                        public Void apply(MobileConnection mobileConnection) {
+                            setCurrentConnection(mobileConnection);
+                            if(callBack != null)callBack.apply(mobileConnection);
+                            return null;
+                        }
+                    });
                     return null;
                 }
             });
@@ -88,15 +100,13 @@ public class DataRepository {
             if(mc.ValidDate == null)return;
             if(mc.Valid){
                 System.out.println("Valid best Connection :" + mc.name + " " + mc.url);
-                callBack.apply(mc);
+                if(callBack != null)callBack.apply(mc);
                 return;
             }
         }
         System.out.println("No valid connection available");
     }
-    public static void setCurrentConnection(MobileConnection connection){
-
-        CurrentConnection = connection;
+    public static void refreshConnectionMenu(){
         if(BaseActivity.ConnectionMenu != null){
             if (DataRepository.CurrentConnection == null) {
                 BaseActivity.ConnectionMenu.setTitle("Net");
@@ -115,12 +125,34 @@ public class DataRepository {
             // 4. Important: Set the spannable back to the menu item
             BaseActivity.ConnectionMenu.setTitle(span);
         }
+    }
+
+    public static void setCurrentConnection(MobileConnection connection){
+
+        CurrentConnection = connection;
+        refreshConnectionMenu();
+
 
     }
 
     public DataRepository(Context ctx) {
         this.store = new SecureStore(ctx);
     }
+
+
+    public static class  Settings{
+        public String IpAddress;
+        public String User;
+        public int Port = 80;
+        public int ControlWidth = 300;
+        public int IconButtonWidth = 75;
+        public int ButtonWidth = 200;
+        public int AppMode;
+        public String Company;
+
+    }
+
+
 
     public static class Company {
         @SerializedName(value = "code", alternate = {"Code"})
@@ -149,11 +181,14 @@ public class DataRepository {
 
         /** -------------------- Device-managed (persist locally) -------------------- */
         /** Per-connection token stored locally (populated/updated by device code) */
-        public String Token = null;
+        public static String Token = null;
+        public static String TokenCompany = null;
+
+        public static String TokenConnection = null;
 
         /** When the Token was last retrieved on device (UTC recommended) */
 
-        public Date TokenRetrieveTime = null;
+        public static Date TokenRetrieveTime = null;
 
         //public String TokenCompany = null;
 
@@ -182,7 +217,7 @@ public class DataRepository {
             MobileConnection connection = this;
 
 
-            String fullUrl = url + "/api/MobileApi/Ping?company=" + BaseActivity.Company;
+            String fullUrl = url + "/api/MobileApi/Ping?company=" + DataRepository.CurrentSettings.Company;
             new DataService(context).httpAction("GET",fullUrl,null, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
@@ -228,18 +263,20 @@ public class DataRepository {
 
         /** Returns true if a token exists and is recent based on a threshold (seconds) */
         public boolean hasRecentToken( long maxAgeSeconds) {
-            //if (TokenCompany == null || TokenCompany.isEmpty() ) return false;
-            //if(!TokenCompany.equals(company))return  false;
-            if (Token == null || Token.isEmpty() || TokenRetrieveTime == null) return false;
+            if (Token == null || Token.isEmpty() ) return false;
+            if(!TokenCompany.equals(CurrentSettings.Company))return  false;
+            if(!TokenConnection.equals(CurrentConnection.name))return  false;
+
             long ageSec = (System.currentTimeMillis() - TokenRetrieveTime.getTime()) / 1000L;
             return ageSec >= 0 && ageSec <= maxAgeSeconds;
         }
 
         /** Update token and retrieval time to now */
-        public void setTokenNow(String token) {
-            this.Token = token;
-            this.TokenRetrieveTime = new Date();
-            //this.TokenCompany = company;
+        public void setTokenNow(String token,String company,String connection) {
+            Token = token;
+            TokenRetrieveTime = new Date();
+            TokenConnection = connection;
+            TokenCompany = company;
         }
         public String getToken(){
             return Token;
@@ -257,8 +294,24 @@ public class DataRepository {
         Type t = new TypeToken<List<MobileConnection>>(){}.getType();
         return gson.fromJson(json, t);
     }
+
+    public Settings getSavedSettings() {
+        String json = store.getString(KEY_SETTINGS, null);
+        if (TextUtils.isEmpty(json)) return new Settings();
+        Type t = new TypeToken<Settings>(){}.getType();
+        return gson.fromJson(json, t);
+    }
+
+
     public void saveConnections(List<MobileConnection> list) {
         store.putString(KEY_CONNECTIONS, gson.toJson(list));
+    }
+
+    public void saveSettings(Settings settings) {
+
+        String json = gson.toJson(settings);
+
+        store.putString(KEY_SETTINGS, json);
     }
 
     public List<Company> getSavedCompanies() {

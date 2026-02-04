@@ -26,6 +26,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 import com.example.myapplication.BaseActivity;
+import com.example.myapplication.Data.DataRepository;
 import com.example.myapplication.Data.DataService;
 import com.example.myapplication.R;
 import com.google.android.flexbox.FlexWrap;
@@ -696,7 +697,7 @@ public class Control {
             EntityName = entityName;
             return this;
         }
-        public void onCapturedImage(int action, Bitmap image,Long id){
+        public void onCapturedImage(int action, Bitmap image,Long id,String guid){
             addImage(id);
             getActionButton(Control.ACTION_DELETE).setEnabled(false);
             getActionButton(Control.ACTION_VIEW).setEnabled(false);
@@ -716,9 +717,15 @@ public class Control {
         }
         @Override
         public void addForSelectQuery(FieldList list) {
-            String formula = "@0.RefFiles.Where(img=>img.RefId == " + getParentId() + " && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Select(img => new{img.Id,img.FileName})";
+            String formula = "new {{0}.Guid,{0}.Id, @0.RefFiles.Where(img=>img.RefGuid == {0}.Guid && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Select(img => new{img.Id,img.FileName,img.Guid}) as Images}";
             list.addForSelectQuery(getName(),getName(), formula);
+            //list.addForSelectQuery("Guid","Guid",null);
         }
+
+
+
+
+
         @Override
         public void onButtonClick(ActionButton button) {
             if(button.Name.equals(Control.ACTION_DELETE)){
@@ -746,10 +753,10 @@ public class Control {
                 }).show(getRootActivity().getSupportFragmentManager(),null);
             }
             else if(button.Name.equals(Control.ACTION_CAMERA)) {
-                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getName(), getParentId());
+                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_CAMERA,getEntityName(),getName() ,Guid);
             }
             else if(button.Name.equals(Control.ACTION_GALLERY)) {
-                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,getEntityName(),getName(),getParentId());
+                getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,getEntityName(),getName(),Guid);
             }
             else if(button.Name.equals(Control.ACTION_VIEW)) {
                 PopupImage.create("Image View", getValue()).show(getRootActivity().getSupportFragmentManager(),null);
@@ -769,7 +776,7 @@ public class Control {
         }
         private ImageView GetImageView(long id){
             ImageView imageView = new ImageView(main_layout.getContext());
-            FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(BaseActivity.ButtonWidth, BaseActivity.ButtonWidth);
+            FlexboxLayout.LayoutParams lllP = new FlexboxLayout.LayoutParams(DataRepository.CurrentSettings.ButtonWidth, DataRepository.CurrentSettings.ButtonWidth);
             imageView.setLayoutParams(lllP);
             imageView.setTag(id);
             imageView.setPadding(2,2,2,2);
@@ -822,7 +829,31 @@ public class Control {
         }
         @Override
         public void refreshDetailedView(JSONArray data) {
+
         }
+        private String Guid;
+        public String getGuid() {
+            return Guid;
+        }
+
+        @Override
+        public ImageControl readValueJSONObject(JSONObject data, String field) {
+
+
+            try {
+                JSONObject obj = data.getJSONObject(field);
+                JSONArray images = obj.getJSONArray("Images");
+                Guid = obj.getString("Guid");
+                return super.readValueJSONObject(obj,"Images");
+
+            } catch (JSONException e) {
+                return super.readValueJSONObject(data,field);
+            }
+
+
+        }
+
+
     }
     public static abstract class DetailedControlBase<T extends ControlBase<T,Long>> extends ControlBase<T, Long> {
         public static final int HEADER_CONTAINER_ID = 1001;
@@ -1076,6 +1107,8 @@ public class Control {
         public Long getParentId() {
             return ParentId;
         }
+
+
         @Override
         public void valueChange(Long oldValue, Long newValue) {
         }
@@ -2289,7 +2322,7 @@ public class Control {
         public FlexboxLayout.LayoutParams getLayoutParams(ViewGroup container){
 
             FlexboxLayout.LayoutParams lp;
-            int singleSize = BaseActivity.ControlWidth;
+            int singleSize = DataRepository.CurrentSettings.ControlWidth;
             if(ControlSize<-5)lp=  new FlexboxLayout.LayoutParams(Math.abs(ControlSize) * singleSize / 10, RelativeLayout.LayoutParams.WRAP_CONTENT);
             else  lp = new FlexboxLayout.LayoutParams(ControlSize, RelativeLayout.LayoutParams.WRAP_CONTENT);
             if(FlexBasisPercent != 0)lp.setFlexBasisPercent(FlexBasisPercent);
@@ -2490,6 +2523,9 @@ public class Control {
             if(value==null)return null;
             else return value.toString();
         }
+
+
+
         private U Value;
         public U getValue(){
             return Value;
@@ -2743,7 +2779,7 @@ public class Control {
         public Button getButton() {
             return button;
         }
-        private int Width = BaseActivity.ActionButtonWidth;
+        private int Width = DataRepository.CurrentSettings.IconButtonWidth;
         public int getWidth() {
             return Width;
         }
@@ -2751,7 +2787,7 @@ public class Control {
             Width = width;
             return  this;
         }
-        private int Height = BaseActivity.ActionButtonWidth;
+        private int Height = DataRepository.CurrentSettings.IconButtonWidth;
         public int getHeight() {
             return Height;
         }

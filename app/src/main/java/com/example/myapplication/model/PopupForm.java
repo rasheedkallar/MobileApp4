@@ -190,12 +190,12 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         if(getArgs().getControls() != null && getArgs().getControls().size() > 0)getArgs().getControls().get(0).requestFocus();
 
     }
-    public void onCapturedImage(int action,Bitmap image,String entityName,String fileGroup,Long entityId,Long id){
+    public void onCapturedImage(int action,Bitmap image,String entityName,String fileGroup,String guid,Long id){
         for (int i = 0; i < getArgs().getControls().size(); i++) {
             if(getArgs().getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
                 Control.ImageControl ic = (Control.ImageControl)getArgs().getControls().get(i);
-                if(ic.getEntityName() != null && ic.getEntityName().equals(entityName) && ic.getParentId() != null && ic.getParentId().equals(entityId))
-                    ic.onCapturedImage(action,image,id);
+                if(ic.getEntityName() != null && ic.getEntityName().equals(entityName) && ic.getParentId() != null && ic.getGuid().equals(guid))
+                    ic.onCapturedImage(action,image,id,guid);
             }
         }
     }

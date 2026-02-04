@@ -2,6 +2,9 @@ package com.example.myapplication.Data;
 import com.example.myapplication.BaseActivity;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -19,6 +22,7 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.ParameterizedType;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -48,10 +52,17 @@ public class DataService {
                         System.out.println(fullUrl + "-"  + list.size());
                         DataRepository.ConnectionsRefreshDate = new Date();
                         connRepo.saveConnections(list);
-                        callBack.apply(DataRepository.Connections);
+                        if(DataRepository.getCurrentConnection() == null){
+                            DataRepository.ChooseBestConnection(appContext,DataRepository.Connections,null);
+                        }
+                        if(callBack != null) callBack.apply(DataRepository.Connections);
                         return null; // IMPORTANT: Function<..., Void> must return null
                     },
                     (String error) -> {
+                        if (callBack != null) callBack.apply(null);
+                        if(DataRepository.getCurrentConnection() == null){
+                            DataRepository.ChooseBestConnection(appContext,DataRepository.Connections,null);
+                        }
                         return null; // IMPORTANT: Function<..., Void> must return null
                     }
                 );
@@ -63,7 +74,7 @@ public class DataService {
             }
         },null,1500);
     }
-    public  void  GetCCompanies(Function<List<DataRepository.Company>,Void> callBack) {
+    public  void  GetCompanies(Function<List<DataRepository.Company>,Void> callBack) {
         String fullUrl = "https://api.greenleafuae.com/api/MobileApi/GetCompanies";
 
         httpAction("GET",fullUrl,null, new AsyncHttpResponseHandler() {
@@ -73,19 +84,28 @@ public class DataService {
                 System.out.println(json);
                 TypeToken<java.util.List<DataRepository.Company>>  token = new TypeToken<java.util.List<DataRepository.Company>>() {};
                 convertResult(token,json,(java.util.List<DataRepository.Company> list) -> {
-                            DataRepository.Companies = list;
-                            System.out.println(fullUrl + "-"  + list.size());
-
-                            connRepo.saveCompanies(list);
-                            callBack.apply(DataRepository.Companies);
-
-
-                            return null; // IMPORTANT: Function<..., Void> must return null
-                        },
-                        (String error) -> {
-                            return null; // IMPORTANT: Function<..., Void> must return null
+                    DataRepository.Companies = list;
+                    System.out.println(fullUrl + "-"  + list.size());
+                    connRepo.saveCompanies(list);
+                    DataRepository.CompaniesRefreshDate = new Date();
+                    if(DataRepository.CurrentSettings.Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
+                        for (DataRepository.Company c : DataRepository.Companies) {
+                            if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
+                                DataRepository.setCurrentCompany(c);
+                                break;
+                            }
                         }
-                );
+                    }
+                    else{
+                        DataRepository.setCurrentCompany(null);
+                    }
+                    if(callBack != null) callBack.apply(DataRepository.Companies);
+                    return null; // IMPORTANT: Function<..., Void> must return null
+                },
+                (String error) -> {
+                    if(callBack != null) callBack.apply(null);
+                    return null; // IMPORTANT: Function<..., Void> must return null
+                });
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
@@ -97,24 +117,9 @@ public class DataService {
 
 
     public  void GetConnection(Function<DataRepository.MobileConnection,Void> callBack){
-        //final int PING_TIMEOUT_MS = 1500; // per your environment; adjust as needed
-        //final String DISCOVERY_URL = "https://api.greenleafuae.com/api/MobileApi/GetMobileConnections";
-
-
         long thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
         long now = new Date().getTime();
-
-        if(DataRepository.Companies == null) {
-            GetCCompanies(new Function<List<DataRepository.Company>, Void>() {
-                @Override
-                public Void apply(List<DataRepository.Company> companies) {
-                    return null;
-                }
-            });
-        }
-
-
-        if(DataRepository.getCurrentConnection() != null && DataRepository.CurrentConnectionLastCall != null && (now - DataRepository.CurrentConnectionLastCall.getTime()) < thirtyMinutes){
+        if(DataRepository.getCurrentConnection() != null){
             callBack.apply(DataRepository.getCurrentConnection());
             return;
         }
@@ -124,7 +129,7 @@ public class DataService {
                 GetConnections(new Function<List<DataRepository.MobileConnection>, Void>() {
                     @Override
                     public Void apply(List<DataRepository.MobileConnection> mobileConnections) {
-                        ChooseBestConnection(DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+                        DataRepository.ChooseBestConnection(appContext,DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
                             DataRepository.setCurrentConnection(mc);
                             callBack.apply(DataRepository.getCurrentConnection());
                             return null;
@@ -134,7 +139,7 @@ public class DataService {
                 });
             }
             else{
-                ChooseBestConnection(DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+                DataRepository.ChooseBestConnection(appContext, DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
                     DataRepository.setCurrentConnection(mc);
                     callBack.apply(DataRepository.getCurrentConnection());
                     return null;
@@ -147,50 +152,18 @@ public class DataService {
                             return null;
                         }
                     });
-                    GetCCompanies(new Function<List<DataRepository.Company>, Void>() {
-                        @Override
-                        public Void apply(List<DataRepository.Company> companies) {
-                            return null;
-                        }
-                    });
                 }
             }
         }
-        else {
-            ChooseBestConnection(DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
-                DataRepository.setCurrentConnection(mc);;
+        else{
+            DataRepository.ChooseBestConnection(appContext, DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+                DataRepository.setCurrentConnection(mc);
                 callBack.apply(DataRepository.getCurrentConnection());
                 return null;
             });
         }
-        //System.out.println("No active connection available");
-    }
-    private void ChooseBestConnection(java.util.List<DataRepository.MobileConnection> list, Function<DataRepository.MobileConnection,Void> callBack){
-        for (DataRepository.MobileConnection mc : list) {
-            mc.ValidateConnection(appContext, new Function<Boolean, Void>() {
-                @Override
-                public Void apply(Boolean aBoolean) {
-                    RespondBestIfAllConnectionValidate(list, callBack);
-                    return null;
-                }
-            });
-        }
     }
 
-
-    private void RespondBestIfAllConnectionValidate(
-            java.util.List<DataRepository.MobileConnection> list,
-            Function<DataRepository.MobileConnection, Void> callBack) {
-        for (DataRepository.MobileConnection mc : list) {
-            if(mc.ValidDate == null)return;
-            if(mc.Valid){
-                System.out.println("Valid best Connection :" + mc.name + " " + mc.url);
-                callBack.apply(mc);
-                return;
-            }
-        }
-        System.out.println("No valid connection available");
-    }
     public  void MakeSureToken(DataRepository.MobileConnection mc, Function<DataRepository.MobileConnection,Void> callBack) {
         if(mc.hasRecentToken(24 * 60 * 60 * 6)){
             callBack.apply(mc);
@@ -199,19 +172,18 @@ public class DataService {
             RequestParams param = new RequestParams();
             param.put("UserId","rasheedkallar@gmail.com");
             param.put("Password","Gold123#");
-            param.put("Company",BaseActivity.Company);
+            param.put("Company",DataRepository.CurrentSettings.Company);
             String finalUrl = mc.url + "/api/MobileApi/GetToken";
             httpAction("POST",finalUrl,param, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
 
                     String json = new String(responseBody);
-                    System.out.println(json);
                     TypeToken<String>  token = new TypeToken<String>() {};
                     convertResult(token,json,
                         (String tokenKey) -> {
-                            System.out.println(finalUrl + "-" + BaseActivity.Company + "-" + tokenKey);
-                            mc.setTokenNow(tokenKey);
+                            System.out.println(finalUrl + "-" + DataRepository.CurrentSettings.Company + "-" + tokenKey);
+                            mc.setTokenNow(tokenKey,DataRepository.CurrentSettings.Company, mc.name);
                             //mc.Token = tokenKey;
                             //mc.TokenRetrieveTime = new Date();
                             callBack.apply(mc);
@@ -606,8 +578,8 @@ public class DataService {
     */
 
 
-    public  void upload(File file,String fileName, String entity,Long id,String fileGroup , String path, Function<Long,Void> success, Context context){
-        System.out.println("&fileName," + entity + "," + id );
+    public  void upload(File file,String fileName, String entity,String guid,String fileGroup , String path, Function<Long,Void> success, Context context){
+        System.out.println("&fileName," + entity + "," + guid );
         RequestParams params = new RequestParams();
         try{
             params.put("file",file,"image/jpeg");
@@ -618,13 +590,55 @@ public class DataService {
             return;
         }
         System.out.println(params);
-        String url= "MobileApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+        String url= "MobileApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&guid=" + URLEncode(guid) + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
         httpEntityAction("POST",url, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String result = new String(responseBody);
+
+
+                String result = new String(responseBody, StandardCharsets.UTF_8);
                 System.out.println(result);
-                success.apply(Long.parseLong(result));
+
+                try {
+                    JsonElement el = JsonParser.parseString(result);
+
+                    long value;
+                    if (el.isJsonPrimitive()) {
+                        if (el.getAsJsonPrimitive().isNumber()) {
+                            // JSON number -> long
+                            value = el.getAsLong();
+                        } else if (el.getAsJsonPrimitive().isString()) {
+                            // JSON string -> parse as long
+                            String s = el.getAsString();
+                            value = Long.parseLong(s.trim());
+                        } else {
+                            throw new IllegalArgumentException("Expected number or numeric string, got primitive: " + el);
+                        }
+                    } else {
+                        throw new IllegalArgumentException("Expected a JSON primitive (\"123\" or 123), got: " + el);
+                    }
+
+                    success.apply(value);
+
+                } catch (NumberFormatException nfe) {
+                    Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
+
+                    //throw new IllegalArgumentException("Response is a string but not a valid long: " + result, nfe);
+                } catch (JsonSyntaxException jse) {
+                    // Not valid JSON; as a last resort, try to parse raw (e.g., plain "123" without quotes)
+                    try {
+                        long fallback = Long.parseLong(result.trim().replace("\"", ""));
+                        success.apply(fallback);
+                    } catch (NumberFormatException nfe2) {
+                        Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
+                        //throw new IllegalArgumentException("Response is not valid JSON nor a parseable long: " + result, jse);
+                    }
+                }
+
+
+
+                //System.out.println(result);
+                //success.apply(Long.parseLong(result));
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {

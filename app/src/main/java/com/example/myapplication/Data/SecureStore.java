@@ -31,7 +31,9 @@ public class SecureStore {
         }
     }
 
-    public void putString(String key, String val) { prefs.edit().putString(key, val).apply(); }
+    public void putString(String key, String val) {
+        prefs.edit().putString(key, val).apply();
+    }
     public String getString(String key, String def) { return prefs.getString(key, def); }
 
     public <T> void putJson(String key, T obj) { putString(key, gson.toJson(obj)); }

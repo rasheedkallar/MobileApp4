@@ -60,6 +60,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -90,35 +92,26 @@ public abstract class BaseActivity extends AppCompatActivity  {
     public FlexboxLayout Container;
     public ArrayList<Control.ControlBase> Controls = new ArrayList<>();
 
-    public static String IpAddress;
-    public static String Company;
-    public static String User;
-    public static Integer Port = 80;
-    public static Integer ControlWidth = 470;
-    public static Integer ButtonWidth = 206;
 
-    public static Integer ActionButtonWidth = 75;
-
-    public static Integer AppMode = 1;
 
     public static class SettingsPopupForm extends PopupForm
     {
         public SettingsPopupForm(){
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-            controls.add(Control.getEditTextControl("IpAddress","Ip Address").setValue(IpAddress));
-            controls.add(Control.getEditIntegerControl("Port","Port").setValue(Port));
-            controls.add(Control.getEditIntegerControl("ControlWidth","Control Width").setValue(ControlWidth));
-            controls.add(Control.getEditIntegerControl("ButtonWidth","Button Width").setValue(ButtonWidth));
+            controls.add(Control.getEditTextControl("IpAddress","Ip Address").setValue(DataRepository.CurrentSettings.IpAddress));
+            controls.add(Control.getEditIntegerControl("Port","Port").setValue(DataRepository.CurrentSettings.Port));
+            controls.add(Control.getEditIntegerControl("ControlWidth","Control Width").setValue(DataRepository.CurrentSettings.ControlWidth));
+            controls.add(Control.getEditIntegerControl("ButtonWidth","Button Width").setValue(DataRepository.CurrentSettings.ButtonWidth));
 
-            controls.add(Control.getEditIntegerControl("ActionButtonWidth","Action Button Width").setValue(ActionButtonWidth));
-            controls.add(Control.getEditIntegerControl("AppMode","App Mode").setValue(AppMode));
-            controls.add(Control.getEditTextControl("Company","Company").setValue(Company));
-
-
+            controls.add(Control.getEditIntegerControl("ActionButtonWidth","Action Button Width").setValue(DataRepository.CurrentSettings.IconButtonWidth));
+            controls.add(Control.getEditIntegerControl("AppMode","App Mode").setValue(DataRepository.CurrentSettings.AppMode));
+            controls.add(Control.getEditTextControl("Company","Company").setValue(DataRepository.CurrentSettings.Company));
 
 
 
-            controls.add(Control.getEditTextControl("User","User").setValue(User));
+
+
+            controls.add(Control.getEditTextControl("User","User").setValue(DataRepository.CurrentSettings.User));
             setArgs(new PopupFormArgs("Settings",controls,"Settings",null));
         }
 
@@ -131,8 +124,8 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
 
 
-            SharedPreferences sharedPref = getRootActivity().getSharedPreferences("Settings",Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPref.edit();
+            //SharedPreferences sharedPref = getRootActivity().getSharedPreferences("Settings",Context.MODE_PRIVATE);
+            //SharedPreferences.Editor editor = sharedPref.edit();
             Control.EditTextControl ipAddress = getControl("IpAddress");
             Control.EditTextControl user = getControl("User");
             Control.EditIntegerControl port = getControl("Port");
@@ -141,35 +134,19 @@ public abstract class BaseActivity extends AppCompatActivity  {
             Control.EditIntegerControl actionButtonWidth = getControl("ActionButtonWidth");
             Control.EditIntegerControl appMode = getControl("AppMode");
             Control.EditTextControl company = getControl("Company");
-
-
-
-            editor.putString(ipAddress.getName(),ipAddress.getValue());
-            editor.putString(user.getName(),user.getValue());
-            editor.putInt(port.getName(),port.getValue());
-            editor.putInt(controlWidth.getName(),controlWidth.getValue());
-            editor.putInt(buttonWidth.getName(),buttonWidth.getValue());
-            editor.putInt(actionButtonWidth.getName(),actionButtonWidth.getValue());
-            editor.putInt(appMode.getName(),appMode.getValue());
-            editor.putString(company.getName(),company.getValue());
-
-
-
-            editor.apply();
-
-            IpAddress = ipAddress.getValue();
-            User = user.getValue();
-            Port = port.getValue();
-            ControlWidth = controlWidth.getValue();
-            ButtonWidth = buttonWidth.getValue();
-            ActionButtonWidth = actionButtonWidth.getValue();
-            AppMode = appMode.getValue();
-            Company = company.getValue();
+            DataRepository.CurrentSettings.IpAddress = ipAddress.getValue();
+            DataRepository.CurrentSettings.User = user.getValue();
+            DataRepository.CurrentSettings.Port = port.getValue();
+            DataRepository.CurrentSettings.ControlWidth = controlWidth.getValue();
+            DataRepository.CurrentSettings.ButtonWidth = buttonWidth.getValue();
+            DataRepository.CurrentSettings.IconButtonWidth = actionButtonWidth.getValue();
+            DataRepository.CurrentSettings.AppMode = appMode.getValue();
+            DataRepository.CurrentSettings.Company = company.getValue();
+            new DataRepository(this.getContext()).saveSettings(DataRepository.CurrentSettings);
             DataRepository.setCurrentConnection(null);
-
-            if(Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
+            if(DataRepository.CurrentSettings.Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
                 for (DataRepository.Company c : DataRepository.Companies) {
-                    if (c.code != null && c.code.equals(Company)) {
+                    if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
                         DataRepository.setCurrentCompany(c);
                         break;
                     }
@@ -178,26 +155,18 @@ public abstract class BaseActivity extends AppCompatActivity  {
             else{
                 DataRepository.setCurrentCompany(null);
             }
-
-
-            //DataRepository.setCurrentCompany(null);
             Intent intent = new Intent(getRootActivity(), MainActivity.class); // the activity to launch if logged in
             startActivity(intent);
-
             dismiss();
         }
     }
-
-    public transient  static    MenuItem ConnectionMenu = null;
-
-
+    public  static MenuItem ConnectionMenu = null;
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu,menu);
         ConnectionMenu = menu.findItem(R.id.mnu_net);
-        //if( DataRepository.CurrentConnection == null)RefreshConnectionMenu();
-        //else FormatMenuItem(ConnectionMenu);
+        DataRepository.refreshConnectionMenu();
         return true;
     }
 
@@ -208,63 +177,16 @@ public abstract class BaseActivity extends AppCompatActivity  {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-
-
-        SharedPreferences sharedPref = getSharedPreferences("Settings",Context.MODE_PRIVATE);
-        IpAddress = sharedPref.getString("IpAddress",null);
-        User = sharedPref.getString("User",null);
-        Port = sharedPref.getInt("Port",80);
-        ControlWidth = sharedPref.getInt("ControlWidth",470);
-        ActionButtonWidth = sharedPref.getInt("ActionButtonWidth",75);
-        AppMode = sharedPref.getInt("AppMode",1);
-        Company = sharedPref.getString("Company",null);
         DataRepository.Companies = new DataRepository(this).getSavedCompanies();
         DataRepository.Connections = new DataRepository(this).getSavedConnections();
+        DataRepository.CurrentSettings = new DataRepository(this).getSavedSettings();
         MenuBar = getSupportActionBar();
-
-        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty()){
-            new DataService(this).GetCCompanies(new Function<List<DataRepository.Company>, Void>() {
-                @Override
-                public Void apply(List<DataRepository.Company> companies) {
-                    if(Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
-                        for (DataRepository.Company c : DataRepository.Companies) {
-                            if (c.code != null && c.code.equals(Company)) {
-                                DataRepository.setCurrentCompany(c);
-                                break;
-                            }
-                        }
-                    }
-                    else{
-                        DataRepository.setCurrentCompany(null);
-                    }
-                    return null;
-                }
-            });
+        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+            new DataService(this).GetCompanies(null);
         }
-
-
-
-        //title.setTitle(Company);
-
-
-
-        //if(DataRepository.getCurrentCompany() != null){
-        //    String companyName = DataRepository.getCurrentCompany().name;
-        //    Objects.requireNonNull(getSupportActionBar()).setTitle(companyName);
-        //}
-        if(DataRepository.getCurrentConnection() == null && DataRepository.Connections!= null && !DataRepository.Connections.isEmpty()){
-            DataRepository.ChooseBestConnection(this,DataRepository.Connections, new Function<DataRepository.MobileConnection, Void>() {
-                @Override
-                public Void apply(DataRepository.MobileConnection mobileConnection) {
-                    DataRepository.setCurrentConnection(mobileConnection);
-                    return null;
-                }
-            });
-        }
-
-        if(Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
+        else if(DataRepository.CurrentSettings.Company != null){
             for (DataRepository.Company c : DataRepository.Companies) {
-                if (c.code != null && c.code.equals(Company)) {
+                if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
                     DataRepository.setCurrentCompany(c);
                     break;
                 }
@@ -273,6 +195,12 @@ public abstract class BaseActivity extends AppCompatActivity  {
         else{
             DataRepository.setCurrentCompany(null);
         }
+        if(DataRepository.Connections == null || DataRepository.Connections.isEmpty() || DataRepository.ConnectionsRefreshDate == null || DataRepository.ConnectionsRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+            new DataService(this).GetConnections(null);
+        }
+        else if(DataRepository.getCurrentConnection() == null && DataRepository.CurrentSettings.Company != null){
+            DataRepository.ChooseBestConnection(this,DataRepository.Connections, null);
+        }
 
         if(savedInstanceState != null) {
             Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
@@ -280,7 +208,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
         super.onCreate(savedInstanceState);
 
         Intent intent;
-        if (AppMode== 2) {
+        if (DataRepository.CurrentSettings.AppMode== 2) {
             if(this.getClass().isAssignableFrom(PriceChecker.class)){
                 return;
             }
@@ -318,7 +246,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             if (result.getResultCode() == Activity.RESULT_OK) {
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
-                new DataService(getBaseContext()).upload(image_file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
+                new DataService(getBaseContext()).upload(image_file, newFileName, image_entityName,  image_entity_guid,image_fileGroup, null, new Function<Long, Void>() {
                     @Override
                     public Void apply(Long aLong) {
                         Bitmap imageBitmap = null;
@@ -328,7 +256,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
                         catch (IOException e){
 
                         }
-                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_id,aLong);
+                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_guid,aLong);
                         return null;
                     }
                 }, this);
@@ -360,10 +288,10 @@ public abstract class BaseActivity extends AppCompatActivity  {
                     }
                     DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                     String newFileName = dateFormat.format(new Date());
-                    new DataService(getBaseContext()).upload(file, newFileName, image_entityName, image_entity_id, image_fileGroup, null, new Function<Long, Void>() {
+                    new DataService(getBaseContext()).upload(file, newFileName, image_entityName, image_entity_guid,image_fileGroup, null, new Function<Long, Void>() {
                         @Override
                         public Void apply(Long aLong) {
-                            onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_id,aLong);
+                            onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_guid,aLong);
                             return null;
                         }
                     }, this);
@@ -392,7 +320,8 @@ public abstract class BaseActivity extends AppCompatActivity  {
             image_file_string =image_file.getAbsolutePath();
         savedInstanceState.putString("image_file_string", image_file_string);
 
-        savedInstanceState.putLong("image_entity_id",image_entity_id);
+
+        savedInstanceState.putString("image_entity_guid",image_entity_guid);
         savedInstanceState.putInt("image_action",image_action);
         savedInstanceState.putString("image_entityName",image_entityName);
         savedInstanceState.putString("image_fileGroup",image_fileGroup);
@@ -420,8 +349,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
         image_file = null;
         if(image_file_string != null)
             image_file = new File(image_file_string);
-
-        image_entity_id = savedInstanceState.getLong("image_entity_id");
+        image_entity_guid = savedInstanceState.getString("image_entity_guid");
         image_action = savedInstanceState.getInt("image_action");
         image_entityName = savedInstanceState.getString("image_entityName");
         image_fileGroup = savedInstanceState.getString("image_fileGroup");
@@ -434,7 +362,8 @@ public abstract class BaseActivity extends AppCompatActivity  {
     }
 
 
-    private long image_entity_id ;
+
+    private String image_entity_guid;
     private String image_entityName;
     private String image_fileGroup;
     private int image_action = 0;
@@ -501,12 +430,14 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
 
 
-    public void  captureImage(int action,String entityName,String fileGroup,long entityId){
+    public void  captureImage(int action,String entityName,String fileGroup,String guid){
         image_action = action;
         image_entityName  = entityName;
         image_fileGroup = fileGroup;
         if(image_action < 0){
-            image_entity_id = entityId;
+
+            image_entity_guid = guid;
+
             String permission;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 permission = Manifest.permission.READ_MEDIA_IMAGES;
@@ -521,7 +452,8 @@ public abstract class BaseActivity extends AppCompatActivity  {
             }
         }
         else{
-            image_entity_id = entityId;
+
+            image_entity_guid = guid;
 
             int cameraPermission = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
             if (cameraPermission == PackageManager.PERMISSION_GRANTED) {
@@ -533,11 +465,11 @@ public abstract class BaseActivity extends AppCompatActivity  {
     }
 
     public ArrayList<PopupBase> Popups = new ArrayList<PopupBase>();
-    public void onCapturedImage(int action,Bitmap image,String entityName,String fileGroup,Long entityId,Long id){
+    public void onCapturedImage(int action,Bitmap image,String entityName,String fileGroup,String guid,Long id){
         for (int i = 0; i < Popups.size(); i++) {
             if(PopupForm.class.isAssignableFrom(Popups.get(i).getClass())){
                 PopupForm form = (PopupForm)Popups.get(i);
-                form.onCapturedImage(action,image,entityName,fileGroup,entityId,id);
+                form.onCapturedImage(action,image,entityName,fileGroup,guid,id);
             }
 
 
@@ -582,23 +514,22 @@ public abstract class BaseActivity extends AppCompatActivity  {
                 if(connection != null){
                     int index = (int)(long) connection.getId();
                     DataRepository.MobileConnection mc = DataRepository.Connections.get(index);
-                    DataRepository.setCurrentConnection(mc);
                     mc.ValidateConnection(this, new Function<Boolean, Void>() {
                         @Override
                         public Void apply(Boolean aBoolean) {
+                            DataRepository.setCurrentConnection(mc);
+                            Intent intent = new Intent(getBaseContext(), MainActivity.class); // the activity to launch if logged in
+                            startActivity(intent);
+                            finish();
                             return null;
                         }
                     });
                 }
                 return true;
             });
-
-
             pl.show(this.getSupportFragmentManager(),null);
         }
         else {
-
-
             Intent intent;
             switch (item.getTitle().toString()) {
                 case "Home":
@@ -635,7 +566,4 @@ public abstract class BaseActivity extends AppCompatActivity  {
         }
         return  true;
     }
-
-
-
 }

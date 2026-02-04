@@ -7,6 +7,7 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import com.example.myapplication.Data.DataRepository;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupConfirmation;
@@ -39,7 +40,7 @@ public  class AccountReconciliation extends BaseActivity {
         if(savedInstanceState == null){
             new DataService(getBaseContext()).postForList("AccDefaults[]",
             "it0=> new{it0.AccLedger.Id,it0.AccLedger.Name,it0.AccLedger.Balance, it0.AccLedger." + Select + " as AccTransactionLines}",
-            "Name = \"Ledger Monitor\" or Name = \"Ledger Monitor_" + User + "\"",
+            "Name = \"Ledger Monitor\" or Name = \"Ledger Monitor_" + DataRepository.CurrentSettings.User + "\"",
             "AccLedger.Name",
             jsonArray -> {
                 for (int i = 0; i < jsonArray.length(); i++) {
