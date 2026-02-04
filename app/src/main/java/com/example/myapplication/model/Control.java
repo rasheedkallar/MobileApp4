@@ -818,7 +818,8 @@ public class Control {
                 getValues().add(id);
             }
             ImageView imageView = GetImageView(id);
-            new DataService(getRootActivity()).get("MobileApi/GetImage/" + id, new AsyncHttpResponseHandler() {
+            String url = "MobileApi/GetImage?guid=" + getGuidForId(id);
+            new DataService(getRootActivity()).get(url, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
@@ -826,6 +827,7 @@ public class Control {
                 }
                 @Override
                 public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
+                    System.out.println(url + "-" + error.getMessage());
                 }
             });
         }
