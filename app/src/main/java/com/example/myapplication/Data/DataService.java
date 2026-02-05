@@ -1,5 +1,6 @@
 package com.example.myapplication.Data;
 import com.example.myapplication.BaseActivity;
+import com.example.myapplication.model.Control;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -26,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -200,7 +202,7 @@ public class DataService {
                     System.out.println("Token retrieve : " + mc.url + "/api/MobileApi/GetToken" + " msg : "  + msg);
 
                 }
-            },null,1000);
+            },null,10000);
         }
     }
 
@@ -224,7 +226,7 @@ public class DataService {
                         @Override
                         public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                             String msg = ServerErrorExtractor.extractError(responseBody);
-                            System.out.println("Error on Ping : " + mc.url + "/" + url + " msg : "  + msg);
+                            System.out.println("Error on : " + mc.url + "/api/" + url + " msg : "  + msg);
                             response.onFailure(statusCode,headers,responseBody,error);
                         }
                     },headers);
@@ -577,8 +579,24 @@ public class DataService {
     }
     */
 
+    private RequestParams buildParamsDynamically(JSONObject obj) throws JSONException {
+        RequestParams params = new RequestParams();
+        Iterator<String> keys = obj.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Object value = obj.get(key);
 
-    public  void upload(File file,String fileName, String entity,String guid,String fileGroup , String path, Function<Long,Void> success, Context context){
+            if (value == JSONObject.NULL) {
+                params.put(key, "");
+            } else {
+                params.put(key, value.toString());
+            }
+        }
+        return params;
+    }
+
+
+    public  void upload(File file,String fileName, String entity,String guid,String fileGroup , String path,Function<JSONObject,Void> success, Context context){
         System.out.println("&fileName," + entity + "," + guid );
         RequestParams params = new RequestParams();
         try{
@@ -589,56 +607,20 @@ public class DataService {
             Toast.makeText(context, "Invalid image", Toast.LENGTH_SHORT).show();
             return;
         }
-        System.out.println(params);
-        String url= "MobileApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&guid=" + URLEncode(guid) + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+        String url= "MobileApi/Upload?select=" + URLEncode(Control.ImageControl.SelectQuery) + "&fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&guid=" + URLEncode(guid) + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
+        System.out.println(params + "; Url: " + url);
         httpEntityAction("POST",url, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-
-
                 String result = new String(responseBody, StandardCharsets.UTF_8);
                 System.out.println(result);
-
+                JSONObject obj;
                 try {
-                    JsonElement el = JsonParser.parseString(result);
-
-                    long value;
-                    if (el.isJsonPrimitive()) {
-                        if (el.getAsJsonPrimitive().isNumber()) {
-                            // JSON number -> long
-                            value = el.getAsLong();
-                        } else if (el.getAsJsonPrimitive().isString()) {
-                            // JSON string -> parse as long
-                            String s = el.getAsString();
-                            value = Long.parseLong(s.trim());
-                        } else {
-                            throw new IllegalArgumentException("Expected number or numeric string, got primitive: " + el);
-                        }
-                    } else {
-                        throw new IllegalArgumentException("Expected a JSON primitive (\"123\" or 123), got: " + el);
-                    }
-
-                    success.apply(value);
-
-                } catch (NumberFormatException nfe) {
-                    Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
-
-                    //throw new IllegalArgumentException("Response is a string but not a valid long: " + result, nfe);
-                } catch (JsonSyntaxException jse) {
-                    // Not valid JSON; as a last resort, try to parse raw (e.g., plain "123" without quotes)
-                    try {
-                        long fallback = Long.parseLong(result.trim().replace("\"", ""));
-                        success.apply(fallback);
-                    } catch (NumberFormatException nfe2) {
-                        Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
-                        //throw new IllegalArgumentException("Response is not valid JSON nor a parseable long: " + result, jse);
-                    }
+                    obj = new JSONObject(result);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
                 }
-
-
-
-                //System.out.println(result);
-                //success.apply(Long.parseLong(result));
+                success.apply(obj);
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
@@ -646,7 +628,6 @@ public class DataService {
                 if(responseBody != null)result = result + "\r\n" + new String(responseBody);
                 if(error != null) {
                     result = result + "\r\n" + error.getMessage();
-
                 }
                 for (String item: result.split("\r\n")) {
                     System.out.println(result);
@@ -655,8 +636,6 @@ public class DataService {
             }
         });
     }
-
-
     public  void postForString(String url, RequestParams params, Function<String,Void> success, Function<String,Void> failure){
         System.out.println(url);
         System.out.println(params);

@@ -109,8 +109,10 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
                 getArgs().getControls().get(j).setPath(path);
                 if(Control.DetailedControlBase.class.isAssignableFrom(getArgs().getControls().get(j).getClass())){
                     Control.DetailedControlBase dc = (Control.DetailedControlBase)getArgs().getControls().get(j);
-                    dc.setParentId(id);
-                    dc.setVisible(true);
+                    dc.onParentCreated(id);
+
+                    //dc.setParentId(id);
+                    //dc.setVisible(true);
                 }
             }
         }
@@ -190,12 +192,12 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         if(getArgs().getControls() != null && getArgs().getControls().size() > 0)getArgs().getControls().get(0).requestFocus();
 
     }
-    public void onCapturedImage(int action,Bitmap image,String entityName,String fileGroup,String guid,Long id){
+    public void onCapturedImage(int action, Bitmap image, String entityName, String fileGroup, String guid, JSONObject lookup){
         for (int i = 0; i < getArgs().getControls().size(); i++) {
             if(getArgs().getControls().get(i).getClass().isAssignableFrom(Control.ImageControl.class)){
                 Control.ImageControl ic = (Control.ImageControl)getArgs().getControls().get(i);
                 if(ic.getEntityName() != null && ic.getEntityName().equals(entityName) && ic.getParentId() != null && ic.getParentGuid().equals(guid))
-                    ic.onCapturedImage(action,image,id,guid);
+                    ic.onCapturedImage(action,image,lookup,guid);
             }
         }
     }

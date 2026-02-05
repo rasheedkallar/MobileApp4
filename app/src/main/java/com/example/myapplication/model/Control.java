@@ -37,6 +37,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -53,6 +55,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import kotlin.jvm.functions.Function2;
+import kotlin.text.Charsets;
 
 public class Control {
     public static String ACTION_SEARCH = "Search";
@@ -699,7 +702,18 @@ public class Control {
             EntityName = entityName;
             return this;
         }
-        public void onCapturedImage(int action, Bitmap image,Long id,String guid){
+
+
+
+        public void onCapturedImage(int action, Bitmap image, JSONObject jsonObject, String guid){
+            Long id = null;
+            try {
+                id = jsonObject.getLong("Id");
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+
+            imageDataForId.put(id,jsonObject);
             addImage(id);
             getActionButton(Control.ACTION_DELETE).setEnabled(false);
             getActionButton(Control.ACTION_VIEW).setEnabled(false);
@@ -716,25 +730,22 @@ public class Control {
                     iv.setBackground(ContextCompat.getDrawable(main_layout.getContext(), R.drawable.button));
                 }
             }
+
         }
-        @Override
-        public void addForSelectQuery(FieldList list) {
-            String formula = "new {{0}.Guid,{0}.Id, @0.RefFiles.Where(img=>img.RefGuid == {0}.Guid && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Select(img => new{img.Id,img.FileName,img.Guid}) as Images}";
-            list.addForSelectQuery(getName(),getName(), formula);
-            //list.addForSelectQuery("Guid","Guid",null);
-        }
-
-
-
-
 
         @Override
         public void onButtonClick(ActionButton button) {
             if(button.Name.equals(Control.ACTION_DELETE)){
                 PopupConfirmation.create("Delete Confirmation", "Are you sure you want to delete?", (unused)->{
-                    new DataService(getRootActivity()).postForDelete("RefFiles[" + getValue() + "]", new Function<Boolean, Void>() {
+                    JSONObject objDelete = new JSONObject();
+                    try {
+                        objDelete.put("Deleted",true);
+                    } catch (JSONException e) {
+
+                    }
+                    new DataService(getRootActivity()).postForSave("RefFiles[" + getValue() + "]", objDelete, new Function<Long, Void>() {
                         @Override
-                        public Void apply(Boolean s) {
+                        public Void apply(Long aLong) {
                             getValues().remove(getValue());
                             for (int i = 0; i < main_layout.getChildCount(); i++) {
                                 Object id = main_layout.getChildAt(i).getTag();
@@ -745,11 +756,15 @@ public class Control {
                             }
                             setValue(null);
                             getActionButton(Control.ACTION_DELETE).setEnabled(false);
+                            getActionButton(Control.ACTION_VIEW).setEnabled(false);
                             return null;
                         }
-                    }, s -> {
-                        PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
-                        return null;
+                    }, new Function<String, Void>() {
+                        @Override
+                        public Void apply(String s) {
+                            PopupHtml.create("Delete Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                            return null;
+                        }
                     });
                     return true;
                 }).show(getRootActivity().getSupportFragmentManager(),null);
@@ -761,7 +776,11 @@ public class Control {
                 getRootActivity().captureImage(BaseActivity.TAKE_IMAGE_FROM_GALLERY,getEntityName(),getName(),ParentGuid);
             }
             else if(button.Name.equals(Control.ACTION_VIEW)) {
-                PopupImage.create("Image View", getValue()).show(getRootActivity().getSupportFragmentManager(),null);
+                try {
+                    PopupImage.create("Image View", getImageDataForId(getValue()).getString("Guid")).show(getRootActivity().getSupportFragmentManager(),null);
+                } catch (JSONException e) {
+
+                }
             }
         }
         protected transient FlexboxLayout main_layout;
@@ -813,13 +832,29 @@ public class Control {
             main_layout.addView(imageView);
             return imageView;
         }
+        private String URLEncode(String data){
+
+            if(data == null)return  "";
+            try{
+                return URLEncoder.encode(data, Charsets.UTF_8.name());
+            }catch (UnsupportedEncodingException e){
+                return  data;
+            }
+        }
+
         private void addImage(long id) {
             if(!getValues().contains(id)){
                 getValues().add(id);
             }
             ImageView imageView = GetImageView(id);
-            String url = "MobileApi/GetImage?guid=" + getGuidForId(id);
-            new DataService(getRootActivity()).get(url, new AsyncHttpResponseHandler() {
+            final String[] url = new String[1];
+            try {
+                url[0] = "MobileApi/GetImage?guid=" + URLEncode(getImageDataForId(id).getString("Guid")) ;
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println(url[0]);
+            new DataService(getRootActivity()).get(url[0], new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody) {
                     Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
@@ -827,7 +862,7 @@ public class Control {
                 }
                 @Override
                 public void onFailure(int statusCode, cz.msebera.android.httpclient.Header[] headers, byte[] responseBody, Throwable error) {
-                    System.out.println(url + "-" + error.getMessage());
+                    System.out.println(url[0] + "-" + error.getMessage());
                 }
             });
         }
@@ -840,27 +875,54 @@ public class Control {
             return ParentGuid;
         }
 
-        private Map<Long,String> guidMap;
-        public String getGuidForId(Long id){
-            return guidMap.get(id);
+        private transient Map<Long,JSONObject> imageDataForId = null;
+        public JSONObject getImageDataForId(Long id){
+            return imageDataForId.get(id);
+        }
+        @Override
+        public void addForSelectQuery(FieldList list) {
+            String formula = "new {{0}.Guid,{0}.Id, @0.RefFiles.Where(img=>img.RefGuid == {0}.Guid && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Where(!Deleted).Select(" + SelectQuery + ") as Images}";
+            list.addForSelectQuery(getName(),getName(), formula);
+            //list.addForSelectQuery("Guid","Guid",null);
+        }
+        public static final String SelectQuery = "img => new{img.Id,img.FileName,img.Guid}";
+
+        @Override
+        public void onParentCreated(Long parentId) {
+            super.onParentCreated(parentId);
+            new DataService(getRootActivity()).postForSelect(getPath(), "it0 => new {it0.Guid,it0.Id,InvCheckInLines.Where(Id == 0).Select(Id) as Images}", new Function<JSONObject, Void>() {
+                @Override
+                public Void apply(JSONObject aLong) {
+                    setData(aLong);
+                    return null;
+                }
+            }, getRootActivity());
+        }
+        private void setData(JSONObject obj){
+            JSONArray images = null;
+            try {
+                images = obj.getJSONArray("Images");
+                imageDataForId = new HashMap<Long,JSONObject>();
+                for (int i = 0; i < images.length(); i++) {
+                    JSONObject item = images.getJSONObject(i);
+                    imageDataForId.put(item.getLong("Id"),item);
+                }
+                ParentGuid = obj.getString("Guid");
+                super.readValueJSONObject(obj,"Images");
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
         public ImageControl readValueJSONObject(JSONObject data, String field) {
             try {
                 JSONObject obj = data.getJSONObject(field);
-                JSONArray images = obj.getJSONArray("Images");
-                guidMap = new HashMap<Long,String>();
-                for (int i = 0; i < images.length(); i++) {
-                    JSONObject item = images.getJSONObject(i);
-                    guidMap.put(item.getLong("Id"),item.getString("Guid"));
-                }
-                ParentGuid = obj.getString("Guid");
-                return super.readValueJSONObject(obj,"Images");
-
+                setData(obj);
             } catch (JSONException e) {
                 return super.readValueJSONObject(data,field);
             }
+            return  this;
         }
     }
     public static abstract class DetailedControlBase<T extends ControlBase<T,Long>> extends ControlBase<T, Long> {
@@ -874,6 +936,12 @@ public class Control {
             orderStyle.setCornerRadius(0f);
             return orderStyle;
         }
+        public void onParentCreated(Long parentId){
+            setParentId(parentId);
+            setVisible(true);
+        }
+
+
         @Override
         protected Long convertValue(Object value) {
             if(value == null || value == JSONObject.NULL)return null;

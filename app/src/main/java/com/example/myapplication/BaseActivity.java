@@ -176,6 +176,16 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if(Controls != null){
+            for (int i = 0; i < Controls.size(); i++) {
+                Control.ControlBase ctrl = Controls.get(i);
+                ctrl.setRootActivity(this);
+                //ctrl.addView(Container);
+                //ctrl.setRootActivity(this);
+            }
+        }
+
+
 
         DataRepository.Companies = new DataRepository(this).getSavedCompanies();
         DataRepository.Connections = new DataRepository(this).getSavedConnections();
@@ -246,9 +256,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
             if (result.getResultCode() == Activity.RESULT_OK) {
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
-                new DataService(getBaseContext()).upload(image_file, newFileName, image_entityName,  image_entity_guid,image_fileGroup, null, new Function<Long, Void>() {
+                new DataService(getBaseContext()).upload(image_file, newFileName, image_entityName,  image_entity_guid,image_fileGroup, null, new Function<JSONObject, Void>() {
                     @Override
-                    public Void apply(Long aLong) {
+                    public Void apply(JSONObject lookup) {
                         Bitmap imageBitmap = null;
                         try {
                             imageBitmap = MediaStore.Images.Media.getBitmap(getBaseContext().getContentResolver(), image_uri);
@@ -256,7 +266,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
                         catch (IOException e){
 
                         }
-                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_guid,aLong);
+                        onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_guid,lookup);
                         return null;
                     }
                 }, this);
@@ -288,10 +298,10 @@ public abstract class BaseActivity extends AppCompatActivity  {
                     }
                     DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                     String newFileName = dateFormat.format(new Date());
-                    new DataService(getBaseContext()).upload(file, newFileName, image_entityName, image_entity_guid,image_fileGroup, null, new Function<Long, Void>() {
+                    new DataService(getBaseContext()).upload(file, newFileName, image_entityName, image_entity_guid,image_fileGroup, null, new Function<JSONObject, Void>() {
                         @Override
-                        public Void apply(Long aLong) {
-                            onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_guid,aLong);
+                        public Void apply(JSONObject lookup) {
+                            onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_guid,lookup);
                             return null;
                         }
                     }, this);
@@ -301,8 +311,10 @@ public abstract class BaseActivity extends AppCompatActivity  {
         });
         if(Controls != null){
             for (int i = 0; i < Controls.size(); i++) {
-                Controls.get(i).addView(Container);
-                Controls.get(i).setRootActivity(this);
+                Control.ControlBase ctrl = Controls.get(i);
+                //ctrl.setRootActivity(this);
+                ctrl.addView(Container);
+                //ctrl.setRootActivity(this);
             }
         }
     }
@@ -465,11 +477,11 @@ public abstract class BaseActivity extends AppCompatActivity  {
     }
 
     public ArrayList<PopupBase> Popups = new ArrayList<PopupBase>();
-    public void onCapturedImage(int action,Bitmap image,String entityName,String fileGroup,String guid,Long id){
+    public void onCapturedImage(int action, Bitmap image, String entityName, String fileGroup, String guid, JSONObject lookup){
         for (int i = 0; i < Popups.size(); i++) {
             if(PopupForm.class.isAssignableFrom(Popups.get(i).getClass())){
                 PopupForm form = (PopupForm)Popups.get(i);
-                form.onCapturedImage(action,image,entityName,fileGroup,guid,id);
+                form.onCapturedImage(action,image,entityName,fileGroup,guid,lookup);
             }
 
 
