@@ -10,6 +10,7 @@ import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.contentcapture.ContentCaptureCondition;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -44,6 +45,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
 
     public InvCheckInDetailsActivity(){
+        //barcodeControl.setRootActivity(this);
         headerControl.setSingleLine(true);
         barcodeControl.setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
         itemControl.setScrollPermanentHeight(550);
@@ -703,7 +705,9 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                     if (!action.equals(Control.ACTION_REFRESH)) {
                         isc = new ItemSearchControl();
-                        barcodeControl = (BarcodeControl)new BarcodeControl().setScanMode(false).setCaption("Barcode").setValue(AddBarcode);
+                        barcodeControl = (BarcodeControl)new BarcodeControl().setScanMode(false).setCaption("Barcode");
+                        barcodeControl.setRootActivity(getRootActivity());
+                        barcodeControl.setValue(AddBarcode);
                         isc.setValue(AdditemLookup);
                         isc.setPopupIndex(clickAdd ? -1 : 0).setIsRequired(false);
                         descriptionControl = Control.getEditTextControl("Description", "Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(true).setValue(AddDescription);

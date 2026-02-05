@@ -38,6 +38,10 @@ public class DataService {
     private final DataRepository connRepo;
 
     public DataService(Context ctx){
+        if(ctx == null){
+            throw new IllegalArgumentException("Context cannot be null");
+        }
+
         this.appContext = ctx.getApplicationContext();
         this.connRepo = new DataRepository(appContext);
     }
