@@ -51,4 +51,12 @@ dependencies {
 
     // REQUIRED for background token refresh every 24 hours
     implementation "androidx.work:work-runtime:2.9.0"
+
+
+// OkHttp (HTTP client)
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
+    // (optional) Logging interceptor for debugging
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
+
+
 }

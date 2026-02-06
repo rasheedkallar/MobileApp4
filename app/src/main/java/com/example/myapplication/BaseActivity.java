@@ -217,11 +217,11 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
         Intent intent;
         if (DataRepository.CurrentSettings.AppMode== 2) {
-            if(this.getClass().isAssignableFrom(PriceChecker.class)){
+            if(this.getClass().isAssignableFrom(PriceCheckActivity.class)){
                 return;
             }
             else{
-                intent = new Intent(this, PriceChecker.class); // the activity to launch if logged in
+                intent = new Intent(this, PriceCheckActivity.class); // the activity to launch if logged in
                 startActivity(intent);
                 finish();
                 return;
