@@ -180,8 +180,6 @@ public abstract class BaseActivity extends AppCompatActivity  {
             for (int i = 0; i < Controls.size(); i++) {
                 Control.ControlBase ctrl = Controls.get(i);
                 ctrl.setRootActivity(this);
-                //ctrl.addView(Container);
-                //ctrl.setRootActivity(this);
             }
         }
 

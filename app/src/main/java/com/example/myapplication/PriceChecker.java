@@ -15,6 +15,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.example.myapplication.Data.DataRepository;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupBase;
@@ -25,7 +26,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.DecimalFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.function.Function;
 
 public class PriceChecker extends BaseActivity {
@@ -42,9 +46,13 @@ public class PriceChecker extends BaseActivity {
     private  MonitorTimer TimerCheckup;
 
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        MenuBar = getSupportActionBar();
+
         setContentView(R.layout.activity_price_checker);
         ImageView imageView =  findViewById(R.id.image);
         new DataService(getBaseContext()).get("refFile?imagePath=~\\Images\\PriceChecker\\Sample1.jpg" , new AsyncHttpResponseHandler() {
@@ -69,6 +77,22 @@ public class PriceChecker extends BaseActivity {
 
         TimerCheckup = new MonitorTimer(this);
         TimerCheckup.start();
+
+        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+            new DataService(this).GetCompanies(null);
+        }
+        else if(DataRepository.CurrentSettings.Company != null){
+            for (DataRepository.Company c : DataRepository.Companies) {
+                if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
+                    DataRepository.setCurrentCompany(c);
+                    break;
+                }
+            }
+        }
+        else{
+            DataRepository.setCurrentCompany(null);
+        }
+
 
     }
     @Override
@@ -212,7 +236,10 @@ public class PriceChecker extends BaseActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.price_checker_menu,menu);
+        ConnectionMenu = menu.findItem(R.id.mnu_net);
+        DataRepository.refreshConnectionMenu();
         return true;
+
     }
 
     public String PinNumber = null;
