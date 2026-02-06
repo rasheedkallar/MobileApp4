@@ -18,6 +18,7 @@ import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupForm;
+import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
 import com.loopj.android.http.RequestParams;
@@ -451,7 +452,10 @@ public  class InvCheckInDetails extends BaseActivity {
                                         throw new RuntimeException(e);
                                     }
                                     return null;
-                                }, s -> null);
+                                }, s ->{
+                                    PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                                    return null;
+                                });
                             }
                         } catch (JSONException e) {
                             throw new RuntimeException(e);

@@ -7,6 +7,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.Data.DataService;
+import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
 import com.loopj.android.http.RequestParams;
@@ -86,10 +87,21 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Final");
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Cancel");
                 PopupLookup.create(getCaption(), stats, null, lookup -> {
-                    new DataService(getRootActivity()).postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getValue() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
+                    //new DataService(getRootActivity()).postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getValue() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
+                    //    refreshGrid(Table);
+                    //    return null;
+                    //},getRootActivity());
+
+                    new DataService(getRootActivity()).postForSave("InvCheckIns[" + getValue() + "]", "{\"Status\" : \"" + lookup.getName() + "\"}", aLong -> {
+                        readValueObject(aLong);
                         refreshGrid(Table);
                         return null;
-                    },getRootActivity());
+                    }, s -> {
+                        PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                        return null;
+                    });
+
+
                     return true;
                 }).show(((BaseActivity)action.getButton().getContext()).getSupportFragmentManager(),null);
             }

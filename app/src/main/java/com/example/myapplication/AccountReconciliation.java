@@ -11,6 +11,7 @@ import com.example.myapplication.Data.DataRepository;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupConfirmation;
+import com.example.myapplication.model.PopupHtml;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -80,7 +81,12 @@ public  class AccountReconciliation extends BaseActivity {
                                 getButton(Control.ACTION_CHECKED).setEnabled(false);
                                 RefreshData();
                                 return null;
-                            }, s -> null);
+                            }, s ->{
+                                        PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
+                                return null;
+                            }
+
+                            );
 
                         } catch (JSONException e) {
                             throw new RuntimeException(e);

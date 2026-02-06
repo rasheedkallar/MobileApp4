@@ -235,7 +235,7 @@ public class DataRepository {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                     String response = new String(responseBody);
-                    System.out.println(fullUrl + "-" + response);
+                    System.out.println(fullUrl + " "  + response + ":" + name);
                     if(response.equals("\"Success\"")) {
                         Valid = true;
                         ValidDate = new Date();
@@ -243,8 +243,7 @@ public class DataRepository {
                             CurrentConnectionLastCall = new Date();
                             DataRepository.setCurrentConnection(connection);
                         }
-
-                        callBack.apply(true);
+                        if(callBack != null)callBack.apply(true);
                     }
                     else{
                         Valid = false;
@@ -253,21 +252,21 @@ public class DataRepository {
                             CurrentConnectionLastCall = new Date();
                             DataRepository.setCurrentConnection(connection);
                         }
-                        callBack.apply(false);
+                        if(callBack != null)callBack.apply(false);
                     }
                 }
 
                 @Override
                 public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                     String msg = ServerErrorExtractor.extractError(responseBody);
-                    System.out.println(fullUrl + "-"  + msg);
+                    System.out.println(fullUrl + " \""  + msg + "\" : " + name);
                     Valid = false;
                     ValidDate = new Date();
                     if(DataRepository.CurrentConnection != null && DataRepository.CurrentConnection.name.equals(name)){
                         CurrentConnectionLastCall = new Date();
                         DataRepository.setCurrentConnection(connection);
                     }
-                    callBack.apply(false);
+                    if(callBack != null)callBack.apply(false);
                 }
             },null,1000);
         }

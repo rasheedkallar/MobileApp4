@@ -1,6 +1,7 @@
 package com.example.myapplication.Data;
 import com.example.myapplication.BaseActivity;
 import com.example.myapplication.model.Control;
+import com.example.myapplication.model.PopupHtml;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -126,7 +127,7 @@ public class DataService {
         long thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
         long now = new Date().getTime();
         if(DataRepository.getCurrentConnection() != null){
-            callBack.apply(DataRepository.getCurrentConnection());
+            if(callBack !=null)callBack.apply(DataRepository.getCurrentConnection());
             return;
         }
         else if(DataRepository.Connections == null || DataRepository.Connections.isEmpty()){
@@ -137,7 +138,7 @@ public class DataService {
                     public Void apply(List<DataRepository.MobileConnection> mobileConnections) {
                         DataRepository.ChooseBestConnection(appContext,DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
                             DataRepository.setCurrentConnection(mc);
-                            callBack.apply(DataRepository.getCurrentConnection());
+                            if(callBack !=null)callBack.apply(DataRepository.getCurrentConnection());
                             return null;
                         });
                         return null;
@@ -147,7 +148,7 @@ public class DataService {
             else{
                 DataRepository.ChooseBestConnection(appContext, DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
                     DataRepository.setCurrentConnection(mc);
-                    callBack.apply(DataRepository.getCurrentConnection());
+                    if(callBack !=null)callBack.apply(DataRepository.getCurrentConnection());
                     return null;
                 });
                 if (DataRepository.ConnectionsRefreshDate == null || DataRepository.ConnectionsRefreshDate.before(new Date(System.currentTimeMillis() - 15 * 60 * 1000))) {
@@ -164,7 +165,7 @@ public class DataService {
         else{
             DataRepository.ChooseBestConnection(appContext, DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
                 DataRepository.setCurrentConnection(mc);
-                callBack.apply(DataRepository.getCurrentConnection());
+                if(callBack !=null)callBack.apply(DataRepository.getCurrentConnection());
                 return null;
             });
         }
@@ -172,7 +173,7 @@ public class DataService {
 
     public  void MakeSureToken(DataRepository.MobileConnection mc, Function<DataRepository.MobileConnection,Void> callBack) {
         if(mc.hasRecentToken(24 * 60 * 60 * 6)){
-            callBack.apply(mc);
+            if(callBack !=null)callBack.apply(mc);
         }
         else{
             RequestParams param = new RequestParams();
@@ -190,9 +191,7 @@ public class DataService {
                         (String tokenKey) -> {
                             System.out.println(finalUrl + "-" + DataRepository.CurrentSettings.Company + "-" + tokenKey);
                             mc.setTokenNow(tokenKey,DataRepository.CurrentSettings.Company, mc.name);
-                            //mc.Token = tokenKey;
-                            //mc.TokenRetrieveTime = new Date();
-                            callBack.apply(mc);
+                            if(callBack !=null)callBack.apply(mc);
                             return null; // IMPORTANT: Function<..., Void> must return null
                         },
                         (String error) -> {
@@ -223,12 +222,12 @@ public class DataService {
                     httpAction(type,mc.url + "/api/" + url,params,new AsyncHttpResponseHandler() {
                         @Override
                         public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                            //DataRepository.CurrentConnection = mc;
                             DataRepository.CurrentConnectionLastCall = new Date();
                             response.onSuccess(statusCode,headers,responseBody);
                         }
                         @Override
                         public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                            connection.ValidateConnection(appContext,null);
                             String msg = ServerErrorExtractor.extractError(responseBody);
                             System.out.println("Error on : " + mc.url + "/api/" + url + " msg : "  + msg);
                             response.onFailure(statusCode,headers,responseBody,error);
@@ -270,7 +269,6 @@ public class DataService {
                 ahc.put(url, params, response);
                 break;
             case "DELETE":
-                // LoopJ delete() does not have a body variant; this is header-only
                 ahc.delete(url, response);
                 break;
             default:
@@ -350,6 +348,16 @@ public class DataService {
         param.add("Path",path);
         postForObject(Boolean.class,"MobileApi/Delete",param,success,failure);
     }
+    public <T extends Serializable> void postForSave(String path,String saveJson ,Function<Long,Void>  success, Function<String,Void>  failure){
+        try {
+            JSONObject obj = new JSONObject(saveJson);
+            postForSave( path, obj , success,  failure);
+        } catch (JSONException e) {
+            if(failure !=null)failure.apply(e.getMessage());
+        }
+    }
+
+
     public <T extends Serializable> void postForSave(String path,JSONObject saveJson ,Function<Long,Void>  success, Function<String,Void>  failure){
         RequestParams param = new RequestParams();
         param.add("Path",path);
@@ -452,10 +460,10 @@ public class DataService {
         httpEntityAction("GET",url,null ,new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                if(responseBody == null)success.apply(null);
+                if(responseBody == null && success != null)success.apply(null);
                 String result = new String(responseBody);
                 System.out.println(result);
-                success.apply(result);
+                if(success !=null)success.apply(result);
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
@@ -468,7 +476,7 @@ public class DataService {
                 for (String item: result.split("\r\n")) {
                     System.out.println(result);
                 }
-                failure.apply(result);
+                if(failure !=null)failure.apply(result);
 
             }
         });
@@ -499,17 +507,17 @@ public class DataService {
                 }
             } catch (JSONException e) {
                 String error = formatError(data);
-                failure.apply(error);
+                if(failure !=null)failure.apply(error);
                 return;
 
             } catch (Exception e) {
                 String error = formatError(data);
-                failure.apply(error);
+                if(failure !=null)failure.apply(error);
                 return;
 
             }
         }
-        success.apply(result);
+        if(success !=null)success.apply(result);
     }
     private String formatError(String json){
         System.out.println("Error on service request");
@@ -538,50 +546,6 @@ public class DataService {
             return  data;
         }
     }
-    /*
-    public  void upload(File file,String fileName, String entity,Long id,String fileGroup , String path, Function<Long,Void> success, Context context){
-
-        System.out.println("&fileName," + entity + "," + id );
-        RequestParams params = new RequestParams();
-        try{
-            params.put("file",file,"image/jpeg");
-        }
-        catch (FileNotFoundException e){
-            System.out.println(e.getMessage());
-            Toast.makeText(context, "Invalid image", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        System.out.println(params);
-
-        String finalUrl= getRootUrl() + "/api/" + "MobileApi/Upload?fileName=" + URLEncode(fileName) + "&entity=" + URLEncode(entity) + "&id=" + id + "&fileGroup=" + URLEncode(fileGroup) + "&path=" + URLEncode(path);
-
-        AsyncHttpClient  cl = new AsyncHttpClient();
-        //cl.setTimeout(10000);
-        cl.setResponseTimeout(50000);
-        //cl.setConnectTimeout(10000);
-        cl.post(finalUrl, params, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String result = new String(responseBody);
-                System.out.println(result);
-                success.apply(Long.parseLong(result));
-            }
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                String result ="Error on : Post Image";
-                if(responseBody != null)result = result + "\r\n" + new String(responseBody);
-                if(error != null) {
-                    result = result + "\r\n" + error.getMessage();
-
-                }
-                for (String item: result.split("\r\n")) {
-                    System.out.println(result);
-                }
-                Toast.makeText(context, result, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-    */
 
     private RequestParams buildParamsDynamically(JSONObject obj) throws JSONException {
         RequestParams params = new RequestParams();
@@ -624,7 +588,7 @@ public class DataService {
                 } catch (JSONException e) {
                     throw new RuntimeException(e);
                 }
-                success.apply(obj);
+                if(success !=null)success.apply(obj);
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
@@ -648,10 +612,13 @@ public class DataService {
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String result = new String(responseBody);
                 System.out.println(result);
-                success.apply(result);
+                if(success !=null)success.apply(result);
             }
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+
+
+
                 String result ="Error on : " + url;
                 if(responseBody != null)result = result + "\r\n" + new String(responseBody);
                 if(error != null) {
@@ -661,7 +628,7 @@ public class DataService {
                 for (String item: result.split("\r\n")) {
                     System.out.println(result);
                 }
-                failure.apply(result);
+                if(failure !=null)failure.apply(result);
             }
         });
     }

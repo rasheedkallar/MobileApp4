@@ -585,8 +585,11 @@ public class Control {
         }
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls){
             if(popupInputs == null || popupInputs.size() == 0){
+                String caption = getCaption();
+                if(caption == null)caption = "Add";
+                else caption = caption + " Add";
                 new PopupForm()
-                        .setArgs(new PopupForm.PopupFormArgs(getCaption() + " Add",controls,getFullPathNew(),0L))
+                        .setArgs(new PopupForm.PopupFormArgs(caption,controls,getFullPathNew(),0L))
                         .show( getRootActivity().getSupportFragmentManager(),null);
             }else{
                 popupInputs.get(0).onPopupList(getRootActivity(), (Function<DataService.Lookup, Void>) lookup -> {

@@ -694,6 +694,19 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         //private InvCheckInPriceDetailedControl priceListControl = null;
         private Control.EditDecimalControl qtyControl = null;
         private Control.EditTextControlBase descriptionControl = null;
+
+        @Override
+        public void valueChange(Long oldValue, Long newValue) {
+            super.valueChange(oldValue, newValue);
+            if(newValue == null){
+                getActionButton(Control.ACTION_CAMERA).setEnabled(false);
+                getActionButton(Control.ACTION_BARCODE).setEnabled(false);
+            }else{
+                getActionButton(Control.ACTION_CAMERA).setEnabled(true);
+                getActionButton(Control.ACTION_BARCODE).setEnabled(true);
+            }
+        }
+
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             final ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
