@@ -223,6 +223,7 @@ public class DataService {
                         @Override
                         public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                             DataRepository.CurrentConnectionLastCall = new Date();
+                            if(!connection.Valid)connection.ValidateConnection(appContext,null);
                             response.onSuccess(statusCode,headers,responseBody);
                         }
                         @Override
