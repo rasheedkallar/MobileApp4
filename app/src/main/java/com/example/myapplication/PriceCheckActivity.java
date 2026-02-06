@@ -1,19 +1,32 @@
 package com.example.myapplication;
 
+import android.content.Context;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.lifecycle.Lifecycle;
 
 import com.example.myapplication.Data.DataService;
+import com.example.myapplication.model.Control;
+import com.example.myapplication.model.PopupBase;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -21,6 +34,10 @@ public class PriceCheckActivity extends BaseActivity {
 
     private EditText txtScan;
     private TextView tvStatus, tvError, Description, Rate;
+
+    private ImageButton btnKeyboard;
+    private  ClearTimer Timer;
+    private  MonitorTimer TimerCheckup;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -33,6 +50,22 @@ public class PriceCheckActivity extends BaseActivity {
         Description = findViewById(R.id.Description);
         Rate        = findViewById(R.id.Rate);
 
+        btnKeyboard = findViewById(R.id.btnKeyboard);
+
+        btnKeyboard.setOnClickListener(v ->{
+            InputMethodManager imm = (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
+            // The button's job is to explicitly SHOW the keyboard for manual entry.
+            // The user can hide it with the system back button.
+            txtScan.requestFocus();
+            imm.showSoftInput(txtScan, InputMethodManager.SHOW_IMPLICIT);
+
+
+            //txtScan.requestFocus();
+
+        });
+
+        txtScan.setShowSoftInputOnFocus(false);
+
         tvStatus.setText("Ready — Scan a barcode");
         tvError.setVisibility(TextView.GONE);
         Description.setText("");
@@ -40,6 +73,13 @@ public class PriceCheckActivity extends BaseActivity {
 
         keepFocusOnScanBox();
         setupKeyListener();
+
+
+        Timer = new ClearTimer(this);
+        Timer.start();
+
+        TimerCheckup = new MonitorTimer(this);
+        TimerCheckup.start();
     }
 
     @Override
@@ -68,6 +108,14 @@ public class PriceCheckActivity extends BaseActivity {
     /** Submit when Enter/Tab/Space is pressed */
     private void setupKeyListener() {
         txtScan.setOnKeyListener((v, keyCode, event) -> {
+
+            Timer.cancel();
+            Timer.start();
+            Description.setText("");
+            Rate.setText("");
+
+
+
             if (event.getAction() != KeyEvent.ACTION_DOWN)
                 return false;
 
@@ -94,6 +142,40 @@ public class PriceCheckActivity extends BaseActivity {
         });
     }
 
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.price_checker_menu,menu);
+        return true;
+    }
+
+    public String PinNumber = null;
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+        PopupPassword pib = new PopupPassword();
+        pib.setArgs(new PopupPassword.PopupPasswordArgs( ));
+        pib.setOnDoOk(new Function<Void, Boolean>() {
+            @Override
+            public Boolean apply(Void unused) {
+                if(pib.PasswordInput.getValue().equals("76167616")){
+                    SettingsPopupForm ps = new SettingsPopupForm();
+                    ps.show(getSupportFragmentManager(),null);
+                }
+                return true;
+            }
+        });
+        pib.show(getSupportFragmentManager(),null);
+        //Intent intent  = new Intent(this,MainActivity.class);
+        //startActivity(intent);
+        return  true;
+
+    }
+
+
+
     private void handleScannedText(String barcode) {
         tvError.setVisibility(TextView.GONE);
         tvStatus.setText("Checking price…");
@@ -105,6 +187,9 @@ public class PriceCheckActivity extends BaseActivity {
 
     /** Uses your existing service exactly as requested */
     private void queryPriceWithExistingService(String barcode) {
+
+        //ClearTimer ThisTimer  = Timer;
+
         try {
             JSONObject param = new JSONObject();
             param.put("param1", "PriceChecker");
@@ -116,7 +201,12 @@ public class PriceCheckActivity extends BaseActivity {
 
                     // onSuccess(JSONArray)
                     new Function<JSONArray, Void>() {
+
+
                         @Override public Void apply(JSONArray jsonArray) {
+                            Timer.cancel();
+                            Timer.start();
+
                             runOnUiThread(() -> {
                                 try {
                                     if (jsonArray == null || jsonArray.length() == 0) {
@@ -172,4 +262,108 @@ public class PriceCheckActivity extends BaseActivity {
         tvError.setText(message);
         tvError.setVisibility(TextView.VISIBLE);
     }
+
+    private class MonitorTimer extends CountDownTimer {
+
+        public MonitorTimer( PriceCheckActivity activity) {
+            super(1000 * 60 *  60 * 24 * 60, 1000 * 60 *  10 );
+
+            Activity = activity;
+        }
+
+
+        PriceCheckActivity Activity;
+
+        @Override
+        public void onTick(long l) {
+
+            JSONObject param = new JSONObject();
+            try {
+                LocalDateTime now = LocalDateTime.now();
+                param.put("monitorType","Price Checker");
+                if( Activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)){
+                    param.put("staus","Active");
+                }
+                else{
+                    param.put("staus","Error");
+                }
+
+
+
+                param.put("expiryDate",now.plusMinutes(10));
+                new DataService(getBaseContext()).postForExecuteList("sp_UpdateMonitorStatus", param, new Function<JSONArray, Void>() {
+                    @Override
+                    public Void apply(JSONArray jsonArray) {
+                        System.out.println(jsonArray.toString());
+
+                        return null;
+                    }
+                }, Activity);
+            }
+            catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+
+
+
+
+            System.out.println("Monitor Tick");
+        }
+
+        @Override
+        public void onFinish() {
+
+            this.start();
+
+            System.out.println("Monitor finish");
+        }
+    }
+
+    public  static  class PopupPassword extends PopupBase<PopupPassword, PopupPassword.PopupPasswordArgs>
+    {
+        public Control.EditTextControl PasswordInput;
+        public static class  PopupPasswordArgs extends PopupBase.PopupArgs<PopupPasswordArgs> {
+            public PopupPasswordArgs(){
+                super("Pin Input");
+                setCancelButton("Close");
+                setOkButton("Login");
+            }
+        }
+        @Override
+        public void AddControls(LinearLayout container) {
+            PasswordInput = Control.getEditTextControl("PinNUmber","Pin Number");
+            PasswordInput.addView(container);
+        }
+    }
+    private static class ClearTimer extends CountDownTimer
+    {
+        PriceCheckActivity Activity;
+
+
+        public ClearTimer( PriceCheckActivity activity) {
+            super(5000, 5000);
+
+            Activity = activity;
+        }
+
+        @Override
+        public void onFinish() {
+            Activity.Description.setText("");
+            Activity.txtScan.setText("");
+            Activity.Rate.setText("");
+            System.out.println("Timer finish");
+
+
+        }
+
+        @Override
+        public void onTick(long duration) {
+            //System.out.println("Timer tick");
+            System.out.println("Timer Tick");
+        }
+    }
+
+
+
+
 }
