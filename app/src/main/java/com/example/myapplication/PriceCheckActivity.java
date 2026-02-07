@@ -7,6 +7,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -17,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.Lifecycle;
 
+import com.example.myapplication.Data.DataRepository;
 import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.PopupBase;
@@ -26,7 +28,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.DecimalFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -42,6 +47,24 @@ public class PriceCheckActivity extends BaseActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        MenuBar = getSupportActionBar();
+        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+            new DataService(this).GetCompanies(null);
+        }
+        else if(DataRepository.CurrentSettings.Company != null){
+            for (DataRepository.Company c : DataRepository.Companies) {
+                if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
+                    DataRepository.setCurrentCompany(c);
+                    break;
+                }
+            }
+        }
+        else{
+            DataRepository.setCurrentCompany(null);
+        }
+
+
+
         setContentView(R.layout.activity_price_checker);
 
         txtScan     = findViewById(R.id.txtScan);
@@ -49,6 +72,9 @@ public class PriceCheckActivity extends BaseActivity {
         tvError     = findViewById(R.id.tvError);
         Description = findViewById(R.id.Description);
         Rate        = findViewById(R.id.Rate);
+
+
+
 
         btnKeyboard = findViewById(R.id.btnKeyboard);
 
@@ -64,7 +90,14 @@ public class PriceCheckActivity extends BaseActivity {
 
         });
 
-        txtScan.setShowSoftInputOnFocus(false);
+
+        // Disable soft keyboard on focus (scanner still works)
+        try {
+            txtScan.setShowSoftInputOnFocus(false);
+        } catch (Exception ignored) {}
+
+
+        //txtScan.setShowSoftInputOnFocus(false);
 
         tvStatus.setText("Ready — Scan a barcode");
         tvError.setVisibility(TextView.GONE);
@@ -107,18 +140,43 @@ public class PriceCheckActivity extends BaseActivity {
 
     /** Submit when Enter/Tab/Space is pressed */
     private void setupKeyListener() {
-        txtScan.setOnKeyListener((v, keyCode, event) -> {
+        txtScan.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                boolean imeAction =
+                    actionId == EditorInfo.IME_ACTION_DONE
+                            || actionId == EditorInfo.IME_ACTION_GO
+                            || actionId == EditorInfo.IME_ACTION_SEND
+                            || actionId == EditorInfo.IME_ACTION_SEARCH
+                            || actionId == EditorInfo.IME_ACTION_NEXT
+                            || actionId == EditorInfo.IME_ACTION_UNSPECIFIED; // some keyboards use this
 
+                    if(imeAction){
+                        final String code = txtScan.getText().toString().trim();
+                        android.util.Log.d("SCAN", "Submit: [" + code + "]");
+
+                        if (!code.isEmpty()) {
+                            handleScannedText(code);
+                        }
+
+                        // Clear and refocus for next scan
+                        txtScan.setText("");
+                        keepFocusOnScanBox();
+                    }
+                //System.out.println(i);
+
+                return false;
+            }
+        });
+
+        txtScan.setOnKeyListener((v, keyCode, event) -> {
             Timer.cancel();
             Timer.start();
             Description.setText("");
-            Rate.setText("");
-
-
+            Rate.setText("—");
 
             if (event.getAction() != KeyEvent.ACTION_DOWN)
                 return false;
-
             // Log only meaningful events
             if (keyCode == KeyEvent.KEYCODE_ENTER ||
                     keyCode == KeyEvent.KEYCODE_TAB ||
@@ -148,7 +206,16 @@ public class PriceCheckActivity extends BaseActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.price_checker_menu,menu);
+
+        //MenuInflater inflater = getMenuInflater();
+        //inflater.inflate(R.menu.main_menu,menu);
+        ConnectionMenu = menu.findItem(R.id.mnu_net);
+        DataRepository.refreshConnectionMenu();
         return true;
+
+
+
+        //return true;
     }
 
     public String PinNumber = null;
@@ -181,8 +248,9 @@ public class PriceCheckActivity extends BaseActivity {
         tvStatus.setText("Checking price…");
         Description.setText("");
         Rate.setText("—");
-
-        queryPriceWithExistingService(barcode);
+        String finalBarcode = barcode;
+        if(finalBarcode.startsWith("#"))finalBarcode = finalBarcode.substring(1);
+        queryPriceWithExistingService(finalBarcode);
     }
 
     /** Uses your existing service exactly as requested */
@@ -350,7 +418,7 @@ public class PriceCheckActivity extends BaseActivity {
         public void onFinish() {
             Activity.Description.setText("");
             Activity.txtScan.setText("");
-            Activity.Rate.setText("");
+            Activity.Rate.setText("—");
             System.out.println("Timer finish");
 
 

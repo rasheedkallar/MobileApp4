@@ -35,11 +35,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintWidth_percent="0.90">
 
+
         <EditText
             android:id="@+id/txtScan"
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:layout_weight="1"
+
             android:hint="Scan or type barcode"
             android:textColor="@android:color/white"
             android:textColorHint="#55FFFFFF"
@@ -47,10 +49,13 @@
             android:padding="12dp"
             android:textSize="20sp"
             android:singleLine="true"
-            android:inputType="textVisiblePassword|textNoSuggestions"
-            android:imeOptions="actionDone"
-            android:importantForAutofill="no"
-             />
+            android:maxLines="1"
+            android:inputType="text|number|textVisiblePassword|textNoSuggestions"
+
+            android:imeOptions="actionDone|flagNoExtractUi"
+
+            android:importantForAutofill="no" />
+
 
         <ImageButton
             android:id="@+id/btnKeyboard"
