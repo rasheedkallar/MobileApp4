@@ -367,6 +367,10 @@ public class PriceCheckActivity extends BaseActivity {
                         return null;
                     }
                 }, Activity);
+
+
+
+
             }
             catch (Exception e) {
                 System.out.println(e.getMessage());
