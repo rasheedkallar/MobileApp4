@@ -1,6 +1,7 @@
 package com.example.myapplication.Data;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.SystemClock;
 import android.text.SpannableString;
@@ -64,14 +65,14 @@ public class DataRepository {
     private static final String KEY_SETTINGS = "Settings";
 
     private static final String KEY_ACTIVE_URL = "active_base_url";
-    private final SecureStore store;
+    //private final SecureStore store;
     private final Gson gson = new Gson();
 
     public  static MobileConnection getCurrentConnection(){
         return  CurrentConnection;
     }
 
-    public static void ChooseBestConnection(Context context,java.util.List<DataRepository.MobileConnection> list, Function<DataRepository.MobileConnection,Void> callBack){
+    public static void ChooseBestConnection(BaseActivity context,java.util.List<DataRepository.MobileConnection> list, Function<DataRepository.MobileConnection,Void> callBack){
 
 
         for (DataRepository.MobileConnection mc : list) {
@@ -148,9 +149,9 @@ public class DataRepository {
 
     }
 
-    public DataRepository(Context ctx) {
-        this.store = new SecureStore(ctx);
-    }
+    //public DataRepository(Context ctx) {
+    //    this.store = new SecureStore(ctx);
+    //}
 
 
     public static class  Settings{
@@ -229,7 +230,7 @@ public class DataRepository {
 
 
 
-        public void  ValidateConnection(Context context,Function<Boolean,Void> callBack){
+        public void  ValidateConnection(BaseActivity context,Function<Boolean,Void> callBack){
             MobileConnection connection = this;
 
 
@@ -305,52 +306,73 @@ public class DataRepository {
 
     /* ----------------------- Persistence ----------------------- */
 
-    public List<MobileConnection> getSavedConnections() {
-        String json = store.getString(KEY_CONNECTIONS, null);
+    public List<MobileConnection> getSavedConnections(BaseActivity context) {
+        SharedPreferences sharedPref = context.getSharedPreferences(KEY_CONNECTIONS,Context.MODE_PRIVATE);
+        String json = sharedPref.getString(KEY_CONNECTIONS, null);
         if (TextUtils.isEmpty(json)) return new ArrayList<>();
         Type t = new TypeToken<List<MobileConnection>>(){}.getType();
         return gson.fromJson(json, t);
     }
 
-    public Settings getSavedSettings() {
-        String json = store.getString(KEY_SETTINGS, null);
+    public Settings getSavedSettings(BaseActivity context) {
+
+        SharedPreferences sharedPref = context.getSharedPreferences(KEY_SETTINGS,Context.MODE_PRIVATE);
+        String json = sharedPref.getString(KEY_SETTINGS, null);
         if (TextUtils.isEmpty(json)) return new Settings();
-        Type t = new TypeToken<Settings>(){}.getType();
-        return gson.fromJson(json, t);
+        try{
+            Type t = new TypeToken<Settings>(){}.getType();
+            return gson.fromJson(json, t);
+        }
+        catch (Exception e){
+            return new Settings();
+        }
+
     }
 
+    public List<Company> getSavedCompanies(BaseActivity context) {
 
-    public void saveConnections(List<MobileConnection> list) {
-        store.putString(KEY_CONNECTIONS, gson.toJson(list));
-    }
-
-    public void saveSettings(Settings settings) {
-
-        String json = gson.toJson(settings);
-
-        store.putString(KEY_SETTINGS, json);
-    }
-
-    public List<Company> getSavedCompanies() {
-        String json = store.getString(KEY_COMPANIES, null);
+        SharedPreferences sharedPref = context.getSharedPreferences(KEY_COMPANIES,Context.MODE_PRIVATE);
+        String json = sharedPref.getString(KEY_COMPANIES, null);
         if (TextUtils.isEmpty(json)) return new ArrayList<>();
         Type t = new TypeToken<List<Company>>(){}.getType();
         return gson.fromJson(json, t);
     }
 
-    public void saveCompanies(List<Company> list) {
-        store.putString(KEY_COMPANIES, gson.toJson(list));
+
+    public void saveConnections(List<MobileConnection> list, BaseActivity context) {
+        SharedPreferences sharedPref = context.getSharedPreferences(KEY_CONNECTIONS,Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(KEY_CONNECTIONS, gson.toJson(list));
+        editor.apply();
+    }
+
+    public void saveSettings(Settings settings, BaseActivity context) {
+
+        SharedPreferences sharedPref = context.getSharedPreferences(KEY_SETTINGS,Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(KEY_SETTINGS, gson.toJson(settings));
+        editor.apply();
     }
 
 
-    public String getActiveBaseUrl() {
-        return store.getString(KEY_ACTIVE_URL, null);
+
+    public void saveCompanies(List<Company> list,  BaseActivity context) {
+
+        SharedPreferences sharedPref = context.getSharedPreferences(KEY_COMPANIES,Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(KEY_COMPANIES, gson.toJson(list));
+        editor.apply();
     }
 
-    public void setActiveBaseUrl(String baseUrl) {
-        if (baseUrl != null) baseUrl = normalizeBase(baseUrl);
-        store.putString(KEY_ACTIVE_URL, baseUrl);
-    }
+
+    //public String getActiveBaseUrl() {
+    //    return store.getString(KEY_ACTIVE_URL, null);
+    //}
+
+    //public void setActiveBaseUrl(String baseUrl) {
+    //    if (baseUrl != null) baseUrl = normalizeBase(baseUrl);
+    //    store.putString(KEY_ACTIVE_URL, baseUrl);
+    //}
 
     /* ----------------------- URL helpers ----------------------- */
 

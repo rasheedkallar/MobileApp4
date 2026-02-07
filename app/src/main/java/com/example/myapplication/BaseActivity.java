@@ -142,7 +142,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             DataRepository.CurrentSettings.IconButtonWidth = actionButtonWidth.getValue();
             DataRepository.CurrentSettings.AppMode = appMode.getValue();
             DataRepository.CurrentSettings.Company = company.getValue();
-            new DataRepository(this.getContext()).saveSettings(DataRepository.CurrentSettings);
+            new DataRepository().saveSettings(DataRepository.CurrentSettings,getRootActivity());
             DataRepository.setCurrentConnection(null);
             if(DataRepository.CurrentSettings.Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
                 for (DataRepository.Company c : DataRepository.Companies) {
@@ -185,9 +185,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
 
 
-        DataRepository.Companies = new DataRepository(this).getSavedCompanies();
-        DataRepository.Connections = new DataRepository(this).getSavedConnections();
-        DataRepository.CurrentSettings = new DataRepository(this).getSavedSettings();
+        DataRepository.Companies = new DataRepository().getSavedCompanies(this);
+        DataRepository.Connections = new DataRepository().getSavedConnections(this);
+        DataRepository.CurrentSettings = new DataRepository().getSavedSettings(this);
         MenuBar = getSupportActionBar();
         if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
             new DataService(this).GetCompanies(null);
@@ -254,7 +254,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
             if (result.getResultCode() == Activity.RESULT_OK) {
                 DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                 String newFileName = dateFormat.format(new Date());
-                new DataService(getBaseContext()).upload(image_file, newFileName, image_entityName,  image_entity_guid,image_fileGroup, null, new Function<JSONObject, Void>() {
+                new DataService(this).upload(image_file, newFileName, image_entityName,  image_entity_guid,image_fileGroup, null, new Function<JSONObject, Void>() {
                     @Override
                     public Void apply(JSONObject lookup) {
                         Bitmap imageBitmap = null;
@@ -296,7 +296,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
                     }
                     DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
                     String newFileName = dateFormat.format(new Date());
-                    new DataService(getBaseContext()).upload(file, newFileName, image_entityName, image_entity_guid,image_fileGroup, null, new Function<JSONObject, Void>() {
+                    new DataService(this).upload(file, newFileName, image_entityName, image_entity_guid,image_fileGroup, null, new Function<JSONObject, Void>() {
                         @Override
                         public Void apply(JSONObject lookup) {
                             onCapturedImage( image_action ,imageBitmap,image_entityName,image_fileGroup,image_entity_guid,lookup);

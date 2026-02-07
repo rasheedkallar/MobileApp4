@@ -227,7 +227,7 @@ public class PriceCheckActivity extends BaseActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
-        Context context = this  ;
+        BaseActivity context = this  ;
 
         PopupPassword pib = new PopupPassword();
         pib.setArgs(new PopupPassword.PopupPasswordArgs( ));
@@ -298,7 +298,7 @@ public class PriceCheckActivity extends BaseActivity {
 
     /** Uses your existing service exactly as requested */
     private void ResetConnections(){
-        Context context = this  ;
+        BaseActivity context = this  ;
 
         new DataService(context).GetConnections(new Function<List<DataRepository.MobileConnection>, Void>() {
             @Override
@@ -309,6 +309,8 @@ public class PriceCheckActivity extends BaseActivity {
         });
     }
     private void queryPriceWithExistingService(String barcode) {
+        //BaseActivity context = this;
+
 
         //ClearTimer ThisTimer  = Timer;
 
@@ -317,7 +319,7 @@ public class PriceCheckActivity extends BaseActivity {
             param.put("param1", "PriceChecker");
             param.put("param2", barcode);
 
-            new DataService(getBaseContext()).postForExecuteList(
+            new DataService(this).postForExecuteList(
                     "sp_DataInspection",
                     param,
 
@@ -416,7 +418,7 @@ public class PriceCheckActivity extends BaseActivity {
 
 
                 param.put("expiryDate",now.plusMinutes(10));
-                new DataService(getBaseContext()).postForExecuteList("sp_UpdateMonitorStatus", param, new Function<JSONArray, Void>() {
+                new DataService((BaseActivity) getBaseContext()).postForExecuteList("sp_UpdateMonitorStatus", param, new Function<JSONArray, Void>() {
                     @Override
                     public Void apply(JSONArray jsonArray) {
                         System.out.println(jsonArray.toString());

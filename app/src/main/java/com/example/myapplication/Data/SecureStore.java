@@ -1,4 +1,7 @@
-package com.example.myapplication.Data;
+/*
+
+
+ackage com.example.myapplication.Data;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -42,3 +45,5 @@ public class SecureStore {
         return s == null ? null : gson.fromJson(s, cls);
     }
 }
+
+ */

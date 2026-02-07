@@ -39,7 +39,7 @@ public  class AccountReconciliation extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if(savedInstanceState == null){
-            new DataService(getBaseContext()).postForList("AccDefaults[]",
+            new DataService(this).postForList("AccDefaults[]",
             "it0=> new{it0.AccLedger.Id,it0.AccLedger.Name,it0.AccLedger.Balance, it0.AccLedger." + Select + " as AccTransactionLines}",
             "Name = \"Ledger Monitor\" or Name = \"Ledger Monitor_" + DataRepository.CurrentSettings.User + "\"",
             "AccLedger.Name",

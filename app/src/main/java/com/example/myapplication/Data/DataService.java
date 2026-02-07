@@ -35,16 +35,17 @@ import java.util.function.Function;
 
 public class DataService {
 
-    private final Context appContext;
+    private  BaseActivity Context;
     private final DataRepository connRepo;
 
-    public DataService(Context ctx){
-        if(ctx == null){
-            throw new IllegalArgumentException("Context cannot be null");
-        }
+    public DataService(BaseActivity context){
+        //if(ctx == null){
+        //    throw new IllegalArgumentException("Context cannot be null");
+        //}
 
-        this.appContext = ctx.getApplicationContext();
-        this.connRepo = new DataRepository(appContext);
+        //this.appContext = ctx.getApplicationContext();
+        this.Context = context;
+        this.connRepo = new DataRepository();
     }
     public  void  GetConnections(Function<List<DataRepository.MobileConnection>,Void> callBack) {
         String fullUrl = "https://api.greenleafuae.com/api/MobileApi/GetMobileConnections";
@@ -58,9 +59,9 @@ public class DataService {
                         DataRepository.Connections = list;
                         System.out.println(fullUrl + "-"  + list.size());
                         DataRepository.ConnectionsRefreshDate = new Date();
-                        connRepo.saveConnections(list);
+                        connRepo.saveConnections(list,Context);
                         if(DataRepository.getCurrentConnection() == null){
-                            DataRepository.ChooseBestConnection(appContext,DataRepository.Connections,null);
+                            DataRepository.ChooseBestConnection(Context,DataRepository.Connections,null);
                         }
                         if(callBack != null) callBack.apply(DataRepository.Connections);
                         return null; // IMPORTANT: Function<..., Void> must return null
@@ -68,7 +69,7 @@ public class DataService {
                     (String error) -> {
                         if (callBack != null) callBack.apply(null);
                         if(DataRepository.getCurrentConnection() == null){
-                            DataRepository.ChooseBestConnection(appContext,DataRepository.Connections,null);
+                            DataRepository.ChooseBestConnection(Context,DataRepository.Connections,null);
                         }
                         return null; // IMPORTANT: Function<..., Void> must return null
                     }
@@ -93,7 +94,7 @@ public class DataService {
                 convertResult(token,json,(java.util.List<DataRepository.Company> list) -> {
                     DataRepository.Companies = list;
                     System.out.println(fullUrl + "-"  + list.size());
-                    connRepo.saveCompanies(list);
+                    connRepo.saveCompanies(list,Context);
                     DataRepository.CompaniesRefreshDate = new Date();
                     if(DataRepository.CurrentSettings.Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
                         for (DataRepository.Company c : DataRepository.Companies) {
@@ -131,12 +132,12 @@ public class DataService {
             return;
         }
         else if(DataRepository.Connections == null || DataRepository.Connections.isEmpty()){
-            DataRepository.Connections = connRepo.getSavedConnections();
+            DataRepository.Connections = connRepo.getSavedConnections(Context);
             if(DataRepository.Connections == null || DataRepository.Connections.size() == 0 ){
                 GetConnections(new Function<List<DataRepository.MobileConnection>, Void>() {
                     @Override
                     public Void apply(List<DataRepository.MobileConnection> mobileConnections) {
-                        DataRepository.ChooseBestConnection(appContext,DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+                        DataRepository.ChooseBestConnection(Context,DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
                             DataRepository.setCurrentConnection(mc);
                             if(callBack !=null)callBack.apply(DataRepository.getCurrentConnection());
                             return null;
@@ -146,7 +147,7 @@ public class DataService {
                 });
             }
             else{
-                DataRepository.ChooseBestConnection(appContext, DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+                DataRepository.ChooseBestConnection(Context, DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
                     DataRepository.setCurrentConnection(mc);
                     if(callBack !=null)callBack.apply(DataRepository.getCurrentConnection());
                     return null;
@@ -163,7 +164,7 @@ public class DataService {
             }
         }
         else{
-            DataRepository.ChooseBestConnection(appContext, DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
+            DataRepository.ChooseBestConnection(Context, DataRepository.Connections, (DataRepository.MobileConnection mc) -> {
                 DataRepository.setCurrentConnection(mc);
                 if(callBack !=null)callBack.apply(DataRepository.getCurrentConnection());
                 return null;
@@ -235,13 +236,13 @@ public class DataService {
                             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                                 DataRepository.CurrentConnectionLastCall = new Date();
                                 if (!connection.Valid)
-                                    connection.ValidateConnection(appContext, null);
+                                    connection.ValidateConnection(Context, null);
                                 response.onSuccess(statusCode, headers, responseBody);
                             }
 
                             @Override
                             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                                connection.ValidateConnection(appContext, null);
+                                connection.ValidateConnection(Context, null);
                                 String msg = ServerErrorExtractor.extractError(responseBody);
                                 System.out.println("Error on : " + mc.url + "/api/" + url + " msg : " + msg);
                                 response.onFailure(statusCode, headers, responseBody, error);

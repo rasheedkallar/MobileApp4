@@ -127,7 +127,7 @@ public class Item {
         public void AddControls(LinearLayout container) {
             //Long invCheckInLineId = getArgs().getInvCheckInLineId();
             String s ="it0 => new{it0.Id,it0.Description,it0.InvItemUnits.OrderBy(Fraction).Select(it1 => new {it1.Id,it1.ItemNumber + \" \" + it1.Code + \" \" + it1.Fraction as Unit,it1.InvItemBarcodes.OrderByDescending(Id).Select(it2 => new{it2.Id,it2.Code}) as InvItemBarcodes}) as InvItemUnits}";
-            new DataService(getContext()).postForSelect(getArgs().getPath(), s, jsonObject -> {
+            new DataService(getRootActivity()).postForSelect(getArgs().getPath(), s, jsonObject -> {
                 try{
                     Title.setText(jsonObject.getString("Description"));
                     JSONArray units = (JSONArray)jsonObject.get("InvItemUnits");

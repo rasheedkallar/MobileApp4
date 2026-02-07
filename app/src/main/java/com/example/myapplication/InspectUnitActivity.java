@@ -280,7 +280,7 @@ public class InspectUnitActivity extends BaseActivity {
                 public boolean onItemSelected(TableRow row, JSONObject data, DataService.Lookup lookup) {
 
                     if(lookup != null){
-                        new DataService(getBaseContext()).postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(it1=> it1.Id = " + lookup.getId() + ").Select(it1=> it1.InvItem).FirstOrDefault()", null, array -> {
+                        new DataService((BaseActivity)getBaseContext()).postForList("InvItems[]", Select, "it0=> it0 = @0.InvItemUnits.Where(it1=> it1.Id = " + lookup.getId() + ").Select(it1=> it1.InvItem).FirstOrDefault()", null, array -> {
                             try {
                                 SearchItem(array.getJSONObject(0),lookup.getId());
                             } catch (JSONException e) {
@@ -298,7 +298,7 @@ public class InspectUnitActivity extends BaseActivity {
                         String text = editor.getText().toString().trim();
                         if(text != null && text.length() !=0){
 
-                            new DataService(getBaseContext()).getList("MobileApi/Get?keyWords=" + text, array -> {
+                            new DataService((BaseActivity) getBaseContext()).getList("MobileApi/Get?keyWords=" + text, array -> {
                                 Popup.refreshDetailedView(array);
                                 return null;
                             }, getBaseContext());
@@ -344,7 +344,7 @@ public class InspectUnitActivity extends BaseActivity {
                             RequestParams rp = new RequestParams();
                             rp.add("Barcode",barcode);
                             rp.add("Select",Select);
-                            new DataService(getBaseContext()).postForObject("MobileApi/GetItemByBarcode", rp, jsonObject -> {
+                            new DataService((BaseActivity) getBaseContext()).postForObject("MobileApi/GetItemByBarcode", rp, jsonObject -> {
                                 Long unitId = null;
                                 try {
                                     if(jsonObject == null || jsonObject.equals(JSONObject.NULL)){
