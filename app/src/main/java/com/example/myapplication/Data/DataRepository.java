@@ -72,11 +72,14 @@ public class DataRepository {
     }
 
     public static void ChooseBestConnection(Context context,java.util.List<DataRepository.MobileConnection> list, Function<DataRepository.MobileConnection,Void> callBack){
+
+
         for (DataRepository.MobileConnection mc : list) {
             mc.Status = "ForBestPick";
             mc.ValidateConnection(context, new Function<Boolean, Void>() {
                 @Override
                 public Void apply(Boolean aBoolean) {
+
                     RespondBestIfAllConnectionValidate(list, new Function<MobileConnection, Void>() {
                         @Override
                         public Void apply(MobileConnection mobileConnection) {

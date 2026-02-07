@@ -203,6 +203,7 @@ public class DataService {
                 public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                     String msg = ServerErrorExtractor.extractError(responseBody);
                     System.out.println("Token retrieve : " + mc.url + "/api/MobileApi/GetToken" + " msg : "  + msg);
+                    if(callBack !=null)callBack.apply(null);
 
                 }
             },null,10000);
@@ -214,26 +215,39 @@ public class DataService {
             @Override
             public Void apply(DataRepository.MobileConnection connection) {
                 MakeSureToken(connection,mc -> {
-                    Map<String, String> headers = null;
-                    if(mc.hasRecentToken(24 * 60 * 60 * 6)){
-                        headers = new HashMap<>();
-                        headers.put("Authorization", "Bearer " + mc.getToken());   // same as your C# DefaultRequestHeaders.Authorization
+                    if(mc == null){
+                        String errorMessage = "Token retrieve fails";
+                        response.onFailure(
+                                400,                   // statusCode
+                                null,                  // headers
+                                errorMessage.getBytes(), // responseBody as bytes
+                                null                   // error
+                        );
                     }
-                    httpAction(type,mc.url + "/api/" + url,params,new AsyncHttpResponseHandler() {
-                        @Override
-                        public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                            DataRepository.CurrentConnectionLastCall = new Date();
-                            if(!connection.Valid)connection.ValidateConnection(appContext,null);
-                            response.onSuccess(statusCode,headers,responseBody);
+                    else {
+                        Map<String, String> headers = null;
+                        if (mc.hasRecentToken(24 * 60 * 60 * 6)) {
+                            headers = new HashMap<>();
+                            headers.put("Authorization", "Bearer " + mc.getToken());   // same as your C# DefaultRequestHeaders.Authorization
                         }
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                            connection.ValidateConnection(appContext,null);
-                            String msg = ServerErrorExtractor.extractError(responseBody);
-                            System.out.println("Error on : " + mc.url + "/api/" + url + " msg : "  + msg);
-                            response.onFailure(statusCode,headers,responseBody,error);
-                        }
-                    },headers);
+                        httpAction(type, mc.url + "/api/" + url, params, new AsyncHttpResponseHandler() {
+                            @Override
+                            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                                DataRepository.CurrentConnectionLastCall = new Date();
+                                if (!connection.Valid)
+                                    connection.ValidateConnection(appContext, null);
+                                response.onSuccess(statusCode, headers, responseBody);
+                            }
+
+                            @Override
+                            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                                connection.ValidateConnection(appContext, null);
+                                String msg = ServerErrorExtractor.extractError(responseBody);
+                                System.out.println("Error on : " + mc.url + "/api/" + url + " msg : " + msg);
+                                response.onFailure(statusCode, headers, responseBody, error);
+                            }
+                        }, headers);
+                    }
                     return null;
                 });
                 return null;

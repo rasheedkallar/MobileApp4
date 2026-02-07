@@ -82,6 +82,8 @@ public class Control {
     public static String ACTION_SAVE= "Save";
     public static int CONTROL_SIZE_DOUBLE = -20;
     public static int CONTROL_SIZE_SINGLE = -10;
+
+    public static int CONTROL_SIZE_FULL = -1;
     public static String AGGREGATE_SUM = "Sum";
     public static String AGGREGATE_AVERAGE = "Average";
     public static String AGGREGATE_COUNT = "Count";

@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.KeyEvent;
@@ -22,6 +23,8 @@ import com.example.myapplication.Data.DataRepository;
 import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.model.PopupBase;
+import com.example.myapplication.model.PopupHtml;
+import com.example.myapplication.model.PopupLookup;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -31,7 +34,9 @@ import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -172,8 +177,8 @@ public class PriceCheckActivity extends BaseActivity {
         txtScan.setOnKeyListener((v, keyCode, event) -> {
             Timer.cancel();
             Timer.start();
-            Description.setText("");
-            Rate.setText("—");
+            //Description.setText("");
+            //Rate.setText("—");
 
             if (event.getAction() != KeyEvent.ACTION_DOWN)
                 return false;
@@ -222,14 +227,52 @@ public class PriceCheckActivity extends BaseActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
+        Context context = this  ;
+
         PopupPassword pib = new PopupPassword();
         pib.setArgs(new PopupPassword.PopupPasswordArgs( ));
         pib.setOnDoOk(new Function<Void, Boolean>() {
             @Override
             public Boolean apply(Void unused) {
                 if(pib.PasswordInput.getValue().equals("76167616")){
-                    SettingsPopupForm ps = new SettingsPopupForm();
-                    ps.show(getSupportFragmentManager(),null);
+
+                    if(item.getItemId() == R.id.mnu_net){
+                        List<DataService.Lookup> lookups = new ArrayList<>();
+
+                        for (int i = 0; i < DataRepository.Connections.size(); i++) {
+                            DataService.Lookup lookup = new DataService.Lookup();
+                            lookup.setId((long)i);
+                            lookup.setName(DataRepository.Connections.get(i).name);
+                            lookups.add(lookup);
+                        }
+                        PopupLookup pl = PopupLookup.create("Select Connection",lookups,0L,(connection)->{
+                            if(connection != null){
+                                int index = (int)(long) connection.getId();
+                                DataRepository.MobileConnection mc = DataRepository.Connections.get(index);
+                                mc.ValidateConnection(context, new Function<Boolean, Void>() {
+                                    @Override
+                                    public Void apply(Boolean aBoolean) {
+                                        DataRepository.setCurrentConnection(mc);
+                                        Intent intent = new Intent(getBaseContext(), MainActivity.class); // the activity to launch if logged in
+                                        startActivity(intent);
+                                        finish();
+                                        return null;
+                                    }
+                                });
+                            }
+                            return true;
+                        });
+                        pl.show(getSupportFragmentManager(),null);
+                    }
+                    else {
+
+
+                        SettingsPopupForm ps = new SettingsPopupForm();
+                        ps.show(getSupportFragmentManager(), null);
+                    }
+                }
+                else{
+                    PopupHtml.create("Pin Number Error","Invalid pin number").show(getSupportFragmentManager(),null);
                 }
                 return true;
             }
@@ -254,6 +297,17 @@ public class PriceCheckActivity extends BaseActivity {
     }
 
     /** Uses your existing service exactly as requested */
+    private void ResetConnections(){
+        Context context = this  ;
+
+        new DataService(context).GetConnections(new Function<List<DataRepository.MobileConnection>, Void>() {
+            @Override
+            public Void apply(List<DataRepository.MobileConnection> mobileConnections) {
+                DataRepository.ChooseBestConnection(context    ,DataRepository.Connections, null);
+                return null;
+            }
+        });
+    }
     private void queryPriceWithExistingService(String barcode) {
 
         //ClearTimer ThisTimer  = Timer;
@@ -312,6 +366,7 @@ public class PriceCheckActivity extends BaseActivity {
                     // onError(String)
                     new Function<String, Void>() {
                         @Override public Void apply(String err) {
+                            ResetConnections();
                             runOnUiThread(() -> showError("Server error"));
                             return null;
                         }
@@ -345,6 +400,8 @@ public class PriceCheckActivity extends BaseActivity {
         @Override
         public void onTick(long l) {
 
+
+
             JSONObject param = new JSONObject();
             try {
                 LocalDateTime now = LocalDateTime.now();
@@ -363,24 +420,90 @@ public class PriceCheckActivity extends BaseActivity {
                     @Override
                     public Void apply(JSONArray jsonArray) {
                         System.out.println(jsonArray.toString());
-
+                        ChooseBestConnection();
                         return null;
                     }
-                }, Activity);
-
-
-
-
+                }, new Function<String, Void>() {
+                    @Override
+                    public Void apply(String s) {
+                        new DataService(Activity).GetConnections(new Function<List<DataRepository.MobileConnection>, Void>() {
+                            @Override
+                            public Void apply(List<DataRepository.MobileConnection> mobileConnections) {
+                                ChooseBestConnection();
+                                return null;
+                            }
+                        });
+                        return null;
+                    }
+                });
             }
             catch (Exception e) {
                 System.out.println(e.getMessage());
             }
-
-
-
-
-            System.out.println("Monitor Tick");
         }
+        private void RespondBestIfAllConnectionValidate(java.util.List<DataRepository.MobileConnection> list,Function<DataRepository.MobileConnection, Void> callBack) {
+            boolean Compleated = true;
+
+            var current = DataRepository.getCurrentConnection();
+            for (DataRepository.MobileConnection mc : list) {
+                if(mc.ValidDate == null && Compleated) {
+                    Compleated = false;
+                }
+                if(mc.Valid && Compleated){
+                    if(current != mc)DataRepository.setCurrentConnection(mc);
+                    if(mc.Status.equals("ForBestPick")) {
+                        mc.Status = "BestConnection";
+                        System.out.println("Valid best Connection :" + mc.name + " " + mc.url);
+                        if(callBack != null)callBack.apply(mc);
+                    }
+                    return;
+                }
+                else if(mc.Valid){
+                    if(current != mc)DataRepository.setCurrentConnection(mc);
+                }
+            }
+            if(Compleated)System.out.println("No valid connection available");
+        }
+        private  void ChooseBestConnection(){
+
+            for (DataRepository.MobileConnection mc : DataRepository.Connections) {
+                mc.Status = "ForBestPick";
+                mc.ValidateConnection(Activity, new Function<Boolean, Void>() {
+                    @Override
+                    public Void apply(Boolean aBoolean) {
+
+                        RespondBestIfAllConnectionValidate(DataRepository.Connections, new Function<DataRepository.MobileConnection, Void>() {
+                            @Override
+                            public Void apply(DataRepository.MobileConnection mobileConnection) {
+                                //if(callBack != null)callBack.apply(mobileConnection);
+                                return null;
+                            }
+                        });
+                        return null;
+                    }
+                });
+            }
+
+
+
+
+
+
+            /*
+
+            System.out.println("Choosing best connection");
+
+            if(DataRepository.Connections == null || DataRepository.Connections.isEmpty() || DataRepository.ConnectionsRefreshDate == null || DataRepository.ConnectionsRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+                new DataService(Activity).GetConnections(null);
+            }
+            else if(DataRepository.getCurrentConnection() == null && DataRepository.CurrentSettings.Company != null){
+                DataRepository.ChooseBestConnection(Activity,DataRepository.Connections, null);
+            }
+
+             */
+        }
+
+
 
         @Override
         public void onFinish() {
@@ -404,6 +527,7 @@ public class PriceCheckActivity extends BaseActivity {
         @Override
         public void AddControls(LinearLayout container) {
             PasswordInput = Control.getEditTextControl("PinNUmber","Pin Number");
+            PasswordInput.setControlSize(Control.CONTROL_SIZE_FULL);
             PasswordInput.addView(container);
         }
     }
