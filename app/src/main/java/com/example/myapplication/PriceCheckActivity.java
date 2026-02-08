@@ -2,12 +2,14 @@ package com.example.myapplication;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -15,6 +17,7 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.Lifecycle;
@@ -52,6 +55,24 @@ public class PriceCheckActivity extends BaseActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+        );
+
+
+        // Block back
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // No-op, or show admin dialog
+            }
+        });
+
+
+
         MenuBar = getSupportActionBar();
         if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
             new DataService(this).GetCompanies(null);
@@ -59,13 +80,13 @@ public class PriceCheckActivity extends BaseActivity {
         else if(DataRepository.CurrentSettings.Company != null){
             for (DataRepository.Company c : DataRepository.Companies) {
                 if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
-                    DataRepository.setCurrentCompany(c);
+                    DataRepository.setCurrentCompany(c,this);
                     break;
                 }
             }
         }
         else{
-            DataRepository.setCurrentCompany(null);
+            DataRepository.setCurrentCompany(null,this);
         }
 
 
@@ -120,11 +141,21 @@ public class PriceCheckActivity extends BaseActivity {
         TimerCheckup.start();
     }
 
+
+
+
     @Override
     protected void onResume() {
         super.onResume();
         keepFocusOnScanBox();
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                startLockTask(); // Will prompt the first time if not whitelisted
+            } catch (IllegalStateException ignored) { }
+        }
     }
+
+
 
     /** Always keep focus on the scan box */
     private void keepFocusOnScanBox() {
@@ -189,7 +220,7 @@ public class PriceCheckActivity extends BaseActivity {
                     keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
 
                 final String code = txtScan.getText().toString().trim();
-                android.util.Log.d("SCAN", "Submit: [" + code + "]");
+                //android.util.Log.d("SCAN", "Submit: [" + code + "]");
 
                 if (!code.isEmpty()) {
                     handleScannedText(code);
@@ -549,7 +580,7 @@ public class PriceCheckActivity extends BaseActivity {
             Activity.Description.setText("");
             Activity.txtScan.setText("");
             Activity.Rate.setText("—");
-            System.out.println("Timer finish");
+            //System.out.println("Timer finish");
 
 
         }
@@ -557,7 +588,7 @@ public class PriceCheckActivity extends BaseActivity {
         @Override
         public void onTick(long duration) {
             //System.out.println("Timer tick");
-            System.out.println("Timer Tick");
+            //System.out.println("Timer Tick");
         }
     }
 

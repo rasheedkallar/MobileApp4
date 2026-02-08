@@ -147,13 +147,13 @@ public abstract class BaseActivity extends AppCompatActivity  {
             if(DataRepository.CurrentSettings.Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
                 for (DataRepository.Company c : DataRepository.Companies) {
                     if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
-                        DataRepository.setCurrentCompany(c);
+                        DataRepository.setCurrentCompany(c,getRootActivity());
                         break;
                     }
                 }
             }
             else{
-                DataRepository.setCurrentCompany(null);
+                DataRepository.setCurrentCompany(null,getRootActivity());
             }
             Intent intent = new Intent(getRootActivity(), MainActivity.class); // the activity to launch if logged in
             startActivity(intent);
@@ -182,13 +182,29 @@ public abstract class BaseActivity extends AppCompatActivity  {
                 ctrl.setRootActivity(this);
             }
         }
-
-
-
         DataRepository.Companies = new DataRepository().getSavedCompanies(this);
         DataRepository.Connections = new DataRepository().getSavedConnections(this);
         DataRepository.CurrentSettings = new DataRepository().getSavedSettings(this);
         MenuBar = getSupportActionBar();
+        BaseActivity context = this;
+
+        MakeSureCompanies(new Function<Boolean, Void>() {
+            @Override
+            public Void apply(Boolean aBoolean) {
+                if(aBoolean) {
+                    if (DataRepository.Connections == null || DataRepository.Connections.isEmpty() || DataRepository.ConnectionsRefreshDate == null || DataRepository.ConnectionsRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))) {
+                        new DataService(context).GetConnections(null);
+                    } else if (DataRepository.getCurrentConnection() == null && DataRepository.CurrentSettings.Company != null) {
+                        DataRepository.ChooseBestConnection(context, DataRepository.Connections, null);
+                    }
+                }
+                return null;
+            }
+        });
+
+
+        /*
+
         if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
             new DataService(this).GetCompanies(null);
         }
@@ -203,16 +219,21 @@ public abstract class BaseActivity extends AppCompatActivity  {
         else{
             DataRepository.setCurrentCompany(null);
         }
-        if(DataRepository.Connections == null || DataRepository.Connections.isEmpty() || DataRepository.ConnectionsRefreshDate == null || DataRepository.ConnectionsRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
-            new DataService(this).GetConnections(null);
-        }
-        else if(DataRepository.getCurrentConnection() == null && DataRepository.CurrentSettings.Company != null){
-            DataRepository.ChooseBestConnection(this,DataRepository.Connections, null);
-        }
+
+         */
+
+
+
+
+
+
+
 
         if(savedInstanceState != null) {
             Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
         }
+
+
         super.onCreate(savedInstanceState);
 
         Intent intent;
@@ -317,6 +338,79 @@ public abstract class BaseActivity extends AppCompatActivity  {
         }
     }
 
+    private void  MakeSureCompanies(Function<Boolean,Void> callBack){
+        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+            new DataService(this).GetCompanies(new Function<List<DataRepository.Company>, Void>() {
+                @Override
+                public Void apply(List<DataRepository.Company> companies) {
+                    if(companies == null || companies.isEmpty()) {
+                        if (callBack != null) callBack.apply(false);
+                    }
+                    else MakeSureCompany(callBack);
+                    return null;
+                }
+            });
+        }
+        else{
+            MakeSureCompany(callBack);
+
+            //if(DataRepository.Company != null)se
+        }
+    }
+
+
+
+    private  void MakeSureCompany(Function<Boolean,Void> callBack){
+        if(DataRepository.getCurrentCompany() != null) {
+            DataRepository.setCurrentCompany(DataRepository.getCurrentCompany(),this);
+            if(callBack != null)callBack.apply(true);
+        }
+        else if(DataRepository.Companies != null) {
+            if(DataRepository.CurrentSettings.Company != null){
+                for (DataRepository.Company c : DataRepository.Companies) {
+                    if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
+                        DataRepository.setCurrentCompany(c,this);
+                        if(callBack != null)callBack.apply(true);
+                        return;
+                    }
+                }
+            }
+            List<DataService.Lookup> lookups = new ArrayList<>();
+            for (int i = 0; i < DataRepository.Companies.size(); i++) {
+                DataService.Lookup lookup = new DataService.Lookup();
+                lookup.setId((long)i);
+                lookup.setName(DataRepository.Companies.get(i).name);
+                lookups.add(lookup);
+            }
+            PopupLookup pl = PopupLookup.create("Select Company",lookups,0L,(company)->{
+                if(company != null){
+                    int index = (int)(long) company.getId();
+                    DataRepository.Company com = DataRepository.Companies.get(index);
+                    DataRepository.CurrentSettings.Company = com.code;
+                    new DataRepository().saveSettings(DataRepository.CurrentSettings,this);
+                    DataRepository.setCurrentCompany(com,this);
+                    if(callBack != null) callBack.apply(true);
+                }
+                else{
+                    DataRepository.setCurrentCompany(null,this);
+                    if(callBack != null)callBack.apply(false);
+                }
+                return true;
+            });
+            var fragment = this.getSupportFragmentManager();
+            try {
+                pl.show(fragment,null);
+            }catch (Exception e) {
+                DataRepository.setCurrentCompany(null,this);
+                if(callBack != null)callBack.apply(false);
+            }
+        }
+        else{
+            DataRepository.setCurrentCompany(null,this);
+            if(callBack != null)callBack.apply(false);
+        }
+    }
+
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
@@ -344,6 +438,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
 
     }
+
+
+
 
     @Override
     public void onRestoreInstanceState(Bundle savedInstanceState) {
@@ -568,6 +665,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
                     SettingsPopupForm ps = new SettingsPopupForm();
                     ps.show(getSupportFragmentManager(), null);
                     return true;
+                case "Exit":
+                    exitAppCleanly();
+                    return true;
                 default:
                     super.onOptionsItemSelected(item);
                     return false;
@@ -575,5 +675,32 @@ public abstract class BaseActivity extends AppCompatActivity  {
             startActivity(intent);
         }
         return  true;
+    }
+
+    public void exitAppCleanly() {
+        // 1) Stop Lock Task (screen pinning) if active
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            try { stopLockTask(); } catch (IllegalStateException ignored) {}
+        }
+
+        // 2) Stop your timers / workers / services here
+        // Example:
+        // if (priceCheckerTimer != null) { priceCheckerTimer.cancel(); }
+        // WorkManager.getInstance(getApplicationContext()).cancelAllWorkByTag("pricechecker");
+        // stopService(new Intent(this, PriceCheckerService.class));
+
+        // 3) Finish all activities and remove the task from Recents
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            finishAndRemoveTask(); // finishes this activity and removes the task
+        } else {
+            finishAffinity();      // API 16+: close this and all parent activities
+            moveTaskToBack(true);  // push task to background (older devices)
+        }
+
+        // 4) OPTIONAL: Hard exit (use only if you must guarantee process ends)
+        // new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        //     android.os.Process.killProcess(android.os.Process.myPid());
+        //     System.exit(0);
+        // }, 150);
     }
 }

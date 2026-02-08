@@ -52,8 +52,8 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/mnu_test"
-        android:title="Test"
+        android:id="@+id/mnu_exit"
+        android:title="Exit"
         app:showAsAction="never" />
 
 </menu>

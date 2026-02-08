@@ -96,17 +96,6 @@ public class DataService {
                     System.out.println(fullUrl + "-"  + list.size());
                     connRepo.saveCompanies(list,Context);
                     DataRepository.CompaniesRefreshDate = new Date();
-                    if(DataRepository.CurrentSettings.Company != null && DataRepository.Companies != null && DataRepository.getCurrentCompany() == null){
-                        for (DataRepository.Company c : DataRepository.Companies) {
-                            if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
-                                DataRepository.setCurrentCompany(c);
-                                break;
-                            }
-                        }
-                    }
-                    else{
-                        DataRepository.setCurrentCompany(null);
-                    }
                     if(callBack != null) callBack.apply(DataRepository.Companies);
                     return null; // IMPORTANT: Function<..., Void> must return null
                 },
@@ -212,9 +201,13 @@ public class DataService {
     }
 
     public void httpEntityAction(String type, String url,RequestParams params,AsyncHttpResponseHandler response){
+        final BaseActivity context = this.Context;
+
         GetConnection(new Function<DataRepository.MobileConnection, Void>() {
             @Override
             public Void apply(DataRepository.MobileConnection connection) {
+
+
                 MakeSureToken(connection,mc -> {
                     if(mc == null){
                         String errorMessage = "Token retrieve fails";
@@ -224,6 +217,7 @@ public class DataService {
                                 errorMessage.getBytes(), // responseBody as bytes
                                 null                   // error
                         );
+                        if(DataRepository.getCurrentConnection() != null)DataRepository.getCurrentConnection().ValidateConnection(context,null);
                     }
                     else {
                         Map<String, String> headers = null;

@@ -34,19 +34,46 @@ public class DataRepository {
     public static DataRepository.Company getCurrentCompany(){
         return CurrentCompany;
     }
-    public static void setCurrentCompany(DataRepository.Company company){
+    public static void setCurrentCompany(DataRepository.Company company,BaseActivity context){
         CurrentCompany = company;
         if(BaseActivity.MenuBar != null){
             if(getCurrentCompany() == null){
+                setCurrentConnection(null);
                 BaseActivity.MenuBar.setTitle("Bytes Mobile");
+                SpannableString span = new SpannableString(BaseActivity.ConnectionMenu.getTitle());
+                span.setSpan(new ForegroundColorSpan(Color.RED), 0, span.length(), 0);
+                if(BaseActivity.ConnectionMenu != null) BaseActivity.ConnectionMenu.setTitle("Net");
+
             }
             else{
                 String companyName = DataRepository.getCurrentCompany().name;
                 BaseActivity.MenuBar.setTitle(companyName);
             }
         }
+        if(getCurrentConnection() != null)getCurrentConnection().ValidateConnection(context,null);
 
     }
+    public static void refreshConnectionMenu(){
+        if(BaseActivity.ConnectionMenu != null){
+            if (DataRepository.CurrentConnection == null) {
+                BaseActivity.ConnectionMenu.setTitle("Net");
+            } else {
+                BaseActivity.ConnectionMenu.setTitle(DataRepository.CurrentConnection.name);
+            }
+            // 2. Now build Spannable from the *new* title
+            SpannableString span = new SpannableString(BaseActivity.ConnectionMenu.getTitle());
+            // 3. Apply color
+            if (DataRepository.CurrentConnection != null &&
+                    DataRepository.CurrentConnection.Valid) {
+                span.setSpan(new ForegroundColorSpan(Color.GREEN), 0, span.length(), 0);
+            } else {
+                span.setSpan(new ForegroundColorSpan(Color.RED), 0, span.length(), 0);
+            }
+            // 4. Important: Set the spannable back to the menu item
+            BaseActivity.ConnectionMenu.setTitle(span);
+        }
+    }
+
     public static Date CurrentConnectionLastCall = null;
 
     public static   List<DataRepository.MobileConnection> Connections = null;
@@ -116,30 +143,12 @@ public class DataRepository {
             }
             else if(mc.Valid){
                 if(current != mc)DataRepository.setCurrentConnection(mc);
+                return;
             }
         }
         if(Compleated)System.out.println("No valid connection available");
     }
-    public static void refreshConnectionMenu(){
-        if(BaseActivity.ConnectionMenu != null){
-            if (DataRepository.CurrentConnection == null) {
-                BaseActivity.ConnectionMenu.setTitle("Net");
-            } else {
-                BaseActivity.ConnectionMenu.setTitle(DataRepository.CurrentConnection.name);
-            }
-            // 2. Now build Spannable from the *new* title
-            SpannableString span = new SpannableString(BaseActivity.ConnectionMenu.getTitle());
-            // 3. Apply color
-            if (DataRepository.CurrentConnection != null &&
-                    DataRepository.CurrentConnection.Valid) {
-                span.setSpan(new ForegroundColorSpan(Color.GREEN), 0, span.length(), 0);
-            } else {
-                span.setSpan(new ForegroundColorSpan(Color.RED), 0, span.length(), 0);
-            }
-            // 4. Important: Set the spannable back to the menu item
-            BaseActivity.ConnectionMenu.setTitle(span);
-        }
-    }
+
 
     public static void setCurrentConnection(MobileConnection connection){
 
@@ -272,7 +281,7 @@ public class DataRepository {
                     }
                     if(callBack != null)callBack.apply(false);
                 }
-            },null,1000);
+            },null,10000);
         }
 
 
@@ -307,19 +316,26 @@ public class DataRepository {
     /* ----------------------- Persistence ----------------------- */
 
     public List<MobileConnection> getSavedConnections(BaseActivity context) {
-        SharedPreferences sharedPref = context.getSharedPreferences(KEY_CONNECTIONS,Context.MODE_PRIVATE);
-        String json = sharedPref.getString(KEY_CONNECTIONS, null);
-        if (TextUtils.isEmpty(json)) return new ArrayList<>();
-        Type t = new TypeToken<List<MobileConnection>>(){}.getType();
-        return gson.fromJson(json, t);
+        try {
+
+            SharedPreferences sharedPref = context.getSharedPreferences(KEY_CONNECTIONS, Context.MODE_PRIVATE);
+            String json = sharedPref.getString(KEY_CONNECTIONS, null);
+            if (TextUtils.isEmpty(json)) return new ArrayList<>();
+            Type t = new TypeToken<List<MobileConnection>>() {
+            }.getType();
+            return gson.fromJson(json, t);
+        }
+        catch (Exception e){
+            return new ArrayList<>();
+        }
     }
 
     public Settings getSavedSettings(BaseActivity context) {
 
-        SharedPreferences sharedPref = context.getSharedPreferences(KEY_SETTINGS,Context.MODE_PRIVATE);
-        String json = sharedPref.getString(KEY_SETTINGS, null);
-        if (TextUtils.isEmpty(json)) return new Settings();
         try{
+            SharedPreferences sharedPref = context.getSharedPreferences(KEY_SETTINGS,Context.MODE_PRIVATE);
+            String json = sharedPref.getString(KEY_SETTINGS, null);
+            if (TextUtils.isEmpty(json)) return new Settings();
             Type t = new TypeToken<Settings>(){}.getType();
             return gson.fromJson(json, t);
         }
@@ -331,11 +347,18 @@ public class DataRepository {
 
     public List<Company> getSavedCompanies(BaseActivity context) {
 
-        SharedPreferences sharedPref = context.getSharedPreferences(KEY_COMPANIES,Context.MODE_PRIVATE);
-        String json = sharedPref.getString(KEY_COMPANIES, null);
-        if (TextUtils.isEmpty(json)) return new ArrayList<>();
-        Type t = new TypeToken<List<Company>>(){}.getType();
-        return gson.fromJson(json, t);
+        try {
+
+            SharedPreferences sharedPref = context.getSharedPreferences(KEY_COMPANIES, Context.MODE_PRIVATE);
+            String json = sharedPref.getString(KEY_COMPANIES, null);
+            if (TextUtils.isEmpty(json)) return new ArrayList<>();
+            Type t = new TypeToken<List<Company>>() {
+            }.getType();
+            return gson.fromJson(json, t);
+        }
+        catch (Exception e){
+            return new ArrayList<>();
+        }
     }
 
 
