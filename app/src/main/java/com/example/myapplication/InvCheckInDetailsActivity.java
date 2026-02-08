@@ -3,6 +3,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.InputType;
@@ -66,6 +67,10 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
     public static long  checkInId =0;
     public static JSONObject row = null;
     public static Double TotalAmount = 0d;
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         try {
@@ -618,6 +623,9 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             getButtons().add(3,new Control.ActionButton(Control.ACTION_CAMERA).setEnabled(false));
             getButtons().remove(getButton(Control.ACTION_REFRESH));
         }
+
+
+
         @Override
         public void refreshDetailedView(JSONArray data) {
             super.refreshDetailedView(data);

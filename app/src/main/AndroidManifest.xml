@@ -27,8 +27,18 @@
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
         <activity
-            android:name=".PriceCheckActivity" android:windowSoftInputMode="stateHidden"
-            android:exported="false" />
+            android:name=".PriceCheckActivity"
+            android:windowSoftInputMode="stateHidden"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:lockTaskMode="if_whitelisted"/>
+
+        <activity
+            android:name=".InvCheckInDetailsActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"
+
+            tools:ignore="LockedOrientationActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -66,11 +76,7 @@
         <activity
             android:name=".TestActivity"
             android:exported="false" />
-        <activity
-            android:name=".InvCheckInDetailsActivity"
-            android:screenOrientation="portrait"
-            android:exported="false"
-            tools:ignore="LockedOrientationActivity" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
