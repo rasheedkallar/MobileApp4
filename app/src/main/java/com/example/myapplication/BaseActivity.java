@@ -215,33 +215,6 @@ public abstract class BaseActivity extends AppCompatActivity  {
             }
         });
 
-
-        /*
-
-        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
-            new DataService(this).GetCompanies(null);
-        }
-        else if(DataRepository.CurrentSettings.Company != null){
-            for (DataRepository.Company c : DataRepository.Companies) {
-                if (c.code != null && c.code.equals(DataRepository.CurrentSettings.Company)) {
-                    DataRepository.setCurrentCompany(c);
-                    break;
-                }
-            }
-        }
-        else{
-            DataRepository.setCurrentCompany(null);
-        }
-
-         */
-
-
-
-
-
-
-
-
         if(savedInstanceState != null) {
             Controls = (ArrayList<Control.ControlBase>) savedInstanceState.getSerializable("Controls");
         }

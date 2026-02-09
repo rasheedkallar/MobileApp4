@@ -28,7 +28,6 @@ import java.util.function.Function;
 import cz.msebera.android.httpclient.Header;
 
 public class DataRepository {
-
     private static DataRepository.MobileConnection CurrentConnection = null;
     private static DataRepository.Company CurrentCompany = null;
     public static DataRepository.Company getCurrentCompany(){
@@ -50,8 +49,8 @@ public class DataRepository {
                 BaseActivity.MenuBar.setTitle(companyName);
             }
         }
-        if(getCurrentConnection() != null)getCurrentConnection().ValidateConnection(context,null);
-
+        MobileConnection cnn = getCurrentConnection();
+        if(cnn != null && (cnn.LastConnectionValidated == null || (System.currentTimeMillis() - cnn.LastConnectionValidated.getTime()) > 1000 * 60 * 10))getCurrentConnection().ValidateConnection(context,null);
     }
     public static void refreshConnectionMenu(){
         if(BaseActivity.ConnectionMenu != null){
@@ -73,22 +72,15 @@ public class DataRepository {
             BaseActivity.ConnectionMenu.setTitle(span);
         }
     }
-
     public static Date CurrentConnectionLastCall = null;
-
     public static   List<DataRepository.MobileConnection> Connections = null;
     public static   List<DataRepository.Company> Companies = null;
     public static   Date CompaniesRefreshDate = null;
     public static Date ConnectionsRefreshDate = null;
 
     public static Settings CurrentSettings = new Settings();
-
-
-
-
     private static final String KEY_CONNECTIONS = "connections";
     private static final String KEY_COMPANIES = "Companies";
-
     private static final String KEY_SETTINGS = "Settings";
 
     private static final String KEY_ACTIVE_URL = "active_base_url";
@@ -233,17 +225,11 @@ public class DataRepository {
             this.ValidDate = null;
         }
 
-
-
-
-
-
-
+        public Date LastConnectionValidated = null;
         public void  ValidateConnection(BaseActivity context,Function<Boolean,Void> callBack){
             MobileConnection connection = this;
-
-
             String fullUrl = url + "/api/MobileApi/Ping?company=" + DataRepository.CurrentSettings.Company;
+            LastConnectionValidated = new Date();
             new DataService(context).httpAction("GET",fullUrl,null, new AsyncHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
