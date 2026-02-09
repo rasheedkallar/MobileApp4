@@ -42,7 +42,6 @@ public class DataRepository {
                 SpannableString span = new SpannableString(BaseActivity.ConnectionMenu.getTitle());
                 span.setSpan(new ForegroundColorSpan(Color.RED), 0, span.length(), 0);
                 if(BaseActivity.ConnectionMenu != null) BaseActivity.ConnectionMenu.setTitle("Net");
-
             }
             else{
                 String companyName = DataRepository.getCurrentCompany().name;
@@ -77,7 +76,6 @@ public class DataRepository {
     public static   List<DataRepository.Company> Companies = null;
     public static   Date CompaniesRefreshDate = null;
     public static Date ConnectionsRefreshDate = null;
-
     public static Settings CurrentSettings = new Settings();
     private static final String KEY_CONNECTIONS = "connections";
     private static final String KEY_COMPANIES = "Companies";
@@ -90,10 +88,7 @@ public class DataRepository {
     public  static MobileConnection getCurrentConnection(){
         return  CurrentConnection;
     }
-
     public static void ChooseBestConnection(BaseActivity context,java.util.List<DataRepository.MobileConnection> list, Function<DataRepository.MobileConnection,Void> callBack){
-
-
         for (DataRepository.MobileConnection mc : list) {
             mc.Status = "ForBestPick";
             mc.ValidateConnection(context, new Function<Boolean, Void>() {
@@ -112,13 +107,8 @@ public class DataRepository {
             });
         }
     }
-
-
-
-
     private static void RespondBestIfAllConnectionValidate(java.util.List<DataRepository.MobileConnection> list,Function<DataRepository.MobileConnection, Void> callBack) {
         boolean Compleated = true;
-
         var current = getCurrentConnection();
         for (DataRepository.MobileConnection mc : list) {
             if(mc.ValidDate == null && Compleated) {
@@ -140,21 +130,10 @@ public class DataRepository {
         }
         if(Compleated)System.out.println("No valid connection available");
     }
-
-
     public static void setCurrentConnection(MobileConnection connection){
-
         CurrentConnection = connection;
         refreshConnectionMenu();
-
-
     }
-
-    //public DataRepository(Context ctx) {
-    //    this.store = new SecureStore(ctx);
-    //}
-
-
     public static class  Settings{
         public String IpAddress;
         public String User;
@@ -164,11 +143,7 @@ public class DataRepository {
         public int ButtonWidth = 200;
         public int AppMode;
         public String Company;
-
     }
-
-
-
     public static class Company {
         @SerializedName(value = "code", alternate = {"Code"})
         public String code;
@@ -204,13 +179,6 @@ public class DataRepository {
         /** When the Token was last retrieved on device (UTC recommended) */
 
         public static Date TokenRetrieveTime = null;
-
-
-
-
-        //public String TokenCompany = null;
-
-
         /** -------------------- Optional helpers -------------------- */
 
         /** Mark as valid now */
