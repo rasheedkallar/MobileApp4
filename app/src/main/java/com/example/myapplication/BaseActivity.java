@@ -192,10 +192,23 @@ public abstract class BaseActivity extends AppCompatActivity  {
             @Override
             public Void apply(Boolean aBoolean) {
                 if(aBoolean) {
-                    if (DataRepository.Connections == null || DataRepository.Connections.isEmpty() || DataRepository.ConnectionsRefreshDate == null || DataRepository.ConnectionsRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))) {
-                        new DataService(context).GetConnections(null);
-                    } else if (DataRepository.getCurrentConnection() == null && DataRepository.CurrentSettings.Company != null) {
+                    if (DataRepository.Connections == null || DataRepository.Connections.isEmpty() ) {
+                        new DataService(context).GetConnections(new Function<List<DataRepository.MobileConnection>, Void>() {
+                            @Override
+                            public Void apply(List<DataRepository.MobileConnection> mobileConnections) {
+                                if(DataRepository.getCurrentConnection() == null){
+                                    DataRepository.ChooseBestConnection(context,DataRepository.Connections,null);
+                                }
+
+                                return null;
+                            }
+                        });
+                    }
+                    else if (DataRepository.getCurrentConnection() == null) {
                         DataRepository.ChooseBestConnection(context, DataRepository.Connections, null);
+                        if(DataRepository.ConnectionsRefreshDate == null || DataRepository.ConnectionsRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+                            new DataService(context).GetConnections(null);
+                        }
                     }
                 }
                 return null;
@@ -339,7 +352,7 @@ public abstract class BaseActivity extends AppCompatActivity  {
     }
 
     private void  MakeSureCompanies(Function<Boolean,Void> callBack){
-        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty() || DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+        if(DataRepository.Companies == null || DataRepository.Companies.isEmpty()){
             new DataService(this).GetCompanies(new Function<List<DataRepository.Company>, Void>() {
                 @Override
                 public Void apply(List<DataRepository.Company> companies) {
@@ -353,6 +366,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
         }
         else{
             MakeSureCompany(callBack);
+            if(DataRepository.CompaniesRefreshDate == null || DataRepository.CompaniesRefreshDate.before(Date.from(Instant.now().minus(5, ChronoUnit.HOURS)))){
+                new DataService(this).GetCompanies(null);
+            }
 
             //if(DataRepository.Company != null)se
         }

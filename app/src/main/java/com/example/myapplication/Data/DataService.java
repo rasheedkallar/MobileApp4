@@ -60,17 +60,15 @@ public class DataService {
                         System.out.println(fullUrl + "-"  + list.size());
                         DataRepository.ConnectionsRefreshDate = new Date();
                         connRepo.saveConnections(list,Context);
-                        if(DataRepository.getCurrentConnection() == null){
-                            DataRepository.ChooseBestConnection(Context,DataRepository.Connections,null);
-                        }
+
                         if(callBack != null) callBack.apply(DataRepository.Connections);
                         return null; // IMPORTANT: Function<..., Void> must return null
                     },
                     (String error) -> {
                         if (callBack != null) callBack.apply(null);
-                        if(DataRepository.getCurrentConnection() == null){
-                            DataRepository.ChooseBestConnection(Context,DataRepository.Connections,null);
-                        }
+                        //if(DataRepository.getCurrentConnection() == null){
+                        //    DataRepository.ChooseBestConnection(Context,DataRepository.Connections,null);
+                        //}
                         return null; // IMPORTANT: Function<..., Void> must return null
                     }
                 );
