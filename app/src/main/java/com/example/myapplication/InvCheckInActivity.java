@@ -39,7 +39,7 @@ public  class InvCheckInActivity extends BaseActivity {
         }
         @Override
         protected String getWhere(String action){
-            return "Status == \"Draft\" or (CheckInTime >= " +  FilterControls.get(0).getQueryValue() + " and CheckInTime < " +  FilterControls.get(1).getQueryValue() + ")" ;
+            return "Status == \"Draft\" or (Status == \"Final\" and CheckInTime >= " +  FilterControls.get(0).getQueryValue() + " and CheckInTime < " +  FilterControls.get(1).getQueryValue() + ")" ;
         }
         @Override
         protected String getOrderBy(String action) {
@@ -51,12 +51,12 @@ public  class InvCheckInActivity extends BaseActivity {
             Optional<Control.ControlBase> control = controls.stream().filter(i-> i.getName().equals("CheckInTime")).findFirst();
             if(control.isPresent() && control.get().getListTextView() != null){
                 TextView tv = control.get().getListTextView();
-                int colour = Color.parseColor("#80FFEB3B");
+                int colour = Color.parseColor("#80808080");
                 try{
                     if(data.get("Status").toString().equals("Draft")){
                         colour = Color.parseColor("#80EE1506");
                     }
-                    else if(data.get("Status").toString().equals("Final")){
+                    else {
                         colour = Color.parseColor("#8048BE09");
                     }
                 }
@@ -77,7 +77,8 @@ public  class InvCheckInActivity extends BaseActivity {
                 SelectedStatus = null;
             }
             getActionButton(Control.ACTION_STATUS).setEnabled(true);
-            getActionButton(Control.ACTION_ADD_SUB).setEnabled(true);
+            getActionButton(Control.ACTION_ADD_SUB).setEnabled(SelectedStatus != null && SelectedStatus.equals("Draft") );
+
         }
         @Override
         public void onButtonClick(Control.ActionButton action) {

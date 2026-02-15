@@ -610,13 +610,16 @@ public abstract class BaseActivity extends AppCompatActivity  {
                 if(connection != null){
                     int index = (int)(long) connection.getId();
                     DataRepository.MobileConnection mc = DataRepository.Connections.get(index);
+                    mc.Valid = false;
+                    DataRepository.setCurrentConnection(mc);
+                    Intent intent = new Intent(getBaseContext(), MainActivity.class); // the activity to launch if logged in
+                    startActivity(intent);
+                    finish();
+
                     mc.ValidateConnection(this, new Function<Boolean, Void>() {
                         @Override
                         public Void apply(Boolean aBoolean) {
-                            DataRepository.setCurrentConnection(mc);
-                            Intent intent = new Intent(getBaseContext(), MainActivity.class); // the activity to launch if logged in
-                            startActivity(intent);
-                            finish();
+
                             return null;
                         }
                     });
