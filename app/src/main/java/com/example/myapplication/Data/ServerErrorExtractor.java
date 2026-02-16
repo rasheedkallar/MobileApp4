@@ -10,10 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class ServerErrorExtractor {
-
     private ServerErrorExtractor() {}
-
-    /** Main entry: from LoopJ byte[] to best-effort error message */
     public static String extractError(byte[] responseBody) {
         if (responseBody == null || responseBody.length == 0) {
             return "No response body";
@@ -66,9 +63,6 @@ public final class ServerErrorExtractor {
         // 6) Last fallback: compact raw body
         return compact(body, 300);
     }
-
-    /* ----------------- Helpers ----------------- */
-
     private static String innerTag(String html, String tag) {
         // Case-insensitive, dotall
         String regex = "(?is)<\\s*" + tag + "\\b[^>]*>(.*?)<\\s*/\\s*" + tag + "\\s*>";

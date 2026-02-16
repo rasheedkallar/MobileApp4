@@ -166,28 +166,14 @@ public class DataRepository {
 
         @SerializedName(value = "updateDate", alternate = {"UpdateDate"})
         public String updateDate;
-
-
-
-        /** -------------------- Device-managed (persist locally) -------------------- */
-        /** Per-connection token stored locally (populated/updated by device code) */
         public static String Token = null;
         public static String TokenCompany = null;
-
         public static String TokenConnection = null;
-
-        /** When the Token was last retrieved on device (UTC recommended) */
-
         public static Date TokenRetrieveTime = null;
-        /** -------------------- Optional helpers -------------------- */
-
-        /** Mark as valid now */
         public void markValidNow() {
             this.Valid = true;
             this.ValidDate = new Date();
         }
-
-        /** Mark as invalid (no ping) */
         public void markInvalid() {
             this.Valid = false;
             this.ValidDate = null;
@@ -237,10 +223,6 @@ public class DataRepository {
                 }
             },null,10000);
         }
-
-
-
-        /** Returns true if a token exists and is recent based on a threshold (seconds) */
         public boolean hasRecentToken( long maxAgeSeconds) {
             if (Token == null || Token.isEmpty() ) return false;
             if(!TokenCompany.equals(CurrentSettings.Company))return  false;
@@ -249,8 +231,6 @@ public class DataRepository {
             long ageSec = (System.currentTimeMillis() - TokenRetrieveTime.getTime()) / 1000L;
             return ageSec >= 0 && ageSec <= maxAgeSeconds;
         }
-
-        /** Update token and retrieval time to now */
         public void setTokenNow(String token,String company,String connection) {
             Token = token;
             TokenRetrieveTime = new Date();
@@ -266,9 +246,6 @@ public class DataRepository {
         public transient  String Status = "Created";
 
     }
-
-    /* ----------------------- Persistence ----------------------- */
-
     public List<MobileConnection> getSavedConnections(BaseActivity context) {
         try {
 
@@ -283,7 +260,6 @@ public class DataRepository {
             return new ArrayList<>();
         }
     }
-
     public Settings getSavedSettings(BaseActivity context) {
 
         try{
@@ -296,9 +272,7 @@ public class DataRepository {
         catch (Exception e){
             return new Settings();
         }
-
     }
-
     public List<Company> getSavedCompanies(BaseActivity context) {
 
         try {
@@ -314,15 +288,12 @@ public class DataRepository {
             return new ArrayList<>();
         }
     }
-
-
     public void saveConnections(List<MobileConnection> list, BaseActivity context) {
         SharedPreferences sharedPref = context.getSharedPreferences(KEY_CONNECTIONS,Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(KEY_CONNECTIONS, gson.toJson(list));
         editor.apply();
     }
-
     public void saveSettings(Settings settings, BaseActivity context) {
 
         SharedPreferences sharedPref = context.getSharedPreferences(KEY_SETTINGS,Context.MODE_PRIVATE);
@@ -330,29 +301,12 @@ public class DataRepository {
         editor.putString(KEY_SETTINGS, gson.toJson(settings));
         editor.apply();
     }
-
-
-
     public void saveCompanies(List<Company> list,  BaseActivity context) {
-
         SharedPreferences sharedPref = context.getSharedPreferences(KEY_COMPANIES,Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(KEY_COMPANIES, gson.toJson(list));
         editor.apply();
     }
-
-
-    //public String getActiveBaseUrl() {
-    //    return store.getString(KEY_ACTIVE_URL, null);
-    //}
-
-    //public void setActiveBaseUrl(String baseUrl) {
-    //    if (baseUrl != null) baseUrl = normalizeBase(baseUrl);
-    //    store.putString(KEY_ACTIVE_URL, baseUrl);
-    //}
-
-    /* ----------------------- URL helpers ----------------------- */
-
     public static String normalizeBase(String url) {
         if (url == null) return null;
         url = url.trim();
@@ -362,6 +316,4 @@ public class DataRepository {
         }
         return url;
     }
-
-
 }

@@ -22,11 +22,8 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 public class Item {
-
     public static class PopupItemForm extends PopupEntityForm {
-
         public PopupItemForm(String header, String path) {
             super(header, path, null);
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
@@ -40,8 +37,6 @@ public class Item {
             getArgs().setControls(controls);
         }
     }
-
-
     public static class PopupEntityForm extends PopupForm
     {
         public PopupEntityForm(String header,String path,ArrayList<Control.ControlBase> controls){
@@ -79,9 +74,6 @@ public class Item {
             }
         }
     }
-
-
-
     public static ArrayList<String> getUnits(){
         ArrayList<String> units = new ArrayList<>();
         units.add("PCS");
@@ -95,16 +87,8 @@ public class Item {
         units.add("OFR");
         return units;
     }
-
-
-
-
-
-
     public  static  class PopupItemBarcode extends PopupBase<PopupItemBarcode, PopupItemBarcode.PopupItemBarcodeArgs>
     {
-
-
         public static class  PopupItemBarcodeArgs extends PopupBase.PopupArgs<PopupItemBarcodeArgs> {
             public PopupItemBarcodeArgs(String header,String path){
                 super(header);
@@ -121,11 +105,9 @@ public class Item {
                 Path = path;
             }
         }
-
         //
         @Override
         public void AddControls(LinearLayout container) {
-            //Long invCheckInLineId = getArgs().getInvCheckInLineId();
             String s ="it0 => new{it0.Id,it0.Description,it0.InvItemUnits.OrderBy(Fraction).Select(it1 => new {it1.Id,it1.ItemNumber + \" \" + it1.Code + \" \" + it1.Fraction as Unit,it1.InvItemBarcodes.OrderByDescending(Id).Select(it2 => new{it2.Id,it2.Code}) as InvItemBarcodes}) as InvItemUnits}";
             new DataService(getRootActivity()).postForSelect(getArgs().getPath(), s, jsonObject -> {
                 try{
@@ -145,9 +127,6 @@ public class Item {
             }, getContext());
         }
     }
-
-
-
     public static class BarcodeDetailedControl extends  Control.DetailedControl{
         public BarcodeDetailedControl(String name, String caption) {
             super(name, caption);
@@ -162,9 +141,7 @@ public class Item {
             }
             return barcodeControls;
         }
-
         private void AddBarcode(String barcode){
-
             String saveBarcode = barcode.trim();
             new DataService(getRootActivity()).postForList("InvItemBarcodes[]", "it0 => new {it0.Id, it0.Code }", "it0=> it0.Code == \"" + saveBarcode + "\"", null, array -> {
                 try {
@@ -186,9 +163,6 @@ public class Item {
                 return null;
             }, getRootActivity());
         }
-
-
-
         @Override
         public void onButtonClick(Control.ActionButton action) {
             if(action.getName().equals(Control.ACTION_ADD)){
@@ -261,7 +235,6 @@ public class Item {
                 super.onButtonClick(action);
             }
         }
-
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
@@ -291,12 +264,5 @@ public class Item {
 
             return controls;
         }
-
-
     }
-
-
-
-
-
 }

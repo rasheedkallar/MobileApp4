@@ -309,11 +309,6 @@ public class Control {
                     name = name + ".Where(" + where + ")";
 
                 }
-
-
-                //if(getWhere(ACTION_REFRESH) != null && getWhere(ACTION_REFRESH).length() != 0){
-                //    name = name + ".Where(it" + (list.Index + 1) + "=>" +  getWhere(ACTION_REFRESH) + ")";
-                //}
                 if(getOrderBy(ACTION_REFRESH) != null && getOrderBy(ACTION_REFRESH).length() != 0){
                     String[] orderBys = getOrderBy(ACTION_REFRESH).trim().split(",");
                     for (int i = 0; i < orderBys.length; i++) {
@@ -531,9 +526,6 @@ public class Control {
                 String id_field_name = getIdFieldName();
                 if(controls != null && controls.size() != 0){
                     RequestParams rp = new RequestParams();
-
-
-
                     String where = getWhere(ACTION_REFRESH);
                     if(getVirtualDelete()){
                         if(where != null && !where.isEmpty()){
@@ -553,26 +545,7 @@ public class Control {
                         if(where.contains("it0.") && !where.replace(" ","").startsWith("it0=>")){
                             where = "it0 => " + where ;
                         }
-                        //name = name + ".Where(" + where + ")";
-
                     }
-
-
-                    //if(getWhere(ACTION_REFRESH) != null && getWhere(ACTION_REFRESH).length() != 0){
-                    //    name = name + ".Where(it" + (list.Index + 1) + "=>" +  getWhere(ACTION_REFRESH) + ")";
-                    //}
-
-
-
-
-
-
-
-                    //String where = getWhere(ACTION_REFRESH);
-                    //if(where != null && where.length() == 0)where = null;
-
-
-
                     DataService.ListParams lp = new DataService.ListParams();
                     lp.Select =getSelect(ACTION_REFRESH);
                     lp.Where = where;
@@ -707,9 +680,6 @@ public class Control {
             EntityName = entityName;
             return this;
         }
-
-
-
         public void onCapturedImage(int action, Bitmap image, JSONObject jsonObject, String guid){
             Long id = null;
             try {
@@ -717,7 +687,6 @@ public class Control {
             } catch (JSONException e) {
                 throw new RuntimeException(e);
             }
-
             imageDataForId.put(id,jsonObject);
             addImage(id);
             getActionButton(Control.ACTION_DELETE).setEnabled(false);
@@ -735,9 +704,7 @@ public class Control {
                     iv.setBackground(ContextCompat.getDrawable(main_layout.getContext(), R.drawable.button));
                 }
             }
-
         }
-
         @Override
         public void onButtonClick(ActionButton button) {
             if(button.Name.equals(Control.ACTION_DELETE)){
@@ -746,7 +713,6 @@ public class Control {
                     try {
                         objDelete.put("Deleted",true);
                     } catch (JSONException e) {
-
                     }
                     new DataService(getRootActivity()).postForSave("RefFiles[" + getValue() + "]", objDelete, new Function<Long, Void>() {
                         @Override
@@ -846,7 +812,6 @@ public class Control {
                 return  data;
             }
         }
-
         private void addImage(long id) {
             if(!getValues().contains(id)){
                 getValues().add(id);
@@ -888,10 +853,8 @@ public class Control {
         public void addForSelectQuery(FieldList list) {
             String formula = "new {{0}.Guid,{0}.Id, @0.RefFiles.Where(img=>img.RefGuid == {0}.Guid && img.RefType == \"" + getEntityName() + "\" && img.FileGroup == \"" + getName() + "\").Where(!Deleted).Select(" + SelectQuery + ") as Images}";
             list.addForSelectQuery(getName(),getName(), formula);
-            //list.addForSelectQuery("Guid","Guid",null);
         }
         public static final String SelectQuery = "img => new{img.Id,img.FileName,img.Guid}";
-
         @Override
         public void onParentCreated(Long parentId) {
             super.onParentCreated(parentId);
@@ -918,7 +881,6 @@ public class Control {
                 throw new RuntimeException(e);
             }
         }
-
         @Override
         public ImageControl readValueJSONObject(JSONObject data, String field) {
             try {
@@ -945,15 +907,12 @@ public class Control {
             setParentId(parentId);
             setVisible(true);
         }
-
-
         @Override
         protected Long convertValue(Object value) {
             if(value == null || value == JSONObject.NULL)return null;
             else if(value.getClass().equals(Long.class))return(Long)value;
             else return null;
         }
-
         private boolean virtualDelete = false;
         public boolean getVirtualDelete() {
             return virtualDelete;
@@ -963,8 +922,6 @@ public class Control {
             virtualDelete = virTualDelete;
             return (T)this;
         }
-
-
         @Override
         public String getFullPath(){
             if(getName() == null)return null;
@@ -1031,12 +988,9 @@ public class Control {
             return valid;
         }
         protected transient  TextView CaptionTextView;
-
         protected transient  TextView FooterTextView;
         protected transient  LinearLayout ActionLayout;
         private transient RelativeLayout rl = null;
-
-
         private int ScrollPermanentHeight = 0;
         public int getScrollPermanentHeight() {
             return ScrollPermanentHeight;
@@ -1044,21 +998,15 @@ public class Control {
         public void setScrollPermanentHeight(int scrollPermanentHeight) {
             ScrollPermanentHeight = scrollPermanentHeight;
         }
-
-
         @Override
         protected void addContentView(ViewGroup container) {
             if(getButtons() != null && getButtons().size() >0){
 
                 rl = new RelativeLayout(container.getContext());
-                //LinearLayout.LayoutParams rlP = new LinearLayout.LayoutParams(getWidth(container), RelativeLayout.LayoutParams.WRAP_CONTENT);
                 FlexboxLayout.LayoutParams rlP = getLayoutParams(container);
-
-
                 rl.setBackground(getHeaderBackground());
                 rl.setLayoutParams(rlP);
                 container.addView(rl);
-
                 ActionLayout = new LinearLayout(container.getContext());
                 RelativeLayout.LayoutParams llActionP = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
                 llActionP.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
@@ -1066,7 +1014,6 @@ public class Control {
                 ActionLayout.setPadding(0, 0, 0, 5);
                 ActionLayout.setLayoutParams(llActionP);
                 ActionLayout.setId(ACTION_CONTAINER_ID);
-
                 for (int i = 0; i < getButtons().size(); i++) {
                     final ActionButton button = getButtons().get(i);
                     button.addView(ActionLayout, new Function<Button, Void>() {
@@ -1125,8 +1072,6 @@ public class Control {
                             );
                     sv.setLayoutParams(params);
                 }
-                //ScrollView sv = new ScrollView(container.getContext());
-                //svP.setLayoutDirection(LinearLayout.HORIZONTAL);
                 sv.addView(llValue);
                 container.addView(sv);
 
@@ -1469,44 +1414,21 @@ public class Control {
         @Override
         public T readValueObject(Object value) {
             if(value != null  && Long.class.isAssignableFrom(value.getClass())) {
-
-                /*
-
-                String json ="new {Id," + getDisplayField() + " as Name}";
-                if(getFormula() != null && getFormula().length() != 0) {
-                    if(getName().equals("."))
-                        json = "it0 => new {it0.Id," + getFormula().replace("{0}", "it0") + " as Name}";
-                    else
-                        json = "it0 => new {it0.Id," + getFormula().replace("{0}." + getName(), "it0") + " as Name}";
-                }
-                */
-
-
-
                 String json = "new {Id," + getDisplayField() + " as Name}";
                 String formula = getFormula();
-
                 if (formula != null && !formula.isEmpty()) {
                     String name = getName();
                     String transformed = formula;
 
                     if (".".equals(name)) {
-                        // Special case: name == ".", so:
-                        // 1) Any "{0}.<token...>"  -> "null"
-                        // 2) Bare "{0}"            -> "it0"
                         transformed = transformed
                                 .replaceAll("\\Q{0}.\\E[^\\s+\\-*/,:?\\)]+", "null")
                                 .replace("{0}", "it0");
                     } else {
-                        // 1) Replace "{0}.<name>" prefix with "it0" while keeping any suffix like ".ItemNumber"
-                        //    Example: "{0}.InvItemUnit.ItemNumber" -> "it0.ItemNumber"
                         transformed = transformed.replaceAll(
                                 "\\Q{0}.\\E" + Pattern.quote(name) + "(?=\\b|\\.)",
                                 "it0"
                         );
-
-                        // 2) Replace any remaining "{0}.<something>" entirely with "null"
-                        //    Example: "{0}.Description" -> "null"
                         transformed = transformed.replaceAll(
                                 "\\Q{0}.\\E[^\\s+\\-*/,:?\\)]+",
                                 "null"
@@ -1515,11 +1437,6 @@ public class Control {
 
                     json = "it0 => new {it0.Id," + transformed + " as Name}";
                 }
-
-
-
-
-
                 String path = getFullPath() + "[" + value + "]";
                 if(getName().equals("."))path = getPath();
                 new DataService(getRootActivity()).postForSelect(DataService.Lookup.class,path,json, lookup -> {
@@ -1552,7 +1469,6 @@ public class Control {
         @Override
         protected void onPopupList() {
             PopupLookup.create(getCaption(),getLookups(),getValue() == null? null : getValue().getId(),(lookup)->{
-                //callBack.apply(lookup);
                 setValue(lookup);
                 return true;
             }).show(getRootActivity().getSupportFragmentManager(),null);
@@ -1729,19 +1645,6 @@ public class Control {
 
                         long id = Long.parseLong(vjo.get("Id").toString());
                         return new DataService.Lookup(id, display);
-
-
-
-
-                        /*
-
-                        String display = "[UNKNOWN]";
-                        if(vjo.has(getDisplayField())){
-                            display = vjo.get(getDisplayField()).toString();
-                        }
-                        return new DataService.Lookup(Long.parseLong(vjo.get("Id").toString()),display);
-
-                         */
                     }
                 }catch (JSONException e){
                     System.out.println(e.getMessage());
@@ -2067,9 +1970,6 @@ public class Control {
             return value.toString();
         }
     }
-
-
-
     public static abstract class EditTextControlBase<T extends EditTextControlBase<T,U>,U extends Serializable> extends FieldControlBase<EditTextControlBase<T,U>,U>{
         private String Digits = null;
         public T setDigits(String digits) {
@@ -2230,16 +2130,11 @@ public class Control {
             }
             return super.setFooterText(footerText);
         }
-
-
         @Override
         public T setCaption(String caption) {
             if(CaptionTextView != null)CaptionTextView.setText(caption);
-
             return super.setCaption(caption);
         }
-
-
         @Override
         protected void addContentView(ViewGroup container)
         {
@@ -2305,11 +2200,6 @@ public class Control {
                 FooterTextView.setVisibility(View.VISIBLE); // show
                 FooterTextView.setText(footerText);
             }
-
-
-
-
-
             if(rl != null){
                 if(getButtonHeader() ){
                     container.addView(llValue);
@@ -2320,61 +2210,34 @@ public class Control {
                     rl.addView(llValue);
                     llValueP.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
                     llValueP.addRule(RelativeLayout.LEFT_OF, ACTION_CONTAINER_ID);
-                    //llValueP.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-
                     rl.addView(FooterTextView);
-
-
-
-
-                    //FooterTextViewP.addRule(RelativeLayout.CENTER_IN_PARENT, 0);
                     FooterTextViewP.addRule(RelativeLayout.ALIGN_PARENT_START);
                     FooterTextViewP.addRule(RelativeLayout.ALIGN_PARENT_END);
                     FooterTextViewP.addRule(RelativeLayout.BELOW, ACTION_CONTAINER_ID);
-
-
-
-
-
                 }
-
             }
             else{
                 container.addView(llValue);
                 container.addView(FooterTextView);
             }
-
-
-
-
-
-
-
-
-
             addValueView(llValue);
         }
     }
     public static abstract   class ControlBase<T extends ControlBase<T,U>,U extends Serializable>  implements Serializable {
         protected abstract void onButtonClick(ActionButton button);
         private int ControlSize = Control.CONTROL_SIZE_SINGLE;
-
         public int getControlSize(){
             return ControlSize;
         }
-
-
         private float FlexBasisPercent = 0;
         public float getFlexBasisPercent() {
             return FlexBasisPercent;
         }
-
         public T setFlexBasisPercent(float flexBasisPercent) {
             FlexBasisPercent = flexBasisPercent;
             if(flexBasisPercent != 0f)setControlSize(0);
             return  (T)this;
         }
-
         public T setControlSize(int size){
             ControlSize = (int)size;
             return  (T)this;
@@ -2396,10 +2259,6 @@ public class Control {
             Formula = formula;
             return (T)this;
         }
-
-        //LinearLayout.LayoutParams
-
-
         public FlexboxLayout.LayoutParams getLayoutParams(ViewGroup container){
 
             FlexboxLayout.LayoutParams lp;
@@ -2410,8 +2269,6 @@ public class Control {
 
             return  lp;
         }
-
-
         public ActionButton getActionButton(String action){
             Optional<ActionButton> button = this.getButtons().stream().filter(i-> i.Name.equals(action)).findFirst();
             if(button.isPresent())return  button.get();

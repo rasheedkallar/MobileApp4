@@ -76,10 +76,7 @@ public  class AccountReconciliation extends BaseActivity {
                             }, s ->{
                                         PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
                                 return null;
-                            }
-
-                            );
-
+                            });
                         } catch (JSONException e) {
                             throw new RuntimeException(e);
                         }

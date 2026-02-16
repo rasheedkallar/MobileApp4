@@ -39,11 +39,6 @@ public class DataService {
     private final DataRepository connRepo;
 
     public DataService(BaseActivity context){
-        //if(ctx == null){
-        //    throw new IllegalArgumentException("Context cannot be null");
-        //}
-
-        //this.appContext = ctx.getApplicationContext();
         this.Context = context;
         this.connRepo = new DataRepository();
     }
@@ -66,9 +61,6 @@ public class DataService {
                     },
                     (String error) -> {
                         if (callBack != null) callBack.apply(null);
-                        //if(DataRepository.getCurrentConnection() == null){
-                        //    DataRepository.ChooseBestConnection(Context,DataRepository.Connections,null);
-                        //}
                         return null; // IMPORTANT: Function<..., Void> must return null
                     }
                 );
@@ -570,8 +562,6 @@ public class DataService {
         }
         return params;
     }
-
-
     public  void upload(File file,String fileName, String entity,String guid,String fileGroup , String path,Function<JSONObject,Void> success, Context context){
         System.out.println("&fileName," + entity + "," + guid );
         RequestParams params = new RequestParams();
@@ -688,4 +678,3 @@ public class DataService {
         }
     }
 }
-
