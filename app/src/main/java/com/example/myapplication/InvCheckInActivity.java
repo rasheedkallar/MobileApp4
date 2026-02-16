@@ -78,6 +78,7 @@ public  class InvCheckInActivity extends BaseActivity {
             }
             getActionButton(Control.ACTION_STATUS).setEnabled(true);
             getActionButton(Control.ACTION_ADD_SUB).setEnabled(SelectedStatus != null && SelectedStatus.equals("Draft") );
+            getActionButton(Control.ACTION_EDIT).setEnabled(SelectedStatus != null && SelectedStatus.equals("Draft") );
 
         }
         @Override
