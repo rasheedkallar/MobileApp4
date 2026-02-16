@@ -1,25 +1,18 @@
 package com.example.myapplication;
-
 import android.graphics.Color;
 import android.widget.TableLayout;
 import android.widget.TextView;
-
 import com.example.myapplication.model.Control;
 import com.example.myapplication.Data.DataService;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Function;
-
-
 public class MainActivity extends BaseActivity {
     public MainActivity()
     {
-        //Controls.add(new MainActivity.MonitorStatusControl());
     }
     public static class MonitorStatusControl extends Control.DetailedControl {
         public MonitorStatusControl() {
@@ -39,7 +32,6 @@ public class MainActivity extends BaseActivity {
                 }
             }, getRootActivity());
         }
-
 
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {

@@ -27,13 +27,6 @@ public  class AccountReconciliation extends BaseActivity {
     public AccountReconciliation(){
         setEnableScroll(true);
     }
-
-
-
-
-
-
-
     private static String Select = "AccTransactionLines.Where(!Deleted && ReconDate == null && AccTransaction.Status == \"Final\").OrderByDescending(AccTransaction.TranDate).Select(it1 => new {it1.Id, it1.AccTransaction.TranNumber + \" \" + it1.RefNumber + \" \"  +  it1.Narration as Narration, it1.Debit - it1.Credit as Amount, new {it1.AccTransaction.Id,it1.AccTransaction.TranDate} as AccTransaction})";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +60,6 @@ public  class AccountReconciliation extends BaseActivity {
         private Double Balance;
         public AccTransactionLineControl(String caption,Long id,Double balance) {
             super("AccTransactionLines", caption);
-
             Id = id;
             Balance =balance;
             getButtons().clear();

@@ -7,21 +7,15 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
-
 import com.example.myapplication.Data.DataService;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
-
 import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-
-
 public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
-
     @Override
     public PopupForm setArgs(PopupFormArgs args) {
         super.setArgs(args);
@@ -47,11 +41,8 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         }
         return valid;
     }
-
-
     @Override
     public void doOk() {
-
         PopupFormArgs args = this.getArgs();
         if(!validate()){
             getPopup().getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
@@ -74,7 +65,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             }
         }
     }
-
     private String getFullPathNew(){
         String path = getArgs().getPath();
         if(path.endsWith("[]"))return path;
@@ -83,8 +73,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         }
         else return path;
     }
-
-
     public Function<Long,Boolean> SaveListener;
     public PopupForm setSaveListener(Function<Long,Boolean> saveListener) {
         SaveListener = saveListener;
@@ -93,9 +81,7 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
     public Function<Long,Boolean> getSaveListener() {
         return SaveListener;
     }
-
     protected void doAfterSaved(Long id){
-
         Long detailedCount = getArgs().getControls().stream().filter(i-> Control.DetailedControlBase.class.isAssignableFrom(i.getClass())).count();
         boolean defaultClose = (getArgs().getValue() != null && getArgs().getValue() != 0L) || detailedCount == null || detailedCount == 0L;
         if(getArgs().getValue() == null || getArgs().getValue() == 0L){
@@ -110,9 +96,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
                 if(Control.DetailedControlBase.class.isAssignableFrom(getArgs().getControls().get(j).getClass())){
                     Control.DetailedControlBase dc = (Control.DetailedControlBase)getArgs().getControls().get(j);
                     dc.onParentCreated(id);
-
-                    //dc.setParentId(id);
-                    //dc.setVisible(true);
                 }
             }
         }
@@ -163,7 +146,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         scP.setLayoutDirection(LinearLayout.HORIZONTAL);
         sv.setLayoutParams(scP);
 
-
         FieldsContainer = new FlexboxLayout(getContext());
         TableLayout.LayoutParams fblP= new TableLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         FieldsContainer.setLayoutParams(fblP);
@@ -201,7 +183,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             }
         }
     }
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -209,12 +190,9 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             getArgs().getControls().get(i).setRootActivity(getRootActivity());
         }
     }
-
     public <A extends Control.ControlBase> A getControl(String name){
         return getArgs().getControl(name);
     }
-
-
     public static class  PopupFormArgs extends PopupArgs<PopupFormArgs> {
         public PopupFormArgs( String header,ArrayList<Control.ControlBase> controls,String path,Long value){
             super(header);
@@ -234,23 +212,18 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             if(control.isPresent())return (A)control.get();
             else return null;
         }
-
         private String ActionPath;
-
         public String getActionPath() {
             return ActionPath;
         }
-
         public PopupFormArgs setActionPath(String actionPath) {
             ActionPath = actionPath;
             return  this;
         }
-
         private ArrayList<Control.ControlBase> Controls;
         public ArrayList<Control.ControlBase> getControls() {
             return Controls;
         }
-
         private String Path;
         public String getPath() {
             return Path;
@@ -259,8 +232,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             Path = path;
             return this;
         }
-
-
         private String IdName;
         public String getIdName() {
             return IdName;
@@ -269,8 +240,6 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             IdName = idName;
             return this;
         }
-
-
         private Long Value;
         public Long getValue() {
             return Value;
@@ -279,15 +248,9 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             Value = value;
             return this;
         }
-
         public PopupFormArgs setControls(ArrayList<Control.ControlBase> controls) {
             Controls = controls;
             return this;
         }
     }
-
-
-
-
-
 }

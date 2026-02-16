@@ -40,11 +40,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
     private final  BalanceControl balance1Control =  new BalanceControl("Total","Total").setFlexBasisPercent(0.3333f);
     private final  BalanceControl balance2Control =  new BalanceControl("Added","Added").setFlexBasisPercent(0.3333f);;
     private final  BalanceControl balance3Control =  new BalanceControl("Balance","Balance").setFlexBasisPercent(0.3333f);
-
     private final  BarcodeControl barcodeControl =  new BarcodeControl();
-
     private final   InvCheckInDetailsActivity.InvCheckInLineDetailedControl itemControl = new InvCheckInDetailsActivity.InvCheckInLineDetailedControl();
-
     public InvCheckInDetailsActivity(){
         //barcodeControl.setRootActivity(this);
         headerControl.setSingleLine(true);
@@ -67,10 +64,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
     public static long  checkInId =0;
     public static JSONObject row = null;
     public static Double TotalAmount = 0d;
-
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         try {
@@ -97,8 +90,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         itemControl.setParentId(checkInId);
         itemControl.setEnableScroll(true);
         super.onCreate(savedInstanceState);
-
-
         itemControl.setOnRefreshListener(new InvCheckInLineDetailedControl.OnRefreshListener() {
             @Override
             public void onRefreshListener(JSONArray data, Double amount) {
@@ -116,20 +107,10 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 } else {
                     txt.setTextColor(Color.parseColor("#8B0000"));   // Outside range
                 }
-
-
-
             }
         });
-
-
         itemControl.refreshGrid();
-
         new Handler().postDelayed(barcodeControl::requestFocus, 2000);
-
-
-        //new Handler().postDelayed(barcodeControl.requestFocus();, 2000);
-
     }
     public  static  class BalanceControl extends Control.EditDecimalControl {
         public BalanceControl(String name, String caption) {
@@ -148,7 +129,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             editText.setClickable(false);
         }
     }
-
     public  static  class BarcodeControl extends Control.EditTextControl {
         public BarcodeControl() {
             super("Barcode", null);
@@ -204,10 +184,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 saveButton.setEnabled(itemLookup != null && itemLookup.getId() != 0 && !barcode.isEmpty());
             }
         }
-
-
-
-
         public  interface OnBarcodeScannedListener {
             void onBarcodeScanned(String barcode, DataService.Lookup lookup);
         }
@@ -216,13 +192,10 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public void setOnBarcodeScannedListener(OnBarcodeScannedListener listener) {
             this.listener = listener;
         }
-
-
         @FunctionalInterface
         public interface BarcodeListener {
             void invoke(DataService.Lookup value,String barcode,JSONObject itemInfo);
         }
-
         @Override
         public void valueChange(String oldValue, String newValue) {
             super.valueChange(oldValue, newValue);
@@ -246,7 +219,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 });
             }
         }
-
         public void requestBarcode(String barcode, BarcodeListener barcodeListener) {
             new DataService(getRootActivity()).getObject("MobileApi/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                 @Override
@@ -307,8 +279,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 editText.requestFocus();
             }
         }
-
-
         @Override
         public void addValueView(ViewGroup container) {
             super.addValueView(container);
@@ -336,7 +306,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             editText.setInputType(InputType.TYPE_CLASS_TEXT);
             editText.setImeOptions(EditorInfo.IME_ACTION_NONE);
         }
-
         @Override
         protected void onButtonClick(Control.ActionButton button) {
             super.onButtonClick(button);
@@ -350,90 +319,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
         }
     }
-    /*
-    public  static  class BarcodeControlInput extends Control.EditTextControl {
-        public BarcodeControlInput() {
-            super("Barcode", null);
-            getButtons().add(new Control.ActionButton(Control.ACTION_KEYBOARD));
-            setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
-            setIsRequired(false);
-        }
-
-        public  interface OnBarcodeScannedListener {
-            void onBarcodeScanned(String barcode, DataService.Lookup lookup);
-        }
-        private transient OnBarcodeScannedListener listener;
-        // Method to set the callback
-        public void setOnBarcodeScannedListener(OnBarcodeScannedListener listener) {
-            this.listener = listener;
-        }
-        public void  RefreshBarcodeStatus(){
-            EditText editText = getEditTextInput();
-            String barcode = editText.getText().toString().trim();
-            if(!barcode.isEmpty() && barcode.indexOf(' ') < 0) {
-                new DataService().getObject("MobileApi/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
-                    @Override
-                    public Void apply(JSONObject jsonObject) {
-                        if (jsonObject == null) {
-                            editText.setText(barcode);
-                            editText.selectAll();
-                            editText.requestFocus();
-                            if (listener != null) listener.onBarcodeScanned(barcode, null);
-                        } else {
-                            try {
-
-                                var lookup = new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()), jsonObject.get("FullDescription").toString());
-                                if (listener != null) listener.onBarcodeScanned(barcode, lookup);
-                                editText.setText(null);
-                                editText.requestFocus();
-                            } catch (JSONException e) {
-                                System.out.println(e.getMessage());
-                                Toast.makeText(getRootActivity(), "GetListData Failed," + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                        return null;
-                    }
-                }, editText.getContext());
-
-            }
-        }
-
-
-        @Override
-        public void addValueView(ViewGroup container) {
-            super.addValueView(container);
-            EditText editText = getEditTextInput();
-            editText.setShowSoftInputOnFocus(false);
-            editText.setSingleLine(true);
-            editText.setInputType(InputType.TYPE_CLASS_TEXT);
-            editText.setImeOptions(EditorInfo.IME_ACTION_NONE);
-            editText.setOnKeyListener((v, keyCode, event) -> {
-                if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                    RefreshBarcodeStatus();
-                    return true; // consume event
-                }
-                return false;
-            });
-            // Request focus after a short delay to ensure the view is ready.
-            new Handler().postDelayed(editText::requestFocus, 2000);
-        }
-
-        @Override
-        protected void onButtonClick(Control.ActionButton button) {
-            super.onButtonClick(button);
-            EditText editText = getEditTextInput();
-            if(button.getName().equals(Control.ACTION_KEYBOARD)){
-                InputMethodManager imm = (InputMethodManager) getRootActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                // The button's job is to explicitly SHOW the keyboard for manual entry.
-                // The user can hide it with the system back button.
-                editText.requestFocus();
-                imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
-            }
-        }
-    }
-
-
-     */
     public static  class ItemSearchControl extends Control.SearchControlBase  {
         private static final String ItemFormula = "{0}.InvItemUnit == null ? {0}.Description : {0}.InvItemUnit.ItemNumber + \" \" + {0}.InvItemUnit.Code + \" \" + {0}.InvItemUnit.Fraction + \"\r\n\" + {0}.InvItemUnit.InvItem.Description";
         public ItemSearchControl() {
@@ -451,8 +336,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             getButtons().add(new Control.ActionButton(Control.ACTION_INBOX).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_BARCODE).setEnabled(false));
         }
-
-
         private  void  RefreshBarcode(String barcode,EditText editor){
             new DataService(getRootActivity()).getObject("MobileApi/Get?barcode=" + barcode, new Function<JSONObject, Void>() {
                 @Override
@@ -465,7 +348,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     else{
                         try {
                             setValue(new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()),jsonObject.get("FullDescription").toString()));
-                            //OnItemSelected.invoke(jsonObject.get("Description").toString(),editor.getText().toString().trim());
                             Popup.dismiss();
                         }
                         catch (JSONException e)
@@ -478,7 +360,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 }
             }, editor.getContext());
         }
-
         @Override
         protected void textChange(EditText editor, int keyCode) {
             if(keyCode == 10){
@@ -515,7 +396,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             units.add("OFR");
             return units;
         }
-
         DataService.Lookup itemLookup = null;
         @Override
         protected void onButtonClick(Control.ActionButton button) {
@@ -585,19 +465,12 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
         }
         public transient Function<Void,Boolean> BarcodeRefreshListener;
-
-        //public transient OnBarcodeRefreshListener BarcodeRefreshListener;
         public void setBarcodeRefreshListener(Function<Void,Boolean> listener){
             BarcodeRefreshListener = listener;
         }
         public Function<Void,Boolean> getBarcodeRefreshListener(){
             return BarcodeRefreshListener;
         }
-
-
-
-
-
         @Override
         protected void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack) {
             new DataService(getRootActivity()).getList("MobileApi/Get?keyWords=" + keywords, array -> {
@@ -605,14 +478,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 return null;
             }, getRootActivity());
         }
-
-
     }
-
-
-
-
-
     public static class InvCheckInLineDetailedControl extends Control.DetailedControl {
         public InvCheckInLineDetailedControl() {
             super("InvCheckInLines", "");
@@ -623,9 +489,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             getButtons().add(3,new Control.ActionButton(Control.ACTION_CAMERA).setEnabled(false));
             getButtons().remove(getButton(Control.ACTION_REFRESH));
         }
-
-
-
         @Override
         public void refreshDetailedView(JSONArray data) {
             super.refreshDetailedView(data);
@@ -642,8 +505,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public void setOnRefreshListener(InvCheckInLineDetailedControl.OnRefreshListener listener) {
             this.listener = listener;
         }
-
-
         public void onBarcodeScanned(String barcode,DataService.Lookup lookup)
         {
             AdditemLookup = lookup;
@@ -652,7 +513,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             AdditemLookup = null;
             AddBarcode = null;
         }
-
         @Override
         protected void selectRow(TableRow row, TableRow header, TableLayout tableLayout) {
             super.selectRow(row, header, tableLayout);
@@ -699,7 +559,6 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 super.onButtonClick(action);
             }
         }
-        //private InvCheckInPriceDetailedControl priceListControl = null;
         private Control.EditDecimalControl qtyControl = null;
         private Control.EditTextControlBase descriptionControl = null;
 
@@ -832,6 +691,5 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
         private  BarcodeControl barcodeControl;
         private  ItemSearchControl isc;
-
     }
 }

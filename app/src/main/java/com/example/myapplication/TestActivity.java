@@ -12,10 +12,6 @@ public class TestActivity extends BaseActivity {
         public InvCheckInDetailedControl() {
             super("InvCheckIns", "Stock Receive");
         }
-
-
-
-
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             return null;
