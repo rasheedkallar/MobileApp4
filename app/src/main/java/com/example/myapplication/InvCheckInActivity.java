@@ -79,7 +79,6 @@ public  class InvCheckInActivity extends BaseActivity {
             getActionButton(Control.ACTION_STATUS).setEnabled(true);
             getActionButton(Control.ACTION_ADD_SUB).setEnabled(SelectedStatus != null && SelectedStatus.equals("Draft") );
             getActionButton(Control.ACTION_EDIT).setEnabled(SelectedStatus != null && SelectedStatus.equals("Draft") );
-
         }
         @Override
         public void onButtonClick(Control.ActionButton action) {
@@ -89,11 +88,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Final");
                 if(SelectedStatus != null && SelectedStatus.equals("Draft"))stats.add("Cancel");
                 PopupLookup.create(getCaption(), stats, null, lookup -> {
-                    //new DataService(getRootActivity()).postForObject(Long.class,"InvCheckIn/UpdateStatus?id=" + getValue() + "&status=" + lookup.getName(),  new RequestParams(), aLong -> {
-                    //    refreshGrid(Table);
-                    //    return null;
-                    //},getRootActivity());
-
                     new DataService(getRootActivity()).postForSave("InvCheckIns[" + getValue() + "]", "{\"Status\" : \"" + lookup.getName() + "\"}", aLong -> {
                         readValueObject(aLong);
                         refreshGrid(Table);
@@ -102,13 +96,10 @@ public  class InvCheckInActivity extends BaseActivity {
                         PopupHtml.create("Save Error",s).show(getRootActivity().getSupportFragmentManager(),null);
                         return null;
                     });
-
-
                     return true;
                 }).show(((BaseActivity)action.getButton().getContext()).getSupportFragmentManager(),null);
             }
             else if(action.getName().equals(Control.ACTION_ADD_SUB)){
-
                 String header = "Items";
                 var row = getSelectedRow();
                 if (row != null && row.getTag() instanceof JSONObject) {
@@ -125,7 +116,6 @@ public  class InvCheckInActivity extends BaseActivity {
             }
         }
         private String SelectedStatus = null;
-
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
@@ -155,7 +145,6 @@ public  class InvCheckInActivity extends BaseActivity {
                 controls.add(Control.getLookupForeignControl( "BusParty", "Supplier","Name").setWhere("PartyType == \"SUP\" && Active"));
                 controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","BusParty.Name").setWhere("BusParty.Active"));
                 controls.add(Control.getImageControl("Images", "Invoice Images", "InvCheckIn").setIsRequired(false));
-
                 return controls;
             }
             else{
