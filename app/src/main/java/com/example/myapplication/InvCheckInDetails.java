@@ -30,6 +30,7 @@ import org.json.JSONObject;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -279,7 +280,6 @@ public  class InvCheckInDetails extends BaseActivity {
             }
         }
         public static class InvCheckInPriceDetailedControl extends Control.DetailedControl {
-            private static String ItemUnitFormula = "{0}.ItemNumber + \" \" + {0}.Code + \" \" + {0}.Fraction";
             public InvCheckInPriceDetailedControl() {
                 super("InvItemUnits", "Price List");
             }
@@ -313,7 +313,7 @@ public  class InvCheckInDetails extends BaseActivity {
             }
             private  long ItemUnitId = 0;
             private  Double _Qty = 0.0;
-            private DecimalFormat df = new DecimalFormat( "0.00");
+            private final DecimalFormat df = new DecimalFormat( "0.00");
             @Override
             public void refreshDetailedView(JSONArray data) {
                 setVisible(true);
@@ -329,14 +329,14 @@ public  class InvCheckInDetails extends BaseActivity {
                             JSONObject data = (JSONObject)row.getTag();
                             TextView CurrentRateView = row.findViewWithTag("CurrentRate");
                             Double lastRate = null;
-                            Double unitFraction = 0.0;
-                            Double fraction = 0.00;
+                            double unitFraction = 0.0;
+                            double fraction = 0.00;
                             try {
                                 unitFraction = data.getDouble("UnitFraction");
                                 fraction = data.getDouble("Fraction");
                                 lastRate = data.getDouble("LastRate");
                             }
-                            catch (JSONException e) {
+                            catch (JSONException ignored) {
 
                             }
                             if(_PurchaseAmount != null && _PurchaseQty != null)purchaseRate = _PurchaseAmount/_PurchaseQty /unitFraction * fraction;
@@ -364,7 +364,7 @@ public  class InvCheckInDetails extends BaseActivity {
                     Double currentRate = null;
                     try{
                         currentRate = Double.parseDouble(CurrentRateView.getText().toString());
-                    }catch (Exception e){
+                    }catch (Exception ignored){
                     }
                     if(currentRate == null){
                         currentRate = data.getDouble("LastRate");
@@ -374,11 +374,11 @@ public  class InvCheckInDetails extends BaseActivity {
                     try{
                         salesRate = Double.parseDouble(salesRateView.getText().toString());
                     }
-                    catch (Exception e){
+                    catch (Exception ignored){
                     }
                     TextView marginPerFinalView =  row.findViewWithTag("MarginPerFinal");
                     int c =Color.WHITE;
-                    if(salesRate != null && currentRate != null){
+                    if(salesRate != null){
                         double marginPer = data.getDouble("MarginPer");
                         double marginPerFinal = (salesRate-currentRate)/ currentRate * 100;
                         if(marginPerFinal>marginPer)  c = ColorUtils.blendARGB(Color.GREEN, Color.WHITE,(float) (marginPer/marginPerFinal));
@@ -491,8 +491,9 @@ public  class InvCheckInDetails extends BaseActivity {
             @Override
             protected ArrayList<Control.ControlBase> getControls(String action) {
                 ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
-                if(action == Control.ACTION_REFRESH) {
-                    controls.add(Control.getEditTextControl("Unit","Unit").setColumnWeight(6F).setFormula(ItemUnitFormula));
+                if(Objects.equals(action, Control.ACTION_REFRESH)) {
+                    String itemUnitFormula = "{0}.ItemNumber + \" \" + {0}.Code + \" \" + {0}.Fraction";
+                    controls.add(Control.getEditTextControl("Unit","Unit").setColumnWeight(6F).setFormula(itemUnitFormula));
                     controls.add(Control.getEditDecimalControl("MarginPer","%").setDecimalPlaces(0).setColumnWeight(3F).setFormula("{0}.MarginPer??{0}.InvItem.MarginPer??{0}.InvItem.InvItemGroup.MarginPer"));
                     controls.add(Control.getEditDecimalControl("LastRate","Last").setFormula("{0}.InvItem.PurchaseRate == null?null:{0}.InvItem.PurchaseRate * {0}.Fraction").setColumnWeight(3F));
                     controls.add(Control.getEditDecimalControl("CurrentRate","Now").setColumnWeight(4F).setFormula("0.00"));
@@ -501,23 +502,32 @@ public  class InvCheckInDetails extends BaseActivity {
                     controls.add(new SalesRateDecimalControl().setColumnWeight(6F));
                     controls.add(Control.getEditDecimalControl("MarginPerFinal","%").setDecimalPlaces(0).setColumnWeight(3F).setFormula("0.00"));
                 }
-                else if (action != Control.ACTION_FILTER){
-                    if(action == Control.ACTION_ADD){
+                else if (!Objects.equals(action, Control.ACTION_FILTER)){
+                    if(Objects.equals(action, Control.ACTION_ADD)){
                         Control.LookupForeignControl item = Control.getLookupForeignControl("InvItem","Item","Description").setValue(ItemLookup);
                         item.getButtons().clear();
                         controls.add(item);
                     }
-                    if(action == Control.ACTION_EDIT)controls.add(Control.getLookupForeignControl("InvItem","Item","Description").setVisible(false));
-                    if(action == Control.ACTION_EDIT)controls.add(Control.getEditTextControl("InvItem.Description","Item").setControlSize(Control.CONTROL_SIZE_DOUBLE));
+                    if(Objects.equals(action, Control.ACTION_EDIT))controls.add(Control.getLookupForeignControl("InvItem","Item","Description").setVisible(false));
+                    if(Objects.equals(action, Control.ACTION_EDIT))controls.add(Control.getEditTextControl("InvItem.Description","Item").setControlSize(Control.CONTROL_SIZE_DOUBLE));
                     controls.add(Control.getEditTextPickerControl("Code", "Unit", Item.getUnits(), null).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS));
                     controls.add(Control.getEditDecimalControl("Fraction", "Fraction").setDecimalPlaces(3).setValue(1.0));
                     controls.add(Control.getEditDecimalControl("SalesRate","Sales Rate").setColumnWidth(200).setIsRequired(false));
 
-                    if(action == Control.ACTION_EDIT)controls.add(Control.getLookupForeignControl("InvItem.InvItemGroup", "Item Group",  "Code"));
-                    if(action == Control.ACTION_EDIT)controls.add(Control.getLookupForeignControl("InvItem.InvItemTax", "Item Tax",  "Code"));
+                    if(Objects.equals(action, Control.ACTION_EDIT))controls.add(Control.getLookupForeignControl("InvItem.InvItemGroup", "Item Group",  "Code"));
+                    if(Objects.equals(action, Control.ACTION_EDIT))controls.add(Control.getLookupForeignControl("InvItem.InvItemTax", "Item Tax",  "Code"));
                 }
                 return controls;
             }
+
+            public Double get_Qty() {
+                return _Qty;
+            }
+
+            public void set_Qty(Double _Qty) {
+                this._Qty = _Qty;
+            }
+
             public static  class SalesRateDecimalControl extends  Control.EditDecimalControl
             {
                 public SalesRateDecimalControl() {

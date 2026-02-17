@@ -20,6 +20,7 @@ public  class InvCheckInActivity extends BaseActivity {
     private final InvCheckInDetailedControl itemControl = new InvCheckInDetailedControl();
     public InvCheckInActivity(){
         Controls.add(Control.getHeaderControl("Header","Stock Receive"));
+        //itemControl.setEnableScroll(true);
         Controls.add(itemControl);
     }
     @Override
@@ -36,6 +37,7 @@ public  class InvCheckInActivity extends BaseActivity {
             getButtons().add(new Control.ActionButton(Control.ACTION_STATUS).setEnabled(false));
             getButtons().add(new Control.ActionButton(Control.ACTION_ADD_SUB).setEnabled(false));
             getButtons().remove(getActionButton(Control.ACTION_DELETE));
+
         }
         @Override
         protected String getWhere(String action){
