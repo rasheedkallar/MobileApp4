@@ -157,11 +157,46 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         txt.setLayoutParams(txtP);
         txt.setVisibility(View.GONE);
         FieldsContainer.addView(txt);
-        if(getArgs().getControls() != null) {
-            for (Control.ControlBase control : getArgs().getControls()) {
-                control.addView(FieldsContainer);
+
+
+        boolean focused = false;
+        Control.ControlBase focusControl = null;
+
+        // Defensive checks
+        List<Control.ControlBase> controls = (getArgs() != null) ? getArgs().getControls() : null;
+
+        if (controls != null) {
+            // 1) Respect explicitly set focus control if it's enabled
+            Control.ControlBase requested = getArgs().getFocusControl();
+            if (requested != null && requested.getEnabled()) {
+                focusControl = requested;
+            }
+
+            // 2) Otherwise, pick the first enabled control
+            if (focusControl == null && controls != null && !controls.isEmpty()) {
+                for (Control.ControlBase c : controls) {
+                    if (c != null && c.getEnabled()) {
+                        focusControl = c;
+                        break;
+                    }
+                }
             }
         }
+
+        // 3) Render controls and request focus on the chosen one
+        if (controls != null) {
+            for (Control.ControlBase control : controls) {
+                if (control == null) continue;
+
+                control.addView(FieldsContainer);
+
+                if (!focused && focusControl != null && focusControl == control) {
+                    control.requestFocus();
+                    focused = true;
+                }
+            }
+        }
+
         if(getArgs().getValue() == null || getArgs().getValue() == 0L){
             for (int j = 0; j < getArgs().getControls().size(); j++) {
                 if(Control.DetailedControlBase.class.isAssignableFrom(getArgs().getControls().get(j).getClass())){
@@ -206,6 +241,15 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
             if(controls == null)setControls(new ArrayList<Control.ControlBase>());
             else setControls(controls);
         }
+        private  Control.ControlBase FocusControl;
+        public Control.ControlBase  getFocusControl(){
+            return  FocusControl;
+        }
+        public PopupFormArgs setFocusControl(Control.ControlBase focusControl){
+            FocusControl = focusControl;
+            return  this;
+        }
+
         public <A extends Control.ControlBase> A getControl(String name){
             if(Controls == null)return null;
             Optional<Control.ControlBase> control = Controls.stream().filter(i-> i.getName().equals(name)).findFirst();
@@ -216,6 +260,9 @@ public class PopupForm extends PopupBase<PopupForm, PopupForm.PopupFormArgs> {
         public String getActionPath() {
             return ActionPath;
         }
+
+
+
         public PopupFormArgs setActionPath(String actionPath) {
             ActionPath = actionPath;
             return  this;

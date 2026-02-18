@@ -558,13 +558,19 @@ public class Control {
                 }
             }
         }
+        protected PopupForm.PopupFormArgs getAddPopupFormArgs(String caption, ArrayList<ControlBase> controls){
+            return  new PopupForm.PopupFormArgs(caption,controls,getFullPathNew(),0L);
+        }
+        protected PopupForm.PopupFormArgs getEditPopupFormArgs(String header,ArrayList<Control.ControlBase> controls,String path,Long value){
+            return  new PopupForm.PopupFormArgs( header, controls, path, value);
+        }
         private void ShowAdd(ArrayList<LookupControlBase> popupInputs, ArrayList<ControlBase> controls){
             if(popupInputs == null || popupInputs.size() == 0){
                 String caption = getCaption();
                 if(caption == null)caption = "Add";
                 else caption = caption + " Add";
                 new PopupForm()
-                        .setArgs(new PopupForm.PopupFormArgs(caption,controls,getFullPathNew(),0L))
+                        .setArgs(getAddPopupFormArgs(caption,controls))
                         .show( getRootActivity().getSupportFragmentManager(),null);
             }else{
                 popupInputs.get(0).onPopupList(getRootActivity(), (Function<DataService.Lookup, Void>) lookup -> {
@@ -632,7 +638,7 @@ public class Control {
                 }
                 new DataService(getRootActivity()).postForSelect(getDataPath(Control.ACTION_EDIT),"it0 => " + fields.getSelectString(), jsonObject -> {
                     loadEditData(EditControls,jsonObject);
-                    PopupForm from = new PopupForm().setArgs(new PopupForm.PopupFormArgs((getCaption() != null ? getCaption() + " " : "") + "Edit",EditControls,getDataPath(Control.ACTION_EDIT),getValue()));
+                    PopupForm from = new PopupForm().setArgs(getEditPopupFormArgs((getCaption() != null ? getCaption() + " " : "") + "Edit",EditControls,getDataPath(Control.ACTION_EDIT),getValue()));
                     from.getArgs().setActionPath(getFullPath());
                     from.show( getRootActivity().getSupportFragmentManager(),null);
                     return null;
@@ -2070,7 +2076,7 @@ public class Control {
                         EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), R.color.black));
                         setValue(result);
                     }else{
-                        EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), Color.RED));
+                        EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), com.google.android.material.R.color.design_default_color_error));
                     }
                     InEditMode =false;
                 }

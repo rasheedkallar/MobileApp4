@@ -24,6 +24,7 @@ import com.example.myapplication.Activity.Item;
 import com.example.myapplication.model.Control;
 import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupConfirmation;
+import com.example.myapplication.model.PopupForm;
 import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
 
@@ -574,6 +575,28 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
         }
 
+
+        @Override
+        protected PopupForm.PopupFormArgs getAddPopupFormArgs(String caption, ArrayList<Control.ControlBase> controls) {
+            // Find the relevant controls
+            Control.ControlBase qtyCtrl  = findByName(controls, "Qty");
+            Control.ControlBase descCtrl = findByName(controls, "Description");
+            PopupForm.PopupFormArgs args = super.getAddPopupFormArgs(caption, controls);
+            // Prefer Description if it exists and is required; otherwise focus Qty
+            if (descCtrl != null && descCtrl.getIsRequired()) { // change to isRequired() if that's your API
+                args.setFocusControl(descCtrl);
+            } else if (qtyCtrl != null) {
+                args.setFocusControl(qtyCtrl);
+            }
+            return args;
+        }
+        private static Control.ControlBase findByName(ArrayList<Control.ControlBase> controls, String name) {
+            if (controls == null || name == null) return null;
+            return controls.stream()
+                    .filter(c -> c != null && name.equals(c.getName())) // use equalsIgnoreCase if needed
+                    .findFirst()
+                    .orElse(null);
+        }
         @Override
         protected ArrayList<Control.ControlBase> getControls(String action) {
             final ArrayList<Control.ControlBase> controls = new ArrayList<Control.ControlBase>();
