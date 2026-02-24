@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.function.Function;
 
+import kotlin.jvm.functions.Function2;
+
 public  class InvCheckInDetailsActivity extends BaseActivity {
     private final  Control.HeaderControl headerControl =  new Control.HeaderControl("Header","Header").setControlSize(ViewGroup.LayoutParams.MATCH_PARENT);
     private final  BalanceControl balance1Control =  new BalanceControl("Total","Total").setFlexBasisPercent(0.3333f);
@@ -56,8 +58,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         Controls.add(itemControl);
         barcodeControl.listener = new BarcodeControl.OnBarcodeScannedListener() {
             @Override
-            public void onBarcodeScanned(String barcode, DataService.Lookup lookup) {
-                itemControl.onBarcodeScanned(barcode, lookup);
+            public void onBarcodeScanned(String barcode, DataService.Lookup lookup,Double purchaseRate) {
+                itemControl.onBarcodeScanned(barcode, lookup,purchaseRate);
 
             }
         };
@@ -186,7 +188,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
         }
         public  interface OnBarcodeScannedListener {
-            void onBarcodeScanned(String barcode, DataService.Lookup lookup);
+            void onBarcodeScanned(String barcode, DataService.Lookup lookup,Double purchaseRate);
         }
         private transient OnBarcodeScannedListener listener;
         // Method to set the callback
@@ -197,6 +199,28 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public interface BarcodeListener {
             void invoke(DataService.Lookup value,String barcode,JSONObject itemInfo);
         }
+
+        private Double getPurchaseRate(JSONObject itemInfo){
+
+            Double purchaseRate = null;
+            Double fraction = null;
+            if(itemInfo == null)return purchaseRate;
+
+            if (itemInfo.has("PurchaseRate") && !itemInfo.isNull("PurchaseRate")) {
+                purchaseRate = itemInfo.optDouble("PurchaseRate");
+            }
+
+            if (itemInfo.has("Fraction") && !itemInfo.isNull("Fraction")) {
+                fraction = itemInfo.optDouble("Fraction");
+            }
+
+            if (purchaseRate != null && fraction != null) {
+                purchaseRate = purchaseRate * fraction;
+            }
+            return  purchaseRate;
+        }
+
+
         @Override
         public void valueChange(String oldValue, String newValue) {
             super.valueChange(oldValue, newValue);
@@ -204,17 +228,20 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 requestBarcode(newValue, new BarcodeListener() {
                     @Override
                     public void invoke(DataService.Lookup value, String barcode,JSONObject itemInfo) {
+
+
+
                         EditText editText = getEditTextInput();
                         if(editText != null) {
                             String editorBarcode = editText.getText().toString().trim();
                             if (Objects.equals(barcode, editorBarcode)) {
                                 LastBarcodeItem = value;
-                                if (listener != null) listener.onBarcodeScanned(barcode, value);
+                                if (listener != null) listener.onBarcodeScanned(barcode, value,getPurchaseRate(itemInfo));
                             }
                         }
                         else{
                             LastBarcodeItem = value;
-                            if (listener != null) listener.onBarcodeScanned(barcode, value);
+                            if (listener != null) listener.onBarcodeScanned(barcode, value,getPurchaseRate(itemInfo));
                         }
                     }
                 });
@@ -256,11 +283,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 requestBarcode(barcode, new BarcodeListener() {
                     @Override
                     public void invoke(DataService.Lookup value, String barcode,JSONObject itemInfo) {
-
                         setLastBarcodeItem(value);
-
                         if(ScanMode) {
-
                             //if (value == null) {
                             //    editText.setText(barcode);
                             //    editText.selectAll();
@@ -269,7 +293,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                                 editText.setText(null);
                                 editText.requestFocus();
                             //}
-                            if(listener !=null)listener.onBarcodeScanned(barcode,value);
+                            if(listener !=null)listener.onBarcodeScanned(barcode,value,getPurchaseRate(itemInfo));
                         }
                         listner.apply(value);
                     }
@@ -507,9 +531,10 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public void setOnRefreshListener(InvCheckInLineDetailedControl.OnRefreshListener listener) {
             this.listener = listener;
         }
-        public void onBarcodeScanned(String barcode,DataService.Lookup lookup)
+        public void onBarcodeScanned(String barcode,DataService.Lookup lookup,Double purchaseRate)
         {
             AdditemLookup = lookup;
+            PurchaseRate = purchaseRate;
             AddBarcode = barcode;
             clickAdd = true;
             super.onButtonClick(getButton(Control.ACTION_ADD));
@@ -531,6 +556,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public String AddBarcode = null;
 
         public DataService.Lookup AdditemLookup = null;
+
+        public Double PurchaseRate = null;
         private boolean clickAdd = true;
         private  String editMode = "Default";
         @Override
@@ -562,6 +589,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                 super.onButtonClick(action);
             }
         }
+        private Control.EditDecimalControl rateControl = null;
         private Control.EditDecimalControl qtyControl = null;
         private Control.EditTextControlBase descriptionControl = null;
 
@@ -577,6 +605,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             }
         }
 
+        private boolean rateChangeMode = false;
 
         @Override
         protected PopupForm.PopupFormArgs getAddPopupFormArgs(String caption, ArrayList<Control.ControlBase> controls) {
@@ -610,12 +639,15 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     ArrayList<Control.ControlBase> list = new ArrayList<Control.ControlBase>();
                     if (!action.equals(Control.ACTION_REFRESH)) {
                         isc = new ItemSearchControl();
+                        isc.setControlSize(Control.CONTROL_SIZE_FULL);
                         barcodeControl = (BarcodeControl)new BarcodeControl().setScanMode(false).setCaption("Barcode");
                         barcodeControl.setRootActivity(getRootActivity());
+                        barcodeControl.setControlSize(Control.CONTROL_SIZE_FULL);
                         barcodeControl.setValue(AddBarcode);
                         isc.setValue(AdditemLookup);
                         isc.setPopupIndex(clickAdd ? -1 : 0).setIsRequired(false);
                         descriptionControl = Control.getEditTextControl("Description", "Description").setControlSize(Control.CONTROL_SIZE_DOUBLE).setIsRequired(true).setValue(AddDescription);
+                        descriptionControl.setControlSize(Control.CONTROL_SIZE_FULL);
                         if(AdditemLookup !=null)descriptionControl.setIsRequired(false);
                         isc.setValueChangedListener((lookup, lookup2) -> {
                             descriptionControl.setIsRequired(lookup2 == null);
@@ -641,10 +673,60 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                         controls.add(descriptionControl);
                     }
                     qtyControl = Control.getEditDecimalControl("Qty", "Qty");
-                    qtyControl.setDecimalPlaces(3).setColumnWeight(3);
-                    controls.add(qtyControl);
                     Control.EditDecimalControl amountControl = Control.getEditDecimalControl("Amount", "Amt +VAT");
-                    amountControl.setIsRequired(true).setColumnWeight(3);
+
+
+                    if(action.equals(Control.ACTION_ADD) || action.equals(Control.ACTION_EDIT)){
+                        rateControl = Control.getEditDecimalControl("Rate", "Rate");
+                        rateControl.setValue(PurchaseRate);
+                        rateControl.setValueChangedListener(new Function2<Double, Double, Void>() {
+                            @Override
+                            public Void invoke(Double oldValue, Double newValue) {
+                                if(newValue != null && qtyControl != null){
+                                    Double qty =  qtyControl.getValue();
+                                    if(qty != null){
+                                        rateChangeMode = true;
+                                        amountControl.setValue(qty * newValue);
+                                        rateChangeMode = false;
+                                    }
+                                }
+                                return null;
+                            }
+                        });
+                        rateControl.setDecimalPlaces(2).setIsRequired(false).setFlexBasisPercent(0.3f);
+                        controls.add(rateControl);
+                    }
+
+
+
+                    qtyControl.setDecimalPlaces(3).setColumnWeight(3).setFlexBasisPercent(0.3f);
+                    qtyControl.setValueChangedListener(new Function2<Double, Double, Void>() {
+                        @Override
+                        public Void invoke(Double oldValue, Double newValue) {
+                            if(newValue != null && rateControl != null){
+                                Double rate =  rateControl.getValue();
+                                if(rate != null){
+                                    rateChangeMode = true;
+                                    amountControl.setValue(rate * newValue);
+                                    rateChangeMode = false;
+                                }
+                            }
+                            return null;
+                        }
+                    });
+                    controls.add(qtyControl);
+
+                    amountControl.setIsRequired(true).setColumnWeight(3).setFlexBasisPercent(0.4f);
+                    amountControl.setValueChangedListener(new Function2<Double, Double, Void>() {
+                        @Override
+                        public Void invoke(Double oldValue, Double newValue) {
+                            if(!rateChangeMode && rateControl != null){
+                                rateControl.setValue(null);
+                            }
+                            return null;
+                        }
+                    });
+
                     amountControl.addButton(Control.ACTION_PERCENT, new Function<View, Boolean>() {
                         @Override
                         public Boolean apply(View view) {
@@ -701,7 +783,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                         }).setEnabled(false);
                         barcodeControl.setOnBarcodeScannedListener(new BarcodeControl.OnBarcodeScannedListener() {
                             @Override
-                            public void onBarcodeScanned(String barcode, DataService.Lookup lookup) {
+                            public void onBarcodeScanned(String barcode, DataService.Lookup lookup,Double purchaseRate) {
                                 barcodeControl.ValidateBarcode(isc.getValue());
                             }
                         });
