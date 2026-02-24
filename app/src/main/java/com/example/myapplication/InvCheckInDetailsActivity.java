@@ -252,6 +252,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             EditText editText = getEditTextInput();
             String barcode = editText.getText().toString().trim();
             if(!barcode.isEmpty() && barcode.indexOf(' ') < 0 && barcode.length() < 20){
+
                 requestBarcode(barcode, new BarcodeListener() {
                     @Override
                     public void invoke(DataService.Lookup value, String barcode,JSONObject itemInfo) {
@@ -260,14 +261,14 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
 
                         if(ScanMode) {
 
-                            if (value == null) {
-                                editText.setText(barcode);
-                                editText.selectAll();
-                                editText.requestFocus();
-                            } else {
+                            //if (value == null) {
+                            //    editText.setText(barcode);
+                            //    editText.selectAll();
+                            //    editText.requestFocus();
+                            //} else {
                                 editText.setText(null);
                                 editText.requestFocus();
-                            }
+                            //}
                             if(listener !=null)listener.onBarcodeScanned(barcode,value);
                         }
                         listner.apply(value);
@@ -510,6 +511,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         {
             AdditemLookup = lookup;
             AddBarcode = barcode;
+            clickAdd = true;
             super.onButtonClick(getButton(Control.ACTION_ADD));
             AdditemLookup = null;
             AddBarcode = null;

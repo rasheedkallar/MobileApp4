@@ -11,6 +11,8 @@ import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
 import com.loopj.android.http.RequestParams;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.ArrayList;
@@ -78,9 +80,20 @@ public  class InvCheckInActivity extends BaseActivity {
                 System.out.println(e.getMessage());
                 SelectedStatus = null;
             }
+            refreshButtons();
+        }
+
+        @Override
+        public void refreshDetailedView(JSONArray data) {
+            super.refreshDetailedView(data);
+            refreshButtons();
+        }
+
+        private void  refreshButtons(){
             getActionButton(Control.ACTION_STATUS).setEnabled(true);
             getActionButton(Control.ACTION_ADD_SUB).setEnabled(SelectedStatus != null && SelectedStatus.equals("Draft") );
             getActionButton(Control.ACTION_EDIT).setEnabled(SelectedStatus != null && SelectedStatus.equals("Draft") );
+            //System.out.println(SelectedStatus != null && SelectedStatus.equals("Draft"));
         }
         @Override
         public void onButtonClick(Control.ActionButton action) {
