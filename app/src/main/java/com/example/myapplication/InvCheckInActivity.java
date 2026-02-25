@@ -151,14 +151,14 @@ public  class InvCheckInActivity extends BaseActivity {
                 return controls;
             }
             else if(action.equals(Control.ACTION_ADD ) || action.equals(Control.ACTION_EDIT)){
-                controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setValue(new Date()));
-                controls.add(Control.getEditTextControl("RefNum", "Ref Number"));
-                controls.add(Control.getEditDecimalControl("TotalAmount", "Amount").setDecimalPlaces(2));
+                controls.add(Control.getDateTimeControl("CheckInTime", "Check In Date").setControlSize(Control.CONTROL_SIZE_FULL).setValue(new Date()));
+                controls.add(Control.getEditTextControl("RefNum", "Ref Number").setFlexBasisPercent(0.5f));
+                controls.add(Control.getEditDecimalControl("TotalAmount", "Amount").setDecimalPlaces(2).setFlexBasisPercent(0.5f));
                 if(action.equals(Control.ACTION_ADD)){
                     controls.add(Control.getHiddenControl( "Status", "Draft"));
                 }
-                controls.add(Control.getLookupForeignControl( "BusParty", "Supplier","Name").setWhere("PartyType == \"SUP\" && Active"));
-                controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","BusParty.Name").setWhere("BusParty.Active"));
+                controls.add(Control.getLookupForeignControl( "BusParty", "Supplier","Name").setWhere("PartyType == \"SUP\" && Active").setControlSize(Control.CONTROL_SIZE_FULL));
+                controls.add(Control.getLookupForeignControl( "BusEmployee", "Employee","BusParty.Name").setWhere("BusParty.Active").setControlSize(Control.CONTROL_SIZE_FULL));
                 controls.add(Control.getImageControl("Images", "Invoice Images", "InvCheckIn").setIsRequired(false));
                 return controls;
             }
