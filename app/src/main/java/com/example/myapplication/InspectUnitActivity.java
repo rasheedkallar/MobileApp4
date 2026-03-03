@@ -166,8 +166,8 @@ public class InspectUnitActivity extends BaseActivity {
     {
         public PopupItemStockForm(String header,Long itemUnitId,Double stock,Function<Double,Boolean> callBack) {
             ArrayList<Control.ControlBase> controls = new ArrayList<>();
-            controls.add(new Control.EditDecimalControl("CurrentStock","Current Stock").setDecimalPlaces(3).setEnabled(false).setValue(stock).setControlSize(LinearLayout.LayoutParams.MATCH_PARENT));
-            controls.add(new Control.EditDecimalControl("NewStock","New Stock").setDecimalPlaces(3).setControlSize(LinearLayout.LayoutParams.MATCH_PARENT));
+            controls.add(new Control.EditDecimalControl("CurrentStock","Current Stock").setDecimalPlaces(3).setEnabled(false).setValue(stock).setFlexBasisPercent(0.5f));
+            controls.add(new Control.EditDecimalControl("NewStock","New Stock").setDecimalPlaces(3).setFlexBasisPercent(0.5f));
             PopupForm.PopupFormArgs ara = new PopupFormArgs(header,controls,"InvItemUnits[]",0L);
             ara.setCanceledOnTouchOutside(true);
             ara.setCancelOnDestroyView(true);
@@ -185,21 +185,31 @@ public class InspectUnitActivity extends BaseActivity {
             }
             else {
 
-                JSONObject obj = new JSONObject();
-                try {
-                    obj.put("itemUnitId",ItemUnitId);
-                    obj.put("stock",getArgs().getControls().get(1).getValue());
-                    obj.put("user","mobile");
-                    new DataService(getRootActivity()).postForExecute(Integer.class, "sp_UpdateStock", obj, new Function<Integer, Void>() {
+                //JSONObject obj = new JSONObject();
+                //try {
+                    //obj.put("itemUnitId",ItemUnitId);
+                    //obj.put("stock",getArgs().getControls().get(1).getValue());
+                    //obj.put("user","mobile");
+
+                    new DataService(getRootActivity()).getString("MobileApi/StockUpdate?unitId=" + ItemUnitId + "&newStock=" + getArgs().getControls().get(1).getValue(), new Function<String, Void>() {
                         @Override
-                        public Void apply(Integer integer) {
-                            if(CallBack.apply((Double)getArgs().getControls().get(0).getValue()))dismiss();
-                            return null;
+                        public Void apply(String s) {
+                                    if(CallBack.apply((Double)getArgs().getControls().get(0).getValue()))dismiss();
+                                    return null;
                         }
                     }, getRootActivity());
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }
+
+
+                    //new DataService(getRootActivity()).postForExecute(Integer.class, "sp_UpdateStock", obj, new Function<Integer, Void>() {
+                    //    @Override
+                    //    public Void apply(Integer integer) {
+                    //        if(CallBack.apply((Double)getArgs().getControls().get(0).getValue()))dismiss();
+                    //        return null;
+                    //    }
+                    //}, getRootActivity());
+                //} catch (JSONException e) {
+                //    throw new RuntimeException(e);
+                //}
             }
         }
     }
@@ -224,6 +234,7 @@ public class InspectUnitActivity extends BaseActivity {
             ItemControl.addView(RootLayout);
             //Controls.add(ItemControl);
             Item.InvItemUnitDetails dc = new Item.InvItemUnitDetails(ItemControl.getValue());
+            dc.setCaption(null);
             dc.addButton(Control.ACTION_STOCK, view -> {
                 JSONObject data1 = (JSONObject) dc.getSelectedRow().getTag();
                 try {
