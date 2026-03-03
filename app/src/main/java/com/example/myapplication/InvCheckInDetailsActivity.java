@@ -221,6 +221,8 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         }
 
 
+
+
         @Override
         public void valueChange(String oldValue, String newValue) {
             super.valueChange(oldValue, newValue);
@@ -373,6 +375,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                     }
                     else{
                         try {
+                            setSelectedData(jsonObject);
                             setValue(new DataService.Lookup(Long.parseLong(jsonObject.get("Id").toString()),jsonObject.get("FullDescription").toString()));
                             Popup.dismiss();
                         }
@@ -462,6 +465,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                             onButtonClick(getActionButton(Control.ACTION_ADD_SUB));
                         }
                         else {
+                            setSelectedData(null);
                             readValueObject(unit.getId());
                         }
                         return true;
@@ -558,6 +562,7 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
         public DataService.Lookup AdditemLookup = null;
 
         public Double PurchaseRate = null;
+
         private boolean clickAdd = true;
         private  String editMode = "Default";
         @Override
@@ -650,6 +655,11 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
                         descriptionControl.setControlSize(Control.CONTROL_SIZE_FULL);
                         if(AdditemLookup !=null)descriptionControl.setIsRequired(false);
                         isc.setValueChangedListener((lookup, lookup2) -> {
+                            JSONObject obj = isc.getSelectedData();
+                            if (obj != null && obj.has("PurchaseRate") && !obj.isNull("PurchaseRate")) {
+                                PurchaseRate = obj.optDouble("PurchaseRate");
+                                if(rateControl != null) rateControl.setValue(PurchaseRate);
+                            }
                             descriptionControl.setIsRequired(lookup2 == null);
                             if(barcodeControl != null) {
                                 barcodeControl.ValidateBarcode(isc.getValue());

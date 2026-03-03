@@ -1,4 +1,5 @@
 package com.example.myapplication.model;
+import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -1329,8 +1330,18 @@ public class Control {
         }
         protected abstract void refreshDetailedView(String keywords, Function<JSONArray, Void> callBack);
         protected transient PopupSearch Popup;
+
+        private transient JSONObject selectedData;
+        public JSONObject getSelectedData(){
+            return selectedData;
+        }
+        public void setSelectedData(JSONObject data){
+            selectedData = data;
+        }
+
         protected boolean itemSelected(TableRow row, JSONObject data, DataService.Lookup lookup)
         {
+            selectedData = data;
             setValue(lookup);
             return true;
         }
@@ -1357,6 +1368,7 @@ public class Control {
                 }
                 @Override
                 public boolean onPressOk() {
+                    selectedData = null;
                     setValue(null);
                     return true;
                 }
@@ -2058,6 +2070,7 @@ public class Control {
                 @Override
                 public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 }
+                @SuppressLint("ResourceType")
                 @Override
                 public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                     InEditMode = true;
@@ -2076,7 +2089,7 @@ public class Control {
                         EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), R.color.black));
                         setValue(result);
                     }else{
-                        EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), com.google.android.material.R.color.design_default_color_error));
+                        EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(),Color.RED));
                     }
                     InEditMode =false;
                 }
