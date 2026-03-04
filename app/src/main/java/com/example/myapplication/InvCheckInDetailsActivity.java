@@ -206,6 +206,11 @@ public  class InvCheckInDetailsActivity extends BaseActivity {
             Double fraction = null;
             if(itemInfo == null)return purchaseRate;
 
+            if (itemInfo.has("UnitPurchaseRate") && !itemInfo.isNull("UnitPurchaseRate")) {
+                return itemInfo.optDouble("UnitPurchaseRate");
+            }
+
+
             if (itemInfo.has("PurchaseRate") && !itemInfo.isNull("PurchaseRate")) {
                 purchaseRate = itemInfo.optDouble("PurchaseRate");
             }
