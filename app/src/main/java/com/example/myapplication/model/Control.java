@@ -2089,7 +2089,7 @@ public class Control {
                         EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), R.color.black));
                         setValue(result);
                     }else{
-                        EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(),Color.RED));
+                        EditTextInput.setTextColor(ContextCompat.getColor(EditTextInput.getContext(), android.R.color.holo_red_dark));
                     }
                     InEditMode =false;
                 }
