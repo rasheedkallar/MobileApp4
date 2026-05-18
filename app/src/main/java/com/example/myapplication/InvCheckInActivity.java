@@ -43,11 +43,11 @@ public  class InvCheckInActivity extends BaseActivity {
         }
         @Override
         protected String getWhere(String action){
-            return "Status == \"Draft\" or ((Status == \"Final\" || Status == \"Cancel\") and CheckInTime >= " +  FilterControls.get(0).getQueryValue() + " and CheckInTime < " +  FilterControls.get(1).getQueryValue() + ")" ;
+            return "Status == \"Draft\" or ((Status == \"Final\" || Status == \"Cancel\")  and CheckInTime >= " +  FilterControls.get(0).getQueryValue() + " and CheckInTime < " +  FilterControls.get(1).getQueryValue() + ")" ;
         }
         @Override
         protected String getOrderBy(String action) {
-            return "Status == \"Draft\" ? 1 : Status == \"Final\" ? 2 : 3, Id Desc";
+            return "Status == \"Draft\" ? 1 :  2, Id Desc";
         }
         @Override
         protected void rowAdded(ArrayList<Control.ControlBase> controls,JSONObject data) {
