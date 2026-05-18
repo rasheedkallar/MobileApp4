@@ -43,7 +43,7 @@ public  class InvCheckInActivity extends BaseActivity {
         }
         @Override
         protected String getWhere(String action){
-            return "Status == \"Draft\" or (Status == \"Final\" and CheckInTime >= " +  FilterControls.get(0).getQueryValue() + " and CheckInTime < " +  FilterControls.get(1).getQueryValue() + ")" ;
+            return "Status == \"Draft\" or ((Status == \"Final\" || Status == \"Cancel\") and CheckInTime >= " +  FilterControls.get(0).getQueryValue() + " and CheckInTime < " +  FilterControls.get(1).getQueryValue() + ")" ;
         }
         @Override
         protected String getOrderBy(String action) {
@@ -59,6 +59,9 @@ public  class InvCheckInActivity extends BaseActivity {
                 try{
                     if(data.get("Status").toString().equals("Draft")){
                         colour = Color.parseColor("#80EE1506");
+                    }
+                    else if(data.get("Status").toString().equals("Cancel")){
+                        colour = Color.parseColor("#FFFF00");
                     }
                     else {
                         colour = Color.parseColor("#8048BE09");
