@@ -61,7 +61,7 @@ public  class InvCheckInActivity extends BaseActivity {
                         colour = Color.parseColor("#80EE1506");
                     }
                     else if(data.get("Status").toString().equals("Cancel")){
-                        colour = Color.parseColor("#FFFF00");
+                        colour = Color.parseColor("#80FFFF00");
 
                     }
                     else {
