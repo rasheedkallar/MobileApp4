@@ -10,7 +10,7 @@ import com.example.myapplication.Data.DataService;
 import com.example.myapplication.model.PopupHtml;
 import com.example.myapplication.model.PopupLookup;
 import com.example.myapplication.model.Utility;
-import com.loopj.android.http.RequestParams;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
