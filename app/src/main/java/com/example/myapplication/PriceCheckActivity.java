@@ -56,6 +56,17 @@ public class PriceCheckActivity extends BaseActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        autoSubmitRunnable = () -> {
+            String code = txtScan.getText().toString().trim();
+
+            if (!code.isEmpty()) {
+                handleScannedText(code);
+                txtScan.setText("");
+                keepFocusOnScanBox();
+            }
+        };
+
+
         getWindow().addFlags(
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
@@ -99,7 +110,22 @@ public class PriceCheckActivity extends BaseActivity {
         Description = findViewById(R.id.Description);
         Rate        = findViewById(R.id.Rate);
 
+        txtScan.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scanHandler.removeCallbacks(autoSubmitRunnable);
+
+                if (s != null && s.length() > 0) {
+                    scanHandler.postDelayed(autoSubmitRunnable, SCAN_TIMEOUT);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) { }
+        });
 
 
         btnKeyboard = findViewById(R.id.btnKeyboard);
@@ -173,6 +199,12 @@ public class PriceCheckActivity extends BaseActivity {
             }
         });
     }
+
+    private android.os.Handler scanHandler = new android.os.Handler();
+    private Runnable autoSubmitRunnable;
+    private static final long SCAN_TIMEOUT = 300; // milliseconds
+
+
 
     /** Submit when Enter/Tab/Space is pressed */
     private void setupKeyListener() {
