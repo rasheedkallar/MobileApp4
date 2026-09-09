@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -51,6 +52,7 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,6 +69,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+
+
 
 public abstract class BaseActivity extends AppCompatActivity  {
 
@@ -161,11 +165,268 @@ public abstract class BaseActivity extends AppCompatActivity  {
         }
     }
     public  static MenuItem ConnectionMenu = null;
+    public  static MenuItem VersionMenu = null;
+
+    public static boolean UpdateAvailable = false;
+    public static String LatestApkUrl = null;
+    public static int LatestVersionCode = 0;
+    public static String LatestVersionName = null;
+
+
+
+    protected void RestVersionMenu(Menu menu)
+    {
+        VersionMenu = menu.findItem(R.id.mnu_version);
+
+        if (VersionMenu != null) {
+            try {
+
+                PackageInfo p =
+                        getPackageManager().getPackageInfo(
+                                getPackageName(),
+                                0);
+
+                VersionMenu.setTitle(
+                        "V" +
+                                p.versionName +
+                                " ↑");
+
+                CheckLatestVersion();
+
+            } catch (Exception e) {
+                VersionMenu.setTitle("V?");
+            }
+        }
+    }
+
+    private File getUpdateFile()
+    {
+        return new File(
+                getExternalFilesDir(null),
+                "BytesPDA.apk");
+    }
+
+    private boolean IsLocalApkValid()
+    {
+        try
+        {
+            File apk = getUpdateFile();
+            if(!apk.exists())
+                return false;
+            if(apk.length() != LatestFileSize)
+                return false;
+            PackageManager pm = getPackageManager();
+            PackageInfo pkg =
+                    pm.getPackageArchiveInfo(
+                            apk.getAbsolutePath(),
+                            0);
+
+            if(pkg == null)
+                return false;
+
+            long apkVersion;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            {
+                apkVersion = pkg.getLongVersionCode();
+            }
+            else
+            {
+                apkVersion = pkg.versionCode;
+            }
+
+            return apkVersion == LatestVersionCode;
+
+        }
+        catch(Exception ex)
+        {
+            return false;
+        }
+    }
+
+    private void DownloadLatestApk()
+    {
+        File apk = getUpdateFile();
+
+        new DataService(this).downloadFile(
+                LatestApkUrl,
+                apk,
+                new Function<Boolean, Void>() {
+
+                    @Override
+                    public Void apply(Boolean success)
+                    {
+                        if(success)
+                        {
+                            UpdateReady =
+                                    IsLocalApkValid();
+
+                            runOnUiThread(() ->
+                                    RefreshVersionMenuColor());
+                        }
+
+                        return null;
+                    }
+                });
+    }
+
+    private void RefreshVersionMenuColor()
+    {
+        if (VersionMenu == null)
+            return;
+
+        String versionName = "?";
+
+        try {
+            PackageInfo p =
+                    getPackageManager().getPackageInfo(
+                            getPackageName(),
+                            0);
+
+            versionName = p.versionName;
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        String text = "V" + versionName;
+        if(UpdateReady)
+        {
+            text += " ↑";
+        }
+
+
+        SpannableString span =
+                new SpannableString(text);
+
+        int color = Color.GREEN;
+
+        if (UpdateAvailable && !UpdateReady)
+        {
+            color = Color.RED;
+        }
+        else if (UpdateReady)
+        {
+            color = Color.rgb(255, 165, 0);
+        }
+
+        span.setSpan(
+                new ForegroundColorSpan(color),
+                0,
+                span.length(),
+                0);
+
+        VersionMenu.setTitle(span);
+    }
+
+
+    private void CheckLatestVersion()
+    {
+        String url =
+                "https://api.greenleafuae.com/api/MobileApi/GetLatestVersion";
+
+        new DataService(this).httpAction(
+                "GET",
+                url,
+                null,
+                new com.loopj.android.http.AsyncHttpResponseHandler()
+                {
+                    @Override
+                    public void onSuccess(
+                            int statusCode,
+                            cz.msebera.android.httpclient.Header[] headers,
+                            byte[] responseBody)
+                    {
+                        try
+                        {
+                            JSONObject obj =
+                                    new JSONObject(
+                                            new String(responseBody));
+
+                            LatestFileSize =
+                                    obj.getLong("fileSize");
+
+                            LatestVersionCode =
+                                    obj.getInt("versionCode");
+
+                            LatestVersionName =
+                                    obj.getString("versionName");
+
+                            LatestApkUrl =
+                                    obj.getString("apkUrl");
+
+                            PackageInfo p =
+                                    getPackageManager()
+                                            .getPackageInfo(
+                                                    getPackageName(),
+                                                    0);
+
+                            long currentVersionCode;
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                            {
+                                currentVersionCode =
+                                        p.getLongVersionCode();
+                            }
+                            else
+                            {
+                                currentVersionCode =
+                                        p.versionCode;
+                            }
+
+                            UpdateAvailable =
+                                    LatestVersionCode >
+                                            currentVersionCode;
+
+                            if(UpdateAvailable)
+                            {
+                                if(IsLocalApkValid())
+                                {
+                                    UpdateReady = true;
+                                }
+                                else
+                                {
+                                    UpdateReady = false;
+                                    DownloadLatestApk();
+                                }
+                            }
+                            else
+                            {
+                                UpdateReady = false;
+                            }
+
+                            runOnUiThread(() ->
+                                    RefreshVersionMenuColor());
+                        }
+                        catch (Exception ex)
+                        {
+                            ex.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(
+                            int statusCode,
+                            cz.msebera.android.httpclient.Header[] headers,
+                            byte[] responseBody,
+                            Throwable error)
+                    {
+                        if(error != null)
+                        {
+                            error.printStackTrace();
+                        }
+                    }
+                },
+                null,
+                10000);
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu,menu);
         ConnectionMenu = menu.findItem(R.id.mnu_net);
+
+        RestVersionMenu(menu);
         DataRepository.refreshConnectionMenu();
         return true;
     }
@@ -593,10 +854,93 @@ public abstract class BaseActivity extends AppCompatActivity  {
     }
 
 
+    public static boolean UpdateReady = false;
+    public static long LatestFileSize = 0;
+    private File LocalUpdateFile;
+    private void InstallDownloadedApk()
+    {
+        try
+        {
+            File apk = getUpdateFile();
 
+            Toast.makeText(
+                    this,
+                    "APK Exists = " + apk.exists() +
+                            "\nSize = " + apk.length(),
+                    Toast.LENGTH_LONG
+            ).show();
 
+            Uri uri = FileProvider.getUriForFile(
+                    this,
+                    getPackageName() + ".provider",
+                    apk);
+
+            Toast.makeText(
+                    this,
+                    uri.toString(),
+                    Toast.LENGTH_LONG
+            ).show();
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+
+            intent.setDataAndType(
+                    uri,
+                    "application/vnd.android.package-archive");
+
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            startActivity(intent);
+
+            Toast.makeText(
+                    this,
+                    "Installer launched",
+                    Toast.LENGTH_LONG
+            ).show();
+        }
+        catch (Exception ex)
+        {
+            Toast.makeText(
+                    this,
+                    ex.toString(),
+                    Toast.LENGTH_LONG
+            ).show();
+
+            ex.printStackTrace();
+        }
+    }
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+
+        if(item.getItemId() == R.id.mnu_version)
+        {
+            if(UpdateReady)
+            {
+                InstallDownloadedApk();
+            }
+            else if(UpdateAvailable)
+            {
+                Toast.makeText(
+                                this,
+                                "Downloading update...",
+                                Toast.LENGTH_LONG)
+                        .show();
+            }
+            else
+            {
+                Toast.makeText(
+                                this,
+                                "Latest version installed",
+                                Toast.LENGTH_LONG)
+                        .show();
+            }
+
+            return true;
+        }
+
+
+
         if(item.getItemId() == R.id.mnu_net && DataRepository.Connections != null && !DataRepository.Connections.isEmpty()){
             List<DataService.Lookup> lookups = new ArrayList<>();
 

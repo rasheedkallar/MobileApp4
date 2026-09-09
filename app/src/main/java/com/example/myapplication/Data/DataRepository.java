@@ -33,6 +33,10 @@ public class DataRepository {
     public static DataRepository.Company getCurrentCompany(){
         return CurrentCompany;
     }
+
+
+
+
     public static void setCurrentCompany(DataRepository.Company company,BaseActivity context){
         CurrentCompany = company;
         if(BaseActivity.MenuBar != null){

@@ -33,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import java.io.FileOutputStream;
+import java.io.File;
+
 public class DataService {
 
     private  BaseActivity Context;
@@ -72,6 +75,60 @@ public class DataService {
             }
         },null,1500);
     }
+
+
+
+    public void downloadFile(
+            String url,
+            File targetFile,
+            Function<Boolean, Void> callback)
+    {
+        AsyncHttpClient client = new AsyncHttpClient();
+
+        client.get(url, new AsyncHttpResponseHandler() {
+
+            @Override
+            public void onSuccess(
+                    int statusCode,
+                    Header[] headers,
+                    byte[] responseBody)
+            {
+                try
+                {
+                    FileOutputStream fos =
+                            new FileOutputStream(targetFile);
+
+                    fos.write(responseBody);
+                    fos.flush();
+                    fos.close();
+
+                    if(callback != null)
+                        callback.apply(true);
+
+                }
+                catch (Exception ex)
+                {
+                    ex.printStackTrace();
+
+                    if(callback != null)
+                        callback.apply(false);
+                }
+            }
+
+            @Override
+            public void onFailure(
+                    int statusCode,
+                    Header[] headers,
+                    byte[] responseBody,
+                    Throwable error)
+            {
+                if(callback != null)
+                    callback.apply(false);
+            }
+        });
+    }
+
+
     public  void  GetCompanies(Function<List<DataRepository.Company>,Void> callBack) {
         String fullUrl = "https://api.greenleafuae.com/api/MobileApi/GetCompanies";
 

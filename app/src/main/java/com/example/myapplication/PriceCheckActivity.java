@@ -278,6 +278,9 @@ public class PriceCheckActivity extends BaseActivity {
         //MenuInflater inflater = getMenuInflater();
         //inflater.inflate(R.menu.main_menu,menu);
         ConnectionMenu = menu.findItem(R.id.mnu_net);
+        RestVersionMenu(menu);
+
+
         DataRepository.refreshConnectionMenu();
         return true;
 
@@ -291,6 +294,11 @@ public class PriceCheckActivity extends BaseActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
         BaseActivity context = this  ;
+
+        if(item.getItemId() == R.id.mnu_version) {
+            return super.onOptionsItemSelected(item);
+        }
+
 
         PopupPassword pib = new PopupPassword();
         pib.setArgs(new PopupPassword.PopupPasswordArgs( ));
