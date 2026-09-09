@@ -91,11 +91,11 @@ $VersionCode = (
         -Pattern 'versionCode\s+(\d+)'
 ).Matches.Groups[1].Value
 
-if (:IsNullOrWhiteSpace($VersionName)) {
+if ([string]::($VersionName)) {
     $VersionName = "Unknown"
 }
 
-if (:IsNullOrWhiteSpace($VersionCode)) {
+if ([string]::($VersionCode)) {
     $VersionCode = 0
 }
 

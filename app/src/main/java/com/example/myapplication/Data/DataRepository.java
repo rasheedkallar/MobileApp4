@@ -43,9 +43,11 @@ public class DataRepository {
             if(getCurrentCompany() == null){
                 setCurrentConnection(null);
                 BaseActivity.MenuBar.setTitle("Bytes Mobile");
-                SpannableString span = new SpannableString(BaseActivity.ConnectionMenu.getTitle());
-                span.setSpan(new ForegroundColorSpan(Color.RED), 0, span.length(), 0);
-                if(BaseActivity.ConnectionMenu != null) BaseActivity.ConnectionMenu.setTitle("Net");
+                if(BaseActivity.ConnectionMenu != null) {
+                    SpannableString span = new SpannableString(BaseActivity.ConnectionMenu.getTitle());
+                    span.setSpan(new ForegroundColorSpan(Color.RED), 0, span.length(), 0);
+                    BaseActivity.ConnectionMenu.setTitle("Net");
+                }
             }
             else{
                 String companyName = DataRepository.getCurrentCompany().name;
