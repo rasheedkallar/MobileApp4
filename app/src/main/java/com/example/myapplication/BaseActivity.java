@@ -861,28 +861,26 @@ public abstract class BaseActivity extends AppCompatActivity  {
     {
         try
         {
-            File apk = getUpdateFile();
+            // Exit lock task first
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            {
+                if (this instanceof PriceCheckActivity)
+                {
+                    try {
+                        stopLockTask();
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
 
-            Toast.makeText(
-                    this,
-                    "APK Exists = " + apk.exists() +
-                            "\nSize = " + apk.length(),
-                    Toast.LENGTH_LONG
-            ).show();
+            File apk = getUpdateFile();
 
             Uri uri = FileProvider.getUriForFile(
                     this,
                     getPackageName() + ".provider",
                     apk);
 
-            Toast.makeText(
-                    this,
-                    uri.toString(),
-                    Toast.LENGTH_LONG
-            ).show();
-
             Intent intent = new Intent(Intent.ACTION_VIEW);
-
             intent.setDataAndType(
                     uri,
                     "application/vnd.android.package-archive");
@@ -892,20 +890,9 @@ public abstract class BaseActivity extends AppCompatActivity  {
 
             startActivity(intent);
 
-            Toast.makeText(
-                    this,
-                    "Installer launched",
-                    Toast.LENGTH_LONG
-            ).show();
         }
         catch (Exception ex)
         {
-            Toast.makeText(
-                    this,
-                    ex.toString(),
-                    Toast.LENGTH_LONG
-            ).show();
-
             ex.printStackTrace();
         }
     }
