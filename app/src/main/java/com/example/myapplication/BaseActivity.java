@@ -191,7 +191,17 @@ public abstract class BaseActivity extends AppCompatActivity  {
                                 p.versionName +
                                 " ↑");
 
-                CheckLatestVersion();
+                long lastCheck = GetLastVersionCheckTime();
+
+                if (System.currentTimeMillis() - lastCheck >
+                        VERSION_CHECK_INTERVAL)
+                {
+                    CheckLatestVersion();
+                }
+                else
+                {
+                    RefreshVersionMenuColor();
+                }
 
             } catch (Exception e) {
                 VersionMenu.setTitle("V?");
@@ -319,6 +329,26 @@ public abstract class BaseActivity extends AppCompatActivity  {
         VersionMenu.setTitle(span);
     }
 
+    private static final long VERSION_CHECK_INTERVAL =
+            60 * 60 * 1000; // 1 hour
+
+    private void SaveVersionCheckTime()
+    {
+        SharedPreferences sp =
+                getSharedPreferences("VersionInfo", MODE_PRIVATE);
+
+        sp.edit()
+                .putLong("LastVersionCheck", System.currentTimeMillis())
+                .apply();
+    }
+    private long GetLastVersionCheckTime()
+    {
+        SharedPreferences sp =
+                getSharedPreferences("VersionInfo", MODE_PRIVATE);
+
+        return sp.getLong("LastVersionCheck", 0);
+    }
+
 
     private void CheckLatestVersion()
     {
@@ -377,6 +407,8 @@ public abstract class BaseActivity extends AppCompatActivity  {
                             UpdateAvailable =
                                     LatestVersionCode >
                                             currentVersionCode;
+
+                            SaveVersionCheckTime();
 
                             if(UpdateAvailable)
                             {
