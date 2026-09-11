@@ -350,6 +350,36 @@ public abstract class BaseActivity extends AppCompatActivity  {
     }
 
 
+
+    private long getLastVersionCheckTime()
+    {
+        SharedPreferences sp =
+                getSharedPreferences("VersionInfo", MODE_PRIVATE);
+
+        return sp.getLong("LastVersionCheck", 0);
+    }
+
+    private void saveVersionCheckTime()
+    {
+        SharedPreferences sp =
+                getSharedPreferences("VersionInfo", MODE_PRIVATE);
+
+        sp.edit()
+                .putLong("LastVersionCheck",
+                        System.currentTimeMillis())
+                .apply();
+    }
+
+    public void CheckLatestVersionIfRequired()
+    {
+        long lastCheck = getLastVersionCheckTime();
+
+        if (System.currentTimeMillis() - lastCheck >
+                VERSION_CHECK_INTERVAL)
+        {
+            CheckLatestVersion();
+        }
+    }
     private void CheckLatestVersion()
     {
         String url =

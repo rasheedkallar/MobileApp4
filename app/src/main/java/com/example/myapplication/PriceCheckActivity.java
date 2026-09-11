@@ -358,6 +358,8 @@ public class PriceCheckActivity extends BaseActivity {
 
 
     private void handleScannedText(String barcode) {
+
+        CheckLatestVersionIfRequired();
         tvError.setVisibility(TextView.GONE);
         tvStatus.setText("Checking price…");
         Description.setText("");
